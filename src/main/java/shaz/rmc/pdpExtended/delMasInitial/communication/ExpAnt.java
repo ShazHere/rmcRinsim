@@ -19,6 +19,7 @@ import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
+import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters;
 
 /**
  * @author Shaza
@@ -68,7 +69,7 @@ public class ExpAnt extends Ant {
 		returnEarlyProbabilityGen = new Random(250);
 		
 		truckSpeed = ((DeliveryTruckInitial)originator).getSpeed();
-		truckTotalTimeRange = ((DeliveryTruckInitial)originator).getTotalTimeRange();
+		truckTotalTimeRange =new TimeSlot(new DateTime(creationTime), originator.getTotalTimeRange().getEndTime());
 		if (!schedule.isEmpty())
 			currentUnit = schedule.get(0);
 	}
@@ -115,25 +116,20 @@ public class ExpAnt extends Ant {
 		return creationTime;
 	}
 
-	public boolean isInterested(DateTime interestedTime, Double travelDistance) {
+	public boolean isInterested(DateTime interestedTime, Double travelDistance, final DateTime currTime) {
 		Duration travelTime = new Duration((long)((travelDistance/truckSpeed)*60*60*1000));
 		//System.out.println("travel time =" +travelTime);
-		Utility.getAvailableSlots(this.schedule, this.availableSlots, this.truckTotalTimeRange);
+		Utility.getAvailableSlots(this.schedule, this.availableSlots, new TimeSlot (new DateTime(currTime), this.truckTotalTimeRange.getEndTime()));
 		TimeSlot currentSlot = availableSlots.get(0);
 		//System.out.println("in method = " + currentSlot.toString());
 		if (currentSlot.getStartTime().compareTo(interestedTime.minus(travelTime))< 0 //making rough estimation that will order enoughÊ interesting to be visited
 				&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime)) > 0) {
-			currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance
-					new TimeSlot (interestedTime.minus(travelTime),null)); //EndTime of slot cannot be decided here, It is adjusted at Order
+			currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
+					new TimeSlot (interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES),null)); //EndTime of slot cannot be decided here, It is adjusted at Order
 			return true;
 		}
 		return false;
 	}
-	
-	
-	//make it utility funtion in core..
-	
-	
 
 	public TruckScheduleUnit getCurrentUnit() {
 		return this.currentUnit;
@@ -162,7 +158,7 @@ public class ExpAnt extends Ant {
 		else {
 			prob = returnEarlyProbabilityGen.nextInt(10) < 9 ;
 		}
-		System.out.println("probability is " + prob);
+		//System.out.println("probability is " + prob);
 		return prob;
 	}
 	/**

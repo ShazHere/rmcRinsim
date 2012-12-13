@@ -11,6 +11,7 @@ import org.joda.time.DateTime;
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.pdp.PDPModel.VehicleState;
+import rinde.sim.core.model.road.MoveProgress;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.domain.Delivery;
 
@@ -26,11 +27,10 @@ public class DeliveryTruckInitialIntention {
 	
 		
 	// variables related to current destination
-	int currentUnitNo = 0;
-	Point destination; //contain (CY/PC/null)..basically contains the location the vehicle is currently heading towards
-
+	private int currentUnitNo = 0;
+	private Point destination; //contain (CY/PC/null)..basically contains the location the vehicle is currently heading towards 
 	
-	final Logger logger; //for logging
+	private final Logger logger; //for logging
 	
 	public DeliveryTruckInitialIntention(DeliveryTruckInitial a, DeliveryTruckInitialBelief b) {
 		this.rmcTruck = a;
@@ -61,37 +61,43 @@ public class DeliveryTruckInitialIntention {
 			return;
 		Delivery currentDelivery = b.schedule.get(currentUnitNo).getDelivery();
 		DeliveryInitial currentParcelDelivery =  ((OrderAgentInitial)currentDelivery.getOrder()).getDeliveryForDomainDelivery(currentDelivery);
-		if (currentTime >= b.schedule.get(currentUnitNo).getTimeSlot().getStartTime().getMillis()
+		if (currentTime >= b.schedule.get(currentUnitNo).getTimeSlot().getStartTime().getMillis() //if current time is equal to trucks currentUnit's starttime
 				&& currentTime < b.schedule.get(currentUnitNo).getTimeSlot().getEndTime().getMillis()) { //remain in current unit
-				if (b.schedule.get(currentUnitNo).getDelivery().getLoadingStation().getLocation() == rmcTruck.getRoadModel().getPosition(rmcTruck) 
+				if (currentDelivery.getLoadingStation().getLocation() == rmcTruck.getRoadModel().getPosition(rmcTruck) 
 						&& rmcTruck.getRoadModel().containsObject(currentParcelDelivery)) {
-					logger.debug(rmcTruck.getId()+ "T: Picking up  and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
+					logger.debug(rmcTruck.getId()+ "T: Picking up " + currentParcelDelivery.getOrder().getOrder().getId() +"O and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
 					rmcTruck.getPdpModel().pickup(rmcTruck, currentParcelDelivery, time); //Picking the deliver
-					destination = b.schedule.get(currentUnitNo).getDelivery().getOrder().getPosition(); //get postion of CY i.e unloading location
-				}
+					destination = currentDelivery.getOrder().getPosition(); //get postion of CY i.e unloading location
+				} //cuurent time has started, but truck is not at location of pickup, so drive to it..
 				if (destination != null) { //so moving could be involved
 					if (rmcTruck.getRoadModel().getPosition(rmcTruck) == destination) {
 						if (rmcTruck.getPdpModel().containerContains(rmcTruck, currentParcelDelivery) 
 								&& rmcTruck.getPdpModel().getVehicleState(rmcTruck) != VehicleState.DELIVERING) {
-							rmcTruck.getPdpModel().deliver(rmcTruck, currentParcelDelivery, time);	
+							logger.debug(rmcTruck.getId()+ "T: Started Delivery and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
+							rmcTruck.getPdpModel().deliver(rmcTruck, currentParcelDelivery, time);
+							//deliveredCurrentDelivery = true;
 						}
-						else if (destination != b.schedule.get(currentUnitNo).getDelivery().getReturnStation().getLocation() 
-								&& rmcTruck.getPdpModel().getContentsSize(rmcTruck) == 0) {
+						else if (destination != currentDelivery.getReturnStation().getLocation() 
+								&& rmcTruck.getPdpModel().getContentsSize(rmcTruck) == 0 
+								&& rmcTruck.getPdpModel().getVehicleState(rmcTruck) == VehicleState.IDLE) { 
+								//&& deliveredCurrentDelivery == true) {
 							logger.debug(rmcTruck.getId()+ "T: Done Delivery and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
-							destination = b.schedule.get(currentUnitNo).getDelivery().getReturnStation().getLocation();
+							destination = currentDelivery.getReturnStation().getLocation();
 							rmcTruck.getRoadModel().moveTo(rmcTruck, destination, time);
 							
 						}
 					}
-					else 
+					else if (rmcTruck.getPdpModel().getVehicleState(rmcTruck) == VehicleState.IDLE)
 						rmcTruck.getRoadModel().moveTo(rmcTruck, destination, time);
+						//logger.debug(rmcTruck.getRoadModel().moveTo(rmcTruck, destination, time).toString());
 				}
 				else
 					logger.debug(rmcTruck.getId()+ "T: Unexpectedly, destination is NULL");
 		}
 		else if (currentUnitNo < b.schedule.size()-1) 
-			if (currentTime >= b.schedule.get(currentUnitNo+1).getTimeSlot().getStartTime().getMillis())
-				currentUnitNo++; 
+			if (currentTime >= b.schedule.get(currentUnitNo+1).getTimeSlot().getStartTime().getMillis()) {
+				currentUnitNo++;
+			}
 		else ;//keep on waiting till the schedule starts
 	}
 }

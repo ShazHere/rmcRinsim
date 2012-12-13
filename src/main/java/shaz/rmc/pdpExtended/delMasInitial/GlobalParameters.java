@@ -30,9 +30,10 @@ public class GlobalParameters {
 	//public static final int TICK_INTERVAL = 200000; 
 	//public static final int INTENTION_EVAPORATION_RATE = 10; //means 20 ticks
 	//public static final int EXPLORATION_EVAPORATION_RATE = 20; //means  no. of tics
-	public static final int FEASIBILITY_INTERVAL_MIN = 100; //means send feeasibilty ants to near by after every X minutes.
-	public static final int FEASIBILITY_EVAPORATION_INTERVAL_MIN = 30;
-	public static final int EXPLORATION_INTERVAL_MIN = 100; //means no. of mintues
+	public static final int FEASIBILITY_INTERVAL_MIN = 10; //means send feeasibilty ants to near by after every X minutes.
+	public static final int FEASIBILITY_EVAPORATION_INTERVAL_MIN = 20;
+	public static final int EXPLORATION_INTERVAL_MIN = 3; //means no. of mintues
+	public static final int INTENTION_INTERVAL_MIN = 5; //means no. of mintues
 	public static final int TOTAL_TRUCKS = 1; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = true; //will all the vehicles have same capacity
 	//public static final int FIXED_VEHICLE_CAPACITY =10000;
@@ -43,8 +44,9 @@ public class GlobalParameters {
 	public static final int MINUTES_TO_CHANGE_ST4ORDER = 5; // When shold start time of the order be delayed..
 	public static final int MINUTES_TO_DELAY_ST = 10; //means ST should be delayed with MINUTES_TO_DELAY_ST if MINUTES_TO_CHANGE_ST4ORDER time has been elapsed
 							//after each change of ST. 
-	public static final int DISCHARGE_RATE_PERHOUR = 10; //Constant for all orders
+	public static final int DISCHARGE_RATE_PERHOUR = 10000; //Constant for all orders
 	public static final int LOADING_MINUTES = 5;
+	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
 	
 	//CHECK NOTES ABOUT INPUT FILES!!
 	public static final String INPUT_FILE = "planning2011-01-10/planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //for the data file in Rmc

@@ -44,7 +44,7 @@ public class RmcSimulation {
 		 * and set a greater valueto the maxSpeed so that vehicles actual speed is used by model and maxSpeed doesn't 
 		 * have to constraint vehicles speed.
 		 * */
-		PlaneRoadModel prm = new PlaneRoadModel(new Point(0, 0), new Point(10, 10), false, 10);//10by10 km plane
+		PlaneRoadModel prm = new PlaneRoadModel(new Point(0, 0), new Point(10, 10), true, 10);//10by10 km plane
 		CommunicationModel communicationModel = new CommunicationModel(rng, true);
 		final PDPModel pdpModel = new PDPModel();
 		final StatisticTracker stTracker = new StatisticTracker(sim);
@@ -61,20 +61,35 @@ public class RmcSimulation {
 			sim.register(new ProductionSiteInitial(rng, GlobalParameters.PROBLEM.getStations().get(j)));
 		
 		//Adding orders
-		int i, k ;
-		for (i = 0; i< GlobalParameters.PROBLEM.getOrders().size(); i++){
-			if (GlobalParameters.PROBLEM.getOrders().get(i).getId().equals("43"))
-				break;		
+		int  k =0, l =0, m =0, n =0 ; //4, 43, 19, 55
+		for (int i = 0; i< GlobalParameters.PROBLEM.getOrders().size(); i++){
+			if (GlobalParameters.PROBLEM.getOrders().get(i).getId().equals("43")) {
+				k = i;
+				System.out.println(GlobalParameters.PROBLEM.getOrders().get(i).toString());
+			}
+			else if (GlobalParameters.PROBLEM.getOrders().get(i).getId().equals("4")) {
+				l = i;
+				System.out.println(GlobalParameters.PROBLEM.getOrders().get(i).toString());
+			}
+//			else if (GlobalParameters.PROBLEM.getOrders().get(i).getId().equals("19"))
+//				m = i;
+			else if (GlobalParameters.PROBLEM.getOrders().get(i).getId().equals("55")) {				
+				n = i;		
+				System.out.println(GlobalParameters.PROBLEM.getOrders().get(i).toString());
+			}
 		}
-		for (k = 0; k< GlobalParameters.PROBLEM.getOrders().size(); k++){
-			if (GlobalParameters.PROBLEM.getOrders().get(k).getId().equals("4"))
-				break;		
-		}
-		sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(i<GlobalParameters.PROBLEM.getOrders().size()?i:i-1)));
+
+		System.out.println("k= " +k+", l = " +l+ ", m = "+m+ ", n =" + n);
 		sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(k<GlobalParameters.PROBLEM.getOrders().size()?k:k-1)));
+		sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(l<GlobalParameters.PROBLEM.getOrders().size()?l:l-1)));
+		//sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(m<GlobalParameters.PROBLEM.getOrders().size()?m:m-1)));
+		sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(n<GlobalParameters.PROBLEM.getOrders().size()?n:n-1)));
+//		for (int i = 0; i< GlobalParameters.PROBLEM.getOrders().size()-1; i++){
+//			sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(i)));
+//		}
 		
 		//Adding Delivery Trucks
-		for (int j = 0; j< 2 /*GlobalParameters.TOTAL_TRUCKS*/ ; j ++){
+		for (int j = 0; j< 7 /*GlobalParameters.TOTAL_TRUCKS*/ ; j ++){
 			sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(j)));
 		}
 		

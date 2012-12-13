@@ -58,9 +58,9 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	private final Map<OrderAgentInitial, Long > pheromoneUpdateTime;
 	private final Map<OrderAgentInitial, Long > noOfExplorations;
 	
-	protected ArrayList<FeaAnt> feasibilityAnts;
-	protected ArrayList<ExpAnt> explorationAnts;
-	protected ArrayList<IntAnt> intentionAnts;
+	private ArrayList<FeaAnt> feasibilityAnts;
+	private ArrayList<ExpAnt> explorationAnts;
+	private ArrayList<IntAnt> intentionAnts;
 	
 	public ProductionSiteInitial(RandomGenerator pRnd, Station pStation) {
 		station = pStation;	
@@ -100,12 +100,21 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	}
 	private void evaporatePheromones(TimeLapse timeLapse) {
 		long currMilli; 
-		for (OrderAgentInitial or:pheromoneUpdateTime.keySet()) {
+		ArrayList<OrderAgentInitial> removeAbleOrd = new ArrayList<OrderAgentInitial>();
+		for (OrderAgentInitial or:pheromoneUpdateTime.keySet()) { //one order culd be removed at one tick..
 			currMilli = timeLapse.getStartTime() -  pheromoneUpdateTime.get(or);
 			if (new Duration(currMilli).getStandardMinutes() >= GlobalParameters.FEASIBILITY_EVAPORATION_INTERVAL_MIN ) {
-				;//TODO  remove order from all Maps..
+				removeAbleOrd.add(or);
 			}
 		}		
+		if (!removeAbleOrd.isEmpty()) {
+			for (OrderAgentInitial ord : removeAbleOrd) {
+				interestedTime.remove(ord);
+				travelDistanceToOrder.remove(ord);
+				pheromoneUpdateTime.remove(ord);
+				noOfExplorations.remove(ord);
+			}
+		}
 	}
 
 	private void processIntentionAnts(TimeLapse timeLapse) {
@@ -119,26 +128,29 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			//checkArgument(iAnt.getCurrentUnit().getDelivery().getLoadingStation() == this, "Unexpected: Int Ant not at properLoading station");
 			if (iAnt.isScheduleComplete()) { //send back to orginator
 				IntAnt newAnt = (IntAnt)iAnt.clone(this);
-				logger.debug(station.getId() +"P Int is being sent back since schedule complete with schedule size = " + newAnt.getSchedule().size());
+				logger.debug(station.getId() +"P Int-" +newAnt.getOriginator().getId()+ " is being sent back since schedule complete with schedule size = " + newAnt.getSchedule().size());
 				cApi.send(newAnt.getOriginator(), newAnt); //sending back to the truck who originated exp ant
 				i.remove();
 				continue;
 			}
 			if (station.makeBookingAt(iAnt.getCurrentUnit().getTimeSlot().getStartTime(), iAnt.getOriginator())!= null) { //means station is booked
 				iAnt.getCurrentUnit().setPsReply(Reply.ACCEPT);
-				logger.debug(station.getId() +"P Int ACCEPTED by PS");
+				logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " ACCEPTED by PS");
 			}
 			else {
 				iAnt.getCurrentUnit().setPsReply(Reply.REJECT);
-				logger.debug(station.getId() +"P Int REJECT by PS");
+				logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " REJECT by PS");
 			}
+			logger.debug("STATTION Availability List = " + station.pringAvailabilityList());
 			IntAnt newAnt = iAnt.clone(this);
 			cApi.send(iAnt.getCurrentUnit().getDelivery().getOrder(), newAnt);
 			i.remove();
 		}
+		checkArgument (intentionAnts.isEmpty(), true);
 	}
 
 	private void processExplorationAnts(TimeLapse timeLapse) throws CloneNotSupportedException {
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
 		if (explorationAnts.isEmpty()) 
 			return;
 		Iterator<ExpAnt> i = explorationAnts.iterator();
@@ -146,7 +158,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			ExpAnt exp = i.next();
 			if (exp.isScheduleComplete()) { //send back to orginator
 				ExpAnt newExp = (ExpAnt)exp.clone(this);
-				logger.debug(station.getId() +"P Exp is being sent back since schedule complete with schedule size = " + newExp.getSchedule().size());
+				logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back since schedule complete with schedule size = " + newExp.getSchedule().size());
 				cApi.send(newExp.getOriginator(), newExp); //sending back to the truck who originated exp ant
 				i.remove();
 				continue;
@@ -154,16 +166,21 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			else if (exp.getSchedule().size() > 0) 
 				if (exp.isReturnEarly()) { //send back to origninator according to probability 
 					ExpAnt newExp = (ExpAnt)exp.clone(this);
-					logger.debug(station.getId() +"P Exp is being sent back becaise probability true with schedule size = " + newExp.getSchedule().size());
+					logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back becaise probability true with schedule size = " + newExp.getSchedule().size());
 					cApi.send(newExp.getOriginator(), newExp);
 					i.remove();
 					continue;
-				}	
-			logger.debug(station.getId() +"P Exp Originator is=" + exp.getOriginator().getId()+ " and expScheduleSize = " + exp.getSchedule().size());
+				}
+			if (exp.getSender().getClass() == DeliveryTruckInitial.class)  //this if-else is just for logging purpose
+				logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((DeliveryTruckInitial)exp.getSender()).getId() +"T expScheduleSize = " + exp.getSchedule().size());
+			else if (exp.getSender().getClass() == OrderAgentInitial.class)
+				logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((OrderAgentInitial)exp.getSender()).getOrder().getId() +"O expScheduleSize = " + exp.getSchedule().size());
+			
 			for (OrderAgentInitial or : interestedTime.keySet()) { //check all order pheromones..
-				if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or))) { //is exp intereseted in this particular order?
-					logger.debug(station.getId() +"P exp is interested at " + exp.getCurrentUnit().getTimeSlot().getStartTime() +
-							", order interested At= " + interestedTime.get(or) + "expScheduleSize = " + exp.getSchedule().size());//", travelDistance= " + travelDistanceToOrder.get(or));
+				if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), currTime)) { //is exp intereseted in this particular order?
+					//if (noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) //if interested, and order in't explored too much
+					logger.debug(station.getId() +"P exp-" +exp.getOriginator().getId()+ " is interested " + exp.getCurrentUnit().getTimeSlot().getStartTime() +
+							", orderInterested " + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));
 					checkArgument(noOfExplorations.containsKey(or), true); 
 					noOfExplorations.put(or, noOfExplorations.get(or)+1);
 					exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.Location, this);
@@ -173,7 +190,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			}
 			i.remove(); // if exp is not further intereste it will automaticaly die..
 		}
-		
+		checkArgument (explorationAnts.isEmpty(), true);
 	}
 	//TODO add test cases to confirm its impl
 	private void processFeasibilityAnts(TimeLapse timeLapse) {
@@ -187,6 +204,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 		}
 		feasibilityAnts.clear();
 		logger.debug(station.getId() +"P pheromone table: \n" + this.pheromoneToString());
+		checkArgument (feasibilityAnts.isEmpty(), true);
 	}
 
 	@Override
@@ -204,7 +222,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			}
 			else if (m.getClass() == IntAnt.class) {
 				this.intentionAnts.add((IntAnt)m);
-				logger.debug(station.getId() +"P received IntAnts quantity = " + intentionAnts.size());
+				//logger.debug(station.getId() +"P received IntAnts quantity = " + intentionAnts.size());
 			}
 			else if (m.getClass() == ExpAnt.class) {
 				this.explorationAnts.add((ExpAnt)m);

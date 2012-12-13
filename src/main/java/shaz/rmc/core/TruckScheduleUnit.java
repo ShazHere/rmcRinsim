@@ -103,12 +103,12 @@ public class TruckScheduleUnit {
 			sb.append("\n  order=").append(((OrderAgentInitial)delivery.getOrder()).getOrder().getId());
 		sb.append("\n  truck=").append(truck.getId());
 		sb.append("\n Unit start time=").append(timeSlot.getStartTime());
-		//sb.append("\n  loading time=").append(delivery.getDeliveryTime().minus(delivery.getLoadingDuration()).minus(delivery.getStationToCYTravelTime()));
+		sb.append("\n  loading time=").append(delivery.getDeliveryTime().minus(delivery.getLoadingDuration()).minus(delivery.getStationToCYTravelTime()));
 		//sb.append("\n  departs from station = ").append(((ProductionSite)delivery.getLoadingStation()).getStation().getId() + 
 			//	" at time "+ delivery.getDeliveryTime().minus(delivery.getStationToCYTravelTime()));
 		if (delivery != null)
 			sb.append("\n  unloading time=").append(delivery.getDeliveryTime());
-		//sb.append("\n leaves CY at =").append(delivery.getDeliveryTime().plus(delivery.getUnloadingDuration()));
+		sb.append("\n leaves CY at =").append(delivery.getDeliveryTime().plus(delivery.getUnloadingDuration()));
 		//sb.append("\n reaches at Station = ").append(((RmcProductionSite)delivery.getReturnStation()).getStation().getId() + 
 			//	" at time "+delivery.getDeliveryTime().plus(delivery.getUnloadingDuration()).plus(delivery.getCYToStationTravelTime()));
 		sb.append("\n Unit end time=").append(timeSlot.getEndTime());

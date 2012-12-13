@@ -3,6 +3,8 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -46,6 +48,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	
 	private DateTime lastExpReturnTime; //time at which last Exp returned to truck
 	private DateTime timeForLastExpAnt; //time at which last Exp was sent by truck
+	private DateTime timeForLastIntAnt; //time at which last Int was sent by truck	
 //	private DateTime lastExpDelebrationTime; // time at which last time some exp were selected and explored
 	
 	private RoadModel roadModel;
@@ -58,7 +61,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private final shaz.rmc.core.domain.Vehicle truck;
 	private final DeliveryTruckInitialBelief b;
 	private final DeliveryTruckInitialIntention i;
-	ExpAnt bestAnt;
+	private ExpAnt bestAnt;
 	private boolean intAntSent;
 	
 	public DeliveryTruckInitial(Point randomPosition, Vehicle pTruck) {
@@ -71,6 +74,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		i = new DeliveryTruckInitialIntention(this, b);
 		
 		timeForLastExpAnt = new DateTime(b.getTotalTimeRange().getLocationAtStartTime());
+		timeForLastIntAnt = new DateTime(b.getTotalTimeRange().getLocationAtStartTime());
 		lastExpReturnTime = new DateTime(b.getTotalTimeRange().getLocationAtStartTime());
 		
 		intAntSent = false;
@@ -101,20 +105,22 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 				//currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN )  {
 				b.explorationAnts.size()> 1) {
 			
-			logger.debug(this.id + "T Investigating exp ants and total are: " +b.explorationAnts.size());
+			//logger.debug(this.id + "T Investigating exp ants and total are: " +b.explorationAnts.size());
 			bestAnt = b.explorationAnts.get(0);
 			for (ExpAnt eAnt: b.explorationAnts) { //find eAnt with smallest score, i.e least cost
 				if (eAnt.getScheduleScore() < bestAnt.getScheduleScore())
 					bestAnt = eAnt;
 			}
-			logger.debug("Best schedule with total Units = " + bestAnt.getSchedule().size() + "and Score = " + bestAnt.getScheduleScore());
-			for (TruckScheduleUnit unit: bestAnt.getSchedule()) {
-				System.out.println(unit.getSummary());
-			}
+			logger.debug("Best schedule with total Units = " + bestAnt.getSchedule().size() + "and Score = " + bestAnt.getScheduleScore() +" & total ants="+ b.explorationAnts.size());
+//			for (TruckScheduleUnit unit: bestAnt.getSchedule()) {
+//				System.out.println(unit.getSummary());
+//			}
 			b.explorationAnts.clear(); //just for checking
 		}
 		
-		if (!b.intentionAnts.isEmpty()) {
+		// Checking Intention Ants
+		if (!b.intentionAnts.isEmpty() && b.schedule.isEmpty()) { //TODO Have to change this condition. Actual should be that intention ants are still checked, 
+			//if some thing interesting found that sould be added in the trucks schedule
 			boolean scheduleDone = true;
 			Iterator<IntAnt> i = b.intentionAnts.iterator();
 			while (i.hasNext()) { //at the moment just select the first one
@@ -122,20 +128,20 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 				for (TruckScheduleUnit u :iAnt.getSchedule()) {
 					if (u.getPsReply() == Reply.REJECT || u.getOrderReply() == Reply.REJECT){
 						scheduleDone = false;
+						logger.debug(this.getId()+"T NOT done unitStartTime = " + u.getTimeSlot().getStartTime());
+						logger.debug(this.getId()+"T Int Replies are <PS, OR> : < " +u.getPsReply() + ", " + u.getOrderReply() + " >" );
 						break;
 					}	
 				}
 				if (scheduleDone)
-					b.schedule = iAnt.getSchedule();
+					b.schedule = iAnt.getSchedule(); 
 				i.remove();
 			}
 			if (scheduleDone == true) {
-				logger.debug("schedule done");
-				 
-			}
-			else {
-				logger.debug("NOT done");
-				//intAntSent = false;
+				logger.debug(this.getId()+"T schedule done & details are  below:");
+				for (TruckScheduleUnit u : b.schedule) {
+					logger.debug(u.getSummary());
+				}	
 			}
 		}
 		/*
@@ -159,8 +165,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		
 	}
 	private void sendExpAnts(long startTime) {
-		//TODO I sill have to add PS booking while exploration
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		//check  exp ants to be sent after particular interval only
 		if (currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN ) {
 			int probabilityToReturnEarly = 8;//1; default 1
@@ -168,26 +173,29 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 				probabilityToReturnEarly = 10;
 			else if (new DateTime(startTime + GlobalParameters.START_DATETIME.getMillis()).minusMinutes(10).compareTo(lastExpReturnTime) >= 0)
 				probabilityToReturnEarly = 5;
-			ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, b.getTotalTimeRange()), b.schedule, currTime, probabilityToReturnEarly);
-			logger.debug(this.getId()+"T Exp sent by Truck with probabilityToReturnEarly = " + probabilityToReturnEarly);
-			Utility.getAvailableSlots(this.b.schedule, b.availableSlots, b.getTotalTimeRange());
+			ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
+					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime, probabilityToReturnEarly);
+			//logger.debug(this.getId()+"T Exp sent by Truck with probabilityToReturnEarly = " + probabilityToReturnEarly);
+			//Utility.getAvailableSlots(this.b.schedule, b.availableSlots, new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime()));
 			if (b.getAvailableSlots().size()>0) {
-				cApi.send(b.getAvailableSlots().get(0).getProductionSiteAtStartTime(), eAnt);
-				
+				checkArgument(b.getAvailableSlots().get(0).getProductionSiteAtStartTime() != null, true);
+				cApi.send(b.getAvailableSlots().get(0).getProductionSiteAtStartTime(), eAnt); 				
 			}
 			timeForLastExpAnt = currTime;
 		}		
 	}
 	
-	//Added by Nayyab for intention ant generation
 	private void sendIntAnts(long startTime) {
-		//TODO I sill have to add PS booking while exploration
-		if (bestAnt != null && intAntSent == false) {
-			DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		//if (bestAnt != null && intAntSent == false) {
+		if (bestAnt != null && currTime.minusMinutes(timeForLastIntAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.INTENTION_INTERVAL_MIN ) {
+			//DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 			IntAnt iAnt = new IntAnt(this, bestAnt.getSchedule(), currTime);
 			logger.debug(this.getId()+"T int sent by Truck");
+			checkArgument(bestAnt.getCurrentUnit().getTimeSlot().getProductionSiteAtStartTime() != null, true);
 			cApi.send(bestAnt.getCurrentUnit().getTimeSlot().getProductionSiteAtStartTime(), iAnt); 
-			intAntSent = true; //so that at the moment intenttions are sent only for once.
+			//intAntSent = true; //so that at the moment intenttions are sent only for once.
+			timeForLastIntAnt = currTime;
 		}
 				
 	}
@@ -198,12 +206,12 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			for (Message m : messages) {
 				if (m.getClass() == ExpAnt.class) {
 					b.explorationAnts.add((ExpAnt)m);
-					logger.debug(this.getId()+"T received exp ant with schedule size = " + ((ExpAnt)m).getSchedule().size());
+					//logger.debug(this.getId()+"T received exp ant with schedule size = " + ((ExpAnt)m).getSchedule().size());
 					this.lastExpReturnTime = new DateTime (GlobalParameters.START_DATETIME.getMillis() + currentTime);
 				}
 				else if (m.getClass() == IntAnt.class) {
 					b.intentionAnts.add((IntAnt)m);
-					logger.debug(this.getId()+"T received int ant quantity = " + b.intentionAnts.size());
+					//logger.debug(this.getId()+"T received int ant quantity = " + b.intentionAnts.size());
 				}
 				else ; 
 					//logger.debug(this.getId()+"T message class is " + m.getClass() ); //Do nothing
