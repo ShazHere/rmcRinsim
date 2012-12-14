@@ -19,6 +19,7 @@ public class Delivery implements Serializable {
 	private Agent order;
 	private int deliveredVolume;
 	private Duration lagTime;// for storing lagTime before this delivery
+	final private int deliveryNo; //which delivery of order it could be?
 	
 	
 	//added by shaz
@@ -36,7 +37,7 @@ public class Delivery implements Serializable {
 
 
 
-	public Delivery(Agent orderAg, Vehicle vehicle, int deliveredVolume,
+	public Delivery(Agent orderAg, int deliveryNo, Vehicle vehicle, int deliveredVolume,
 			ProductionSite loadingStation, ProductionSite returnStation) {
 		this.order = orderAg;
 		//this.vehicle = vehicle;
@@ -46,6 +47,7 @@ public class Delivery implements Serializable {
 		this.isReserved = false;
 		this.deliveryTime = null;
 		this.confirmed = false;
+		this.deliveryNo = deliveryNo;
 		//this.orderAg = orderAg;
 //		this.isLastDelivery = false;
 		//this.isExplored = false;
@@ -224,5 +226,9 @@ public class Delivery implements Serializable {
 
 	public void setLagTime(Duration lagTime) {
 		this.lagTime = lagTime;
+	}
+
+	public int getDeliveryNo() {
+		return deliveryNo;
 	}
 }

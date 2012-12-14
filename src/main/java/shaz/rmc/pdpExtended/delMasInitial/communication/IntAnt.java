@@ -71,9 +71,14 @@ public class IntAnt extends Ant {
 			currentUnit = schedule.get(currentUnitNo);
 		}
 	}
+	
+	/**
+	 * similar to exp.isSchedule complete
+	 * @return
+	 */
 	public boolean isScheduleComplete() { //is whole schedule completed 
 		if (currentUnitNo >= schedule.size()-1){
-			if (currentUnit.getOrderReply() != Reply.NO_REPLY && currentUnit.getPsReply() != Reply.NO_REPLY)
+			if (currentUnit.getOrderReply() != Reply.NO_REPLY && currentUnit.getPsReply() != Reply.NO_REPLY) //check if the currentUnit is processed and replies got
 				return true;
 			else 
 				return false;

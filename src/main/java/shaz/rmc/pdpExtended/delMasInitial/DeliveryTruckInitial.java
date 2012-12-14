@@ -111,7 +111,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 				if (eAnt.getScheduleScore() < bestAnt.getScheduleScore())
 					bestAnt = eAnt;
 			}
-			logger.debug("Best schedule with total Units = " + bestAnt.getSchedule().size() + "and Score = " + bestAnt.getScheduleScore() +" & total ants="+ b.explorationAnts.size());
+			logger.debug(this.getId()+"T Best schedule with total Units = " + bestAnt.getSchedule().size() + "and Score = " + bestAnt.getScheduleScore() +" & total ants="+ b.explorationAnts.size());
 //			for (TruckScheduleUnit unit: bestAnt.getSchedule()) {
 //				System.out.println(unit.getSummary());
 //			}
@@ -144,33 +144,14 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 				}	
 			}
 		}
-		/*
-		 * check if size of returned expList is > 3 then start checking them
-		 * {
-		 * add method of score calculation within expAnt
-		 * select the best schedule based on score
-		 * make intended schedule (list), send booking intention ants to orders whom deliveries are intended
-		 * remove exp ant
-		 * 
-		 * } 
-		 * 
-		 * check about size of intentionAnt list >0 then start checking them
-		 * { //are all bookings in the schedule done?
-		 * if order.delivery is weekAccepted then put it in actual schedule, there shoud b some sense of delivery id, 
-		 * so that order and truck boht can communicate	about it in future
-		 * } 
-		 * 
-		 * 
-		 */
-		
 	}
 	private void sendExpAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		//check  exp ants to be sent after particular interval only
 		if (currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN ) {
-			int probabilityToReturnEarly = 8;//1; default 1
+			int probabilityToReturnEarly = 3;//1; default 1
 			if (new DateTime(startTime + GlobalParameters.START_DATETIME.getMillis()).minusMinutes(15).compareTo(lastExpReturnTime) >= 0)
-				probabilityToReturnEarly = 10;
+				probabilityToReturnEarly = 9;
 			else if (new DateTime(startTime + GlobalParameters.START_DATETIME.getMillis()).minusMinutes(10).compareTo(lastExpReturnTime) >= 0)
 				probabilityToReturnEarly = 5;
 			ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
@@ -187,7 +168,8 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	
 	private void sendIntAnts(long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		//if (bestAnt != null && intAntSent == false) {
+		//send int ants to book again the whole schedule..
+		//chk what to do with ACCETED 
 		if (bestAnt != null && currTime.minusMinutes(timeForLastIntAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.INTENTION_INTERVAL_MIN ) {
 			//DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 			IntAnt iAnt = new IntAnt(this, bestAnt.getSchedule(), currTime);
@@ -197,7 +179,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			//intAntSent = true; //so that at the moment intenttions are sent only for once.
 			timeForLastIntAnt = currTime;
 		}
-				
 	}
 	private void checkMsgs(long currentTime) {
 		Queue<Message> messages = mailbox.getMessages();
@@ -273,8 +254,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	public void receive(Message message) {
 		mailbox.receive(message);
 	}
-	//@Override
-	//public int getCapacity() {}
 
 	public RoadModel getRoadModel() {
 		return roadModel;

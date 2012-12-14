@@ -10,6 +10,7 @@ import org.joda.time.Duration;
 
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.TimeSlot;
+import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
 
 import java.util.Comparator;
 import com.sun.org.apache.bcel.internal.generic.*;
@@ -121,9 +122,21 @@ public class Station implements Location {
 		return false;
 	}
 	
-	
-	
+	public void evaporateBookings() {
+		ArrayList<StationBookingUnit> removeAbleBookings = new ArrayList<StationBookingUnit>();
+		for (StationBookingUnit sbu : availabilityList) {
+			if (sbu.getReAssuredTimes() == 0) { //evaporate if never reAssured by truck
+				removeAbleBookings.add(sbu);
+			}
+		}
+		if (!removeAbleBookings.isEmpty()) {
+			for (StationBookingUnit u : removeAbleBookings) {
+				availabilityList.remove(u);
+			}
+		}
+	}
 	public class StationBookingUnit {
+		private int reAssuredTimes; //to keep track, how many times the truck re-assured the same booking of PS.
 		private Agent truck;
 		private TimeSlot timeSlot; //think should it be directly timeslot of delivery or it shud include travel time etc.
 		private int slotNo; /*This is a special no. which represents, which 5min slot of station this is? The value ranges from 0 to 288-1. (Since 24 hours will have 12*24 5min slots)
@@ -146,6 +159,7 @@ public class Station implements Location {
 			this.truck = truck;
 			this.timeSlot = ts;
 			this.slotNo = -1;
+			reAssuredTimes = 0;
 		}
 
 		public Agent getTruck() {
@@ -170,6 +184,16 @@ public class Station implements Location {
 
 		public void setSlotNo(int slotNo) {
 			this.slotNo = slotNo;
+		}
+
+		public int getReAssuredTimes() {
+			return reAssuredTimes;
+		}
+		/**
+		 * increases by one
+		 */
+		public void setReAssuredTimes() {
+			this.reAssuredTimes += 1;
 		}
 		
 	}

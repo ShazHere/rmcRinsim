@@ -46,7 +46,7 @@ public class ExpAnt extends Ant {
 	//this was introduced because otherwise ants wont return at all, if there are less orders in environment. range is 0 to 9.
 	private final Random returnEarlyProbabilityGen;
 	private final DeliveryTruckInitial originator; //the actual truck agent which initialized the ExpAnt 
-	
+	private int scheduleUnitsAdded; //to keep track that exp ant itself added how many units.
 	
 	/**
 	 * used only for first time Ant creation by the orginator, should never be used for cloning purpose.
@@ -64,6 +64,7 @@ public class ExpAnt extends Ant {
 		schedule = new ArrayList<TruckScheduleUnit>(pSchedule);
 		scheduleComplete = false;
 		creationTime = pCreateTime;
+		scheduleUnitsAdded = 0;
 		
 		returnEarlyProbability = pReturnEarlyProbability;
 		returnEarlyProbabilityGen = new Random(250);
@@ -99,9 +100,17 @@ public class ExpAnt extends Ant {
 		if (!schedule.isEmpty())
 			currentUnit = schedule.get(0);
 	}
-
+/**
+ * similar to int.isScheduleComplete
+ * @return
+ */
 	public boolean isScheduleComplete() {
-		if (schedule.size() >= 3)
+//		if (schedule.size() >= GlobalParameters.EXPLORATION_SCHEDULE_SIZE)
+//			scheduleComplete = true;
+//		else
+//			scheduleComplete = false;			
+//		return scheduleComplete;
+		if (scheduleUnitsAdded >= GlobalParameters.EXPLORATION_SCHEDULE_SIZE)
 			scheduleComplete = true;
 		else
 			scheduleComplete = false;			
@@ -126,6 +135,7 @@ public class ExpAnt extends Ant {
 				&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime)) > 0) {
 			currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
 					new TimeSlot (interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES),null)); //EndTime of slot cannot be decided here, It is adjusted at Order
+			scheduleUnitsAdded += 1;
 			return true;
 		}
 		return false;
@@ -169,6 +179,7 @@ public class ExpAnt extends Ant {
 		ExpAnt exp = new ExpAnt(pSender,this.availableSlots, this.schedule, this.creationTime, this.returnEarlyProbability, this.originator );
 		exp.currentUnit = this.currentUnit;
 		exp.scheduleComplete = this.scheduleComplete;
+		exp.scheduleUnitsAdded = this.scheduleUnitsAdded;
 		return exp;
 	}
  

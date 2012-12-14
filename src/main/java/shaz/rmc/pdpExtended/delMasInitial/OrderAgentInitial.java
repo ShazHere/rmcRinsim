@@ -56,6 +56,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	//REalted to current interest
 	private DateTime previousInterestedTime; //interested time of Order before current interested time, to keep track that intention ants are for which one?
 	private DateTime interestedTime;  //time sent by FeaAnts, to indicate this is the time at which order is interested
+	private int interestedDeliveryNo; //the no. of current delivery 
 	private Duration delayFromActualInterestedTime; //to keep recored of delay before interestedTime, for first delivery it should be zero
 	private Duration delayStartTime; //delay in startTime
 	private int remainingToBookVolume;
@@ -78,6 +79,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		
 		
 		interestedTime = order.getStartTime(); 
+		interestedDeliveryNo = 0;
 		previousInterestedTime = order.getStartTime().minusMinutes(30); //just to have a previous value in the begining
 		delayFromActualInterestedTime = new Duration(0);
 		delayStartTime = new Duration(0);
@@ -148,17 +150,17 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		Iterator<ExpAnt> i = explorationAnts.iterator();
 		logger.debug(order.getId() + "O Checking exp ants total are= " + explorationAnts.size() );
 		while (i.hasNext()) { 
-			ExpAnt exp = i.next();
+			ExpAnt exp = i.next(); //i guess once reached to order, it shud just include order in its list, since order was in general ok
 			logger.debug(order.getId() + "O expStarTim = " + exp.getCurrentUnit().getTimeSlot().getStartTime() + " & interestedTim = " + interestedTime	);
-			if (interestedTime.compareTo(exp.getCurrentUnit().getTimeSlot().getStartTime().plusMinutes(60)) <= 0 //interesteTime <= exp + Xmin && interseTime >= exp
-					&& interestedTime.compareTo(exp.getCurrentUnit().getTimeSlot().getStartTime()) >= 0) { //means exp shud include this orderk's delivery
+//			if (interestedTime.compareTo(exp.getCurrentUnit().getTimeSlot().getStartTime().plusMinutes(60)) <= 0 //interesteTime <= exp + Xmin && interseTime >= exp
+//					&& interestedTime.compareTo(exp.getCurrentUnit().getTimeSlot().getStartTime()) >= 0) { //means exp shud include this orderk's delivery
 				ArrayList<ProductionSiteInitial> sites = new ArrayList<ProductionSiteInitial>(roadModel.getObjectsOfType(ProductionSiteInitial.class));
 				ProductionSiteInitial selectedPs;
 				if (sites.size()>1) 				//select the next pC to visit at random..
 					selectedPs = sites.get(new RandomDataImpl().nextInt(0, sites.size()-1));
 				else
 					selectedPs = sites.get(0);
-				Delivery del=  new Delivery(this, exp.getOriginator().getTruck(), (int)(exp.getOriginator().getCapacity()), 
+				Delivery del=  new Delivery(this, interestedDeliveryNo, exp.getOriginator().getTruck(), (int)(exp.getOriginator().getCapacity()), 
 						exp.getCurrentUnit().getTimeSlot().getProductionSiteAtStartTime(),selectedPs );
 				long dur = (long)((Point.distance(exp.getSender().getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //hours to milli
 				del.setStationToCYTravelTime(new Duration (dur));
@@ -186,8 +188,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 				newExp.getSchedule().add(newExp.getCurrentUnit());//Actual addition in schedule
 				cApi.send(del.getReturnStation(), newExp); 
 				//deliveries.add(del); At intentionAnt this shud b added at actual deliveries of order
-			}
-			else ; //will be removed any way..:)
+//			}
+//			else ; //will be removed any way..:)
 			i.remove(); //exp should die
 		}
 		checkArgument (explorationAnts.isEmpty(), true);
@@ -201,12 +203,14 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		Iterator<IntAnt> i = intentionAnts.iterator();
 		while (i.hasNext()) { //at the moment just select the first one
 			IntAnt iAnt = i.next();
-			if (iAnt.getCurrentUnit().getDelivery().getDeliveryTime().equals(this.interestedTime) 
-					&& (!iAnt.getCurrentUnit().getDelivery().getDeliveryTime().equals(this.previousInterestedTime))) { //means select it..say ok
+			if (iAnt.getCurrentUnit().getDelivery().getDeliveryTime().equals(this.interestedTime) //here I don't need to check if PS has already ACCEPTED or not, let the trucks check it latter 
+					&& (!iAnt.getCurrentUnit().getDelivery().getDeliveryTime().equals(this.previousInterestedTime)
+							&& iAnt.getCurrentUnit().getPsReply() == Reply.ACCEPT)) { //means select it..say ok
 				iAnt.getCurrentUnit().setOrderReply(Reply.WEEK_ACCEPT); //strong accept if whole voluem done..
 				Duration dur =  iAnt.getCurrentUnit().getDelivery().getUnloadingDuration();
 				previousInterestedTime = interestedTime;
 				interestedTime = iAnt.getCurrentUnit().getDelivery().getDeliveryTime().plus(dur); //send feasibility ants..
+				interestedDeliveryNo += 1;
 				if (remainingToBookVolume > 0 && remainingToBookVolume >iAnt.getOriginator().getCapacity())
 					remainingToBookVolume = (int)(remainingToBookVolume - iAnt.getOriginator().getCapacity());
 				else {

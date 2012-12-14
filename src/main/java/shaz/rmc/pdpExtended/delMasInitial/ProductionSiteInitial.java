@@ -114,6 +114,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				pheromoneUpdateTime.remove(ord);
 				noOfExplorations.remove(ord);
 			}
+			logger.debug(station.getId() +"P pheromone table: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
 		}
 	}
 
@@ -141,7 +142,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				iAnt.getCurrentUnit().setPsReply(Reply.REJECT);
 				logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " REJECT by PS");
 			}
-			logger.debug("STATTION Availability List = " + station.pringAvailabilityList());
+			logger.debug(station.getId() +"P STATTION  Availability List = " + station.pringAvailabilityList());
 			IntAnt newAnt = iAnt.clone(this);
 			cApi.send(iAnt.getCurrentUnit().getDelivery().getOrder(), newAnt);
 			i.remove();
@@ -203,7 +204,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			noOfExplorations.put((OrderAgentInitial)f.getSender(),0l); //so current info is acquired by none..
 		}
 		feasibilityAnts.clear();
-		logger.debug(station.getId() +"P pheromone table: \n" + this.pheromoneToString());
+		logger.debug(station.getId() +"P pheromone table: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
 		checkArgument (feasibilityAnts.isEmpty(), true);
 	}
 

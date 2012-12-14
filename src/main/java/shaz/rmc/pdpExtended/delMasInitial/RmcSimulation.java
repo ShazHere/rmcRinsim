@@ -44,7 +44,7 @@ public class RmcSimulation {
 		 * and set a greater valueto the maxSpeed so that vehicles actual speed is used by model and maxSpeed doesn't 
 		 * have to constraint vehicles speed.
 		 * */
-		PlaneRoadModel prm = new PlaneRoadModel(new Point(0, 0), new Point(10, 10), true, 10);//10by10 km plane
+		final PlaneRoadModel prm = new PlaneRoadModel(new Point(0, 0), new Point(10, 10), true, 10);//10by10 km plane
 		CommunicationModel communicationModel = new CommunicationModel(rng, true);
 		final PDPModel pdpModel = new PDPModel();
 		final StatisticTracker stTracker = new StatisticTracker(sim);
@@ -53,7 +53,7 @@ public class RmcSimulation {
 		sim.register(communicationModel);
 		sim.getEventAPI().addListener(stTracker, SimulatorEventType.values());
 		sim.configure();
-		RmcSimulation rmSim = new RmcSimulation(); 
+		final RmcSimulation rmSim = new RmcSimulation(); 
 		rmSim.loadProblem(sim);
 
 		//Adding prodcuction Sites
@@ -95,6 +95,12 @@ public class RmcSimulation {
 		
 		sim.register(new TickListener() {
 			public void tick(TimeLapse timeLapse) {
+//				if (timeLapse.getStartTime() == 10800000) //3 hours passed
+//				{
+//					sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(6)));
+//					sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(7)));
+//					log.debug("Registered new Trucks");
+//				}
 				if (timeLapse.getStartTime() + GlobalParameters.START_DATETIME.getMillis() >= GlobalParameters.END_DATETIME.getMillis()){
 					log.debug("Stopping Simulation: CURRENT TIME = " + new DateTime(GlobalParameters.START_DATETIME.getMillis() + timeLapse.getStartTime()) 
 					+ " & ENDTIME = " + GlobalParameters.END_DATETIME);
