@@ -3,6 +3,8 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
@@ -63,6 +65,8 @@ public class DeliveryTruckInitialIntention {
 		DeliveryInitial currentParcelDelivery =  ((OrderAgentInitial)currentDelivery.getOrder()).getDeliveryForDomainDelivery(currentDelivery);
 		if (currentTime >= b.schedule.get(currentUnitNo).getTimeSlot().getStartTime().getMillis() //if current time is equal to trucks currentUnit's starttime
 				&& currentTime < b.schedule.get(currentUnitNo).getTimeSlot().getEndTime().getMillis()) { //remain in current unit
+				checkArgument( currentParcelDelivery != null, rmcTruck.getId()+ "T: current Parcel delivery shoulnt' be null, current Time = " + new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime())+
+						" delivery No = " + currentDelivery.getDeliveryNo() + "truck state = " + rmcTruck.getPdpModel().getVehicleState(rmcTruck));
 				if (currentDelivery.getLoadingStation().getLocation() == rmcTruck.getRoadModel().getPosition(rmcTruck) 
 						&& rmcTruck.getRoadModel().containsObject(currentParcelDelivery)) {
 					logger.debug(rmcTruck.getId()+ "T: Picking up " + currentParcelDelivery.getOrder().getOrder().getId() +"O and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );

@@ -80,4 +80,30 @@ public class DeliveryTruckInitialBelief {
 	public TimeSlot getTotalTimeRange() {
 		return totalTimeRange;
 	}
+	/**
+	 * to check if newSch (explored by expAnt) still contains all the elements of b.schedule and is a valid schedule for truck
+	 * @param newSch to be compared with actual b.schedule of truck
+	 * @return true if all b.schedule units are still in newSch, and false if not.
+	 */ //TODO check do i need to compare sizes of newSch and b.schedule? to validate that newSch also contains new explored stuff
+	protected boolean scheduleStillValid(ArrayList<TruckScheduleUnit> oldSch, ArrayList<TruckScheduleUnit> newSch) {
+		boolean foundMatch = false;
+		if (oldSch.isEmpty()) //if already existing schedule is empty, then what ever new schedule is, its ok for truck
+			return true;
+		for (TruckScheduleUnit u : oldSch) {
+			foundMatch = false;
+			for (TruckScheduleUnit newUnit: newSch) {
+				if (((OrderAgentInitial)u.getDelivery().getOrder()).getOrder().getId().equals(((OrderAgentInitial)newUnit.getDelivery().getOrder()).getOrder().getId())  //add timeSlot match as well
+						&& u.getDelivery().getDeliveryNo() == newUnit.getDelivery().getDeliveryNo()) {
+					foundMatch = true;
+					break;
+				}
+			}
+			if (!foundMatch)
+				return false;
+		}
+		if (foundMatch ) //&& newSch.size() > b.schedule.size())
+			return true;
+		else 
+			return false;
+	}
 }

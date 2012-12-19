@@ -1,5 +1,7 @@
 package shaz.rmc.core.domain;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -10,6 +12,7 @@ import org.joda.time.Duration;
 
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.TimeSlot;
+import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters;
 import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
 
 import java.util.Comparator;
@@ -49,14 +52,23 @@ public class Station implements Location {
 	 * @return DATETIME, the time aloted to the truck for loading. This could be exact time according to truck's own specified time (i.e same return value as the parameter given), 
 	 * or it will be nearest available time available for loading at the station.
 	 */
-	public synchronized DateTime makeBookingAt (DateTime dt, Agent truck){
-
+	public synchronized DateTime makeBookingAt (DateTime dt, Agent truck, Delivery del, DateTime currTime){
+		evaporateBookings(currTime);
 		int slotNo = dt.getHourOfDay()*12 + (dt.getMinuteOfHour()/loadingDurationInMin)-1; 
-		StationBookingUnit unit = new StationBookingUnit(truck, new TimeSlot(dt, new DateTime (dt.plus(loadingDuration ))));
+		StationBookingUnit unit = new StationBookingUnit(truck, new TimeSlot(dt, new DateTime (dt.plus(loadingDuration ))), del, currTime);
 		int sameUnitLoc = unitWithSlotExist(slotNo); 
 		int hour = 0,min = 0;
 		if ( sameUnitLoc >= 0) { //means some other booking at the same slot..
-			return null; ///no fsearch of a good time slot if the required slot is booked.. fixed at 20/08/2012
+			if (availabilityList.get(sameUnitLoc).getTruck().equals(truck) ) // same truck made the previous booking
+			{
+				if (del.equals(availabilityList.get(sameUnitLoc).getDelivery())) { //means same truck with same delivery
+					availabilityList.get(sameUnitLoc).setRefreshTime(currTime); //refresh the booking time..
+					return null; //so that PS keeps the reply=REJECT
+				}
+			}
+			else
+				return null;
+			///no fsearch of a good time slot if the required slot is booked.. fixed at 20/08/2012
 			/*slotNo = getNearestNextAvailableSlot(sameUnitLoc);
 			hour = (((slotNo+1)*loadingDurationInMin) - (((slotNo+1)*loadingDurationInMin)%60))/60;
 			min = ((slotNo+1)*loadingDurationInMin)%60 + loadingDurationInMin -1  ;
@@ -122,22 +134,27 @@ public class Station implements Location {
 		return false;
 	}
 	
-	public void evaporateBookings() {
+	public void evaporateBookings(DateTime currTime) {
 		ArrayList<StationBookingUnit> removeAbleBookings = new ArrayList<StationBookingUnit>();
 		for (StationBookingUnit sbu : availabilityList) {
-			if (sbu.getReAssuredTimes() == 0) { //evaporate if never reAssured by truck
+			long currMilli = currTime.getMillis() - sbu.getRefreshTime().getMillis();
+			if (new Duration (currMilli).getStandardMinutes() >= GlobalParameters.INTENTION_EVAPORATION_MIN) { //evaporate if never reAssured by truck
 				removeAbleBookings.add(sbu);
 			}
 		}
+		int previousAvailabilitySize = availabilityList.size();
 		if (!removeAbleBookings.isEmpty()) {
 			for (StationBookingUnit u : removeAbleBookings) {
 				availabilityList.remove(u);
 			}
 		}
+		checkArgument(availabilityList.size() == previousAvailabilitySize - removeAbleBookings.size(), true);
 	}
 	public class StationBookingUnit {
-		private int reAssuredTimes; //to keep track, how many times the truck re-assured the same booking of PS.
-		private Agent truck;
+		//private int reAssuredTimes; //to keep track, how many times the truck re-assured the same booking of PS.
+		private DateTime refreshTime;
+		final private Agent truck;
+		final private Delivery delivery;
 		private TimeSlot timeSlot; //think should it be directly timeslot of delivery or it shud include travel time etc.
 		private int slotNo; /*This is a special no. which represents, which 5min slot of station this is? The value ranges from 0 to 288-1. (Since 24 hours will have 12*24 5min slots)
 				//which makes in total 288 bookable slots for a station). Each time when a booking is added in schedule array of station, the slot no. should be calculated in the following way:
@@ -155,20 +172,22 @@ public class Station implements Location {
 //			slotNo = -1;
 //		}
 		
-		public StationBookingUnit(Agent truck , TimeSlot ts) {
+		public StationBookingUnit(Agent truck , TimeSlot ts, Delivery del, DateTime curTime) {
 			this.truck = truck;
 			this.timeSlot = ts;
 			this.slotNo = -1;
-			reAssuredTimes = 0;
+			this.delivery = del;
+			this.refreshTime = curTime;
+			//reAssuredTimes = 0;
 		}
 
 		public Agent getTruck() {
 			return truck;
 		}
 
-		public void setTruck(Agent truck) {
-			this.truck = truck;
-		}
+//		public void setTruck(Agent truck) {
+//			this.truck = truck;
+//		}
 
 		public TimeSlot getTimeSlot() {
 			return timeSlot;
@@ -186,15 +205,31 @@ public class Station implements Location {
 			this.slotNo = slotNo;
 		}
 
-		public int getReAssuredTimes() {
-			return reAssuredTimes;
+//		public DateTime getReAssuredTimes() {
+//			return reAssuredTimes;
+//		}
+//		/**
+//		 * increases by one
+//		 */
+//		public void setReAssuredTimes() {
+//			this.reAssuredTimes += 1;
+//		}
+
+		public Delivery getDelivery() {
+			return delivery;
 		}
-		/**
-		 * increases by one
-		 */
-		public void setReAssuredTimes() {
-			this.reAssuredTimes += 1;
+
+		public DateTime getRefreshTime() {
+			return refreshTime;
 		}
+
+		public void setRefreshTime(DateTime refreshTime) {
+			this.refreshTime = refreshTime;
+		}
+
+//		public void setDelivery(Delivery delivery) {
+//			this.delivery = delivery;
+//		}
 		
 	}
 

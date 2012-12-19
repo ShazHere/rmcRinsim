@@ -26,6 +26,7 @@ import rinde.sim.core.model.road.RoadModel;
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
+import shaz.rmc.core.Utility;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.core.domain.Order;
 import shaz.rmc.pdpExtended.delMasInitial.communication.FeaAnt;
@@ -114,15 +115,16 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (!deliveries.isEmpty()) {
 			int dNo = 0;
+			int cushionMinutes = 5;
 			for (Delivery d : deliveries) { //5 min cushion time, 5min for PS fillling time
-				DateTime deliveryTime = d.getDeliveryTime().minus(d.getStationToCYTravelTime()).minus(5l*60l*1000l).minus(GlobalParameters.LOADING_MINUTES); 
+				DateTime deliveryTime = d.getDeliveryTime().minus(d.getStationToCYTravelTime()).minusMinutes(cushionMinutes).minusMinutes(GlobalParameters.LOADING_MINUTES); 
 				if (currTime.compareTo(deliveryTime) >= 0) {
-					if (d.isReserved() == false){
+					if (d.isReserved() == false){ //isReservd means isPhysically created..
 						DeliveryInitial pd = new DeliveryInitial(this, d, dNo, d.getLoadingStation().getPosition(), 
 								this.getPosition(), d.getLoadingDuration().getMillis(), d.getUnloadingDuration().getMillis(), (double)d.getDeliveredVolume());
 						sim.register(pd);
 						parcelDeliveries.add(pd);
-						logger.debug(order.getId() + "O Delivery physically created..del NO = " + dNo + "current time = " + currTime + ", Loading time = " + deliveryTime);
+						logger.debug(order.getId() + "O Delivery physically created..del NO = " + dNo + "current time = " + currTime + ", Loading time = " + deliveryTime.plusMinutes(cushionMinutes));
 						d.setReserved(true);
 					}
 				}
@@ -151,45 +153,52 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		logger.debug(order.getId() + "O Checking exp ants total are= " + explorationAnts.size() );
 		while (i.hasNext()) { 
 			ExpAnt exp = i.next(); //i guess once reached to order, it shud just include order in its list, since order was in general ok
-			logger.debug(order.getId() + "O expStarTim = " + exp.getCurrentUnit().getTimeSlot().getStartTime() + " & interestedTim = " + interestedTime	);
-//			if (interestedTime.compareTo(exp.getCurrentUnit().getTimeSlot().getStartTime().plusMinutes(60)) <= 0 //interesteTime <= exp + Xmin && interseTime >= exp
-//					&& interestedTime.compareTo(exp.getCurrentUnit().getTimeSlot().getStartTime()) >= 0) { //means exp shud include this orderk's delivery
-				ArrayList<ProductionSiteInitial> sites = new ArrayList<ProductionSiteInitial>(roadModel.getObjectsOfType(ProductionSiteInitial.class));
-				ProductionSiteInitial selectedPs;
-				if (sites.size()>1) 				//select the next pC to visit at random..
-					selectedPs = sites.get(new RandomDataImpl().nextInt(0, sites.size()-1));
-				else
-					selectedPs = sites.get(0);
-				Delivery del=  new Delivery(this, interestedDeliveryNo, exp.getOriginator().getTruck(), (int)(exp.getOriginator().getCapacity()), 
-						exp.getCurrentUnit().getTimeSlot().getProductionSiteAtStartTime(),selectedPs );
-				long dur = (long)((Point.distance(exp.getSender().getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //hours to milli
-				del.setStationToCYTravelTime(new Duration (dur));
-				dur = (long)((Point.distance(selectedPs.getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //CY to returnStation distance
-				del.setCYToStationTravelTime(new Duration(dur));
-				del.setDeliveryTime(interestedTime);
-				if (this.deliveries.size() == 0) //means at the moment decesions are for first delivery so ST shud b included
-					del.setLagTime(this.delayFromActualInterestedTime.plus(this.delayStartTime));
-				else
-					del.setLagTime(this.delayFromActualInterestedTime); //no ST added this time
-				if (remainingToBookVolume < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
-					int requiredVolume = (int)(exp.getOriginator().getCapacity() - remainingToBookVolume);
-					del.setWastedVolume(requiredVolume);
-					del.setUnloadingDuration(new Duration((long)(requiredVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
-				}
-				else {
-					del.setWastedVolume(0);// no wastage 
-					del.setUnloadingDuration(new Duration((long)(exp.getOriginator().getCapacity()* 60l*60l*1000l / GlobalParameters.DISCHARGE_RATE_PERHOUR) ));
-				}
-				del.setLoadingDuration(new Duration(GlobalParameters.LOADING_MINUTES*60l*1000l));
-				ExpAnt newExp = (ExpAnt)exp.clone(this);
-				newExp.getCurrentUnit().setDelivery(del);
-				newExp.getCurrentUnit().getTimeSlot().setEndtime(interestedTime.plus(del.getUnloadingDuration()).plus(del.getCYToStationTravelTime()));
-				logger.debug(order.getId() + "O delivery added in expAnts schedule, orginator = " + newExp.getOriginator().getId());
-				newExp.getSchedule().add(newExp.getCurrentUnit());//Actual addition in schedule
-				cApi.send(del.getReturnStation(), newExp); 
-				//deliveries.add(del); At intentionAnt this shud b added at actual deliveries of order
-//			}
-//			else ; //will be removed any way..:)
+			long dur = (long)((Point.distance(exp.getSender().getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //hours to milli
+			if (exp.getCurrentUnit().getTimeSlot().getStartTime().equals(interestedTime.minus(dur).minusMinutes(GlobalParameters.LOADING_MINUTES))) {
+				logger.debug(order.getId() + "O expStarTim = " + exp.getCurrentUnit().getTimeSlot().getStartTime() + " & interestedTim = " + interestedTime + " loadingTime = " + interestedTime.minus(dur).minusMinutes(GlobalParameters.LOADING_MINUTES));
+	//			if (interestedTime.compareTo(exp.getCurrentUnit().getTimeSlot().getStartTime().plusMinutes(60)) <= 0 //interesteTime <= exp + Xmin && interseTime >= exp
+	//					&& interestedTime.compareTo(exp.getCurrentUnit().getTimeSlot().getStartTime()) >= 0) { //means exp shud include this orderk's delivery
+					ArrayList<ProductionSiteInitial> sites = new ArrayList<ProductionSiteInitial>(roadModel.getObjectsOfType(ProductionSiteInitial.class));
+					ProductionSiteInitial selectedPs;
+					if (exp.nextAfterCurrentUnit()!= null) {//next slot in schedule exists, select the start PS of next slot
+						selectedPs = (ProductionSiteInitial)exp.nextAfterCurrentUnit().getTimeSlot().getProductionSiteAtStartTime();
+					}
+					else {//next slot in schedule doesn't exist, so select randomly
+						if (sites.size()>1) 				//select the next pC to visit at random..
+							selectedPs = sites.get(new RandomDataImpl().nextInt(0, sites.size()-1));
+						else
+							selectedPs = sites.get(0);
+					}
+					Delivery del=  new Delivery(this, interestedDeliveryNo, exp.getOriginator().getTruck(), (int)(exp.getOriginator().getCapacity()), 
+							exp.getCurrentUnit().getTimeSlot().getProductionSiteAtStartTime(),selectedPs );
+					del.setStationToCYTravelTime(new Duration (dur));
+					dur = (long)((Point.distance(selectedPs.getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //CY to returnStation distance
+					del.setCYToStationTravelTime(new Duration(dur));
+					del.setDeliveryTime(interestedTime);
+					if (this.deliveries.size() == 0) //means at the moment decesions are for first delivery so ST shud b included
+						del.setLagTime(this.delayFromActualInterestedTime.plus(this.delayStartTime));
+					else
+						del.setLagTime(this.delayFromActualInterestedTime); //no ST added this time
+					if (remainingToBookVolume < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
+						int requiredVolume = (int)(exp.getOriginator().getCapacity() - remainingToBookVolume);
+						del.setWastedVolume(requiredVolume);
+						del.setUnloadingDuration(new Duration((long)(requiredVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
+					}
+					else {
+						del.setWastedVolume(0);// no wastage 
+						del.setUnloadingDuration(new Duration((long)(exp.getOriginator().getCapacity()* 60l*60l*1000l / GlobalParameters.DISCHARGE_RATE_PERHOUR) ));
+					}
+					del.setLoadingDuration(new Duration(GlobalParameters.LOADING_MINUTES*60l*1000l));
+					ExpAnt newExp = (ExpAnt)exp.clone(this);
+					newExp.getCurrentUnit().setDelivery(del);
+					newExp.getCurrentUnit().getTimeSlot().setEndtime(interestedTime.plus(del.getUnloadingDuration()).plus(del.getCYToStationTravelTime()));
+					logger.debug(order.getId() + "O delivery added in expAnts schedule, orginator = " + newExp.getOriginator().getId());
+					newExp.addCurrentUnitInSchedule();					
+					cApi.send(del.getReturnStation(), newExp); 
+					//deliveries.add(del); At intentionAnt this shud b added at actual deliveries of order
+	//			}
+	//			else ; //will be removed any way..:)
+			}
 			i.remove(); //exp should die
 		}
 		checkArgument (explorationAnts.isEmpty(), true);

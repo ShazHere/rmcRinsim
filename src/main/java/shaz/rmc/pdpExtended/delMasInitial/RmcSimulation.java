@@ -47,7 +47,7 @@ public class RmcSimulation {
 		final PlaneRoadModel prm = new PlaneRoadModel(new Point(0, 0), new Point(10, 10), true, 10);//10by10 km plane
 		CommunicationModel communicationModel = new CommunicationModel(rng, true);
 		final PDPModel pdpModel = new PDPModel();
-		final StatisticTracker stTracker = new StatisticTracker(sim);
+		final StatisticTracker stTracker = new StatisticTracker(sim , pdpModel);
 		sim.register(prm);
 		sim.register(pdpModel);
 		sim.register(communicationModel);
@@ -89,7 +89,7 @@ public class RmcSimulation {
 //		}
 		
 		//Adding Delivery Trucks
-		for (int j = 0; j< 7 /*GlobalParameters.TOTAL_TRUCKS*/ ; j ++){
+		for (int j = 0; j< 4 /*GlobalParameters.TOTAL_TRUCKS*/ ; j ++){
 			sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(j)));
 		}
 		
@@ -111,7 +111,7 @@ public class RmcSimulation {
 			});
 		//gui
 		final UiSchema schema = new UiSchema();
-		//schema.add(RmcDelivery.class, new RGB(0, 0, 255));
+		schema.add(DeliveryInitial.class, new RGB(0, 0, 255));
 		schema.add(DeliveryTruckInitial.class, "/graphics/perspective/concreteTruck-32.png");
 		schema.add(ProductionSiteInitial.class, "/graphics/perspective/productionSite-32.png");
 		schema.add(OrderAgentInitial.class,"/graphics/perspective/tall-building-32.png"); 
@@ -120,6 +120,7 @@ public class RmcSimulation {
 		sim.start();
 		//if (!sim.isPlaying()) {
 			log.debug(stTracker.collectDataString());
+			log.debug(stTracker.collectStatistics());
 		//}
 	}
 

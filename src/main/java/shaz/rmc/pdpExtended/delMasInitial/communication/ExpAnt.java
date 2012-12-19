@@ -20,6 +20,7 @@ import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
 import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters;
+import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters.Weights;
 
 /**
  * @author Shaza
@@ -49,7 +50,7 @@ public class ExpAnt extends Ant {
 	private int scheduleUnitsAdded; //to keep track that exp ant itself added how many units.
 	
 	/**
-	 * used only for first time Ant creation by the orginator, should never be used for cloning purpose.
+	 * Used only for first time Ant creation by the orginator, should never be used for cloning purpose.
 	 * @param sender Originator
 	 * @param pAvailableSlots available slot of the truck at the moment of creation of expAnt
 	 * @param pSchedule schedule of truck at the moment of creation of expAnt
@@ -59,20 +60,21 @@ public class ExpAnt extends Ant {
 	public ExpAnt(CommunicationUser sender,
 			ArrayList<TimeSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime, int pReturnEarlyProbability) {
 		super(sender);
-		originator = (DeliveryTruckInitial)sender;
+		originator = (DeliveryTruckInitial)sender;  //ant originator, creater. Sender means the one who is curreently sending ant after cloning
 		availableSlots = new ArrayList<TimeSlot>(pAvailableSlots);
 		schedule = new ArrayList<TruckScheduleUnit>(pSchedule);
-		scheduleComplete = false;
+		scheduleComplete = false; 		// to keep track if the schedule is explored by ant, now it could return to orignator.
 		creationTime = pCreateTime;
-		scheduleUnitsAdded = 0;
+		scheduleUnitsAdded = 0; 		//to keep track how many schedule units are added by the current ant. 
 		
 		returnEarlyProbability = pReturnEarlyProbability;
 		returnEarlyProbabilityGen = new Random(250);
 		
 		truckSpeed = ((DeliveryTruckInitial)originator).getSpeed();
 		truckTotalTimeRange =new TimeSlot(new DateTime(creationTime), originator.getTotalTimeRange().getEndTime());
-		if (!schedule.isEmpty())
-			currentUnit = schedule.get(0);
+//		if (!schedule.isEmpty())
+//			currentUnit = schedule.get(0);
+		currentUnit = null; // It should not contain any unit if currently expAnt isn't interested in any order.
 	}
 	/**
 	 * used by clone(sender) method..for hop by hop movement
@@ -97,8 +99,8 @@ public class ExpAnt extends Ant {
 		
 		truckSpeed = ((DeliveryTruckInitial)originator).getSpeed();
 		truckTotalTimeRange = ((DeliveryTruckInitial)originator).getTotalTimeRange();
-		if (!schedule.isEmpty())
-			currentUnit = schedule.get(0);
+		
+		//currentUnit = schedule.get(0);
 	}
 /**
  * similar to int.isScheduleComplete
@@ -110,12 +112,13 @@ public class ExpAnt extends Ant {
 //		else
 //			scheduleComplete = false;			
 //		return scheduleComplete;
-		if (scheduleUnitsAdded >= GlobalParameters.EXPLORATION_SCHEDULE_SIZE)
+		if (scheduleUnitsAdded >= GlobalParameters.EXPLORATION_SCHEDULE_SIZE) //TODO: shouldn't i make currentUnit = null now?
 			scheduleComplete = true;
 		else
 			scheduleComplete = false;			
 		return scheduleComplete;
 	}
+	
 
 //	public void setScheduleComplete(boolean scheduleComplete) {
 //		this.scheduleComplete = scheduleComplete;
@@ -125,6 +128,15 @@ public class ExpAnt extends Ant {
 		return creationTime;
 	}
 
+	/**
+	 * Apart from returning true if interested, the method also creates a new currentUnit
+	 * TODO Later disintegrate the currrenUnit creation to some other method for proper design
+	 * @param interestedTime
+	 * @param travelDistance
+	 * @param currTime
+	 * @return true if the ExpAnt is interested at interested time even though it has to travel through 
+	 * the travelDistance after loading time (LOADING_MINUTES). 
+	 */
 	public boolean isInterested(DateTime interestedTime, Double travelDistance, final DateTime currTime) {
 		Duration travelTime = new Duration((long)((travelDistance/truckSpeed)*60*60*1000));
 		//System.out.println("travel time =" +travelTime);
@@ -135,7 +147,6 @@ public class ExpAnt extends Ant {
 				&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime)) > 0) {
 			currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
 					new TimeSlot (interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES),null)); //EndTime of slot cannot be decided here, It is adjusted at Order
-			scheduleUnitsAdded += 1;
 			return true;
 		}
 		return false;
@@ -159,8 +170,20 @@ public class ExpAnt extends Ant {
 	 */
 	public boolean isReturnEarly() {
 		boolean prob;
-		if (returnEarlyProbability == 1){
-			prob = returnEarlyProbabilityGen.nextInt(10) <= 1 ;
+//		if (returnEarlyProbability == 1){
+//			prob = returnEarlyProbabilityGen.nextInt(10) <= 1 ;
+//		}
+//		else if (returnEarlyProbability == 5){
+//			prob = returnEarlyProbabilityGen.nextInt(10) <= 5 ;
+//		}
+//		else {
+//			prob = returnEarlyProbabilityGen.nextInt(10) < 9 ;
+//		}
+//		//System.out.println("probability is " + prob);
+//		return prob;
+		
+		if (returnEarlyProbability == 6){
+			prob = returnEarlyProbabilityGen.nextInt(10) <= 6 ;
 		}
 		else if (returnEarlyProbability == 5){
 			prob = returnEarlyProbabilityGen.nextInt(10) <= 5 ;
@@ -168,7 +191,7 @@ public class ExpAnt extends Ant {
 		else {
 			prob = returnEarlyProbabilityGen.nextInt(10) < 9 ;
 		}
-		//System.out.println("probability is " + prob);
+		System.out.println("probability is " + prob);
 		return prob;
 	}
 	/**
@@ -204,11 +227,12 @@ public class ExpAnt extends Ant {
 				wastedConcrete += u.getDelivery().getWastedVolume();
 			}
 			//TODO: add weights as well..
-			return travelMin+lagTimeInMin+startTimeDelay+wastedConcrete;
+			int score = (Weights.TRAVEL_TIME * travelMin) + (Weights.LAGTIME*lagTimeInMin) + 
+					(Weights.STARTTIME_DELAY*startTimeDelay) + (Weights.CONCRETE_WASTAGE*wastedConcrete); 
+			return score/schedule.size(); //this is an attempt to normalize score with respect to size of schedule
 		}
 		else 
 			return 999999999;
-		
 	}
 	public DeliveryTruckInitial getOriginator() {
 		return originator;
@@ -218,5 +242,19 @@ public class ExpAnt extends Ant {
 	}
 	public ArrayList<TimeSlot> getAvailableSlots() {
 		return availableSlots;
+	}
+	public TruckScheduleUnit nextAfterCurrentUnit() {
+		for (TruckScheduleUnit u : this.schedule){
+			if (u.getTimeSlot().getStartTime().compareTo(currentUnit.getTimeSlot().getStartTime()) > 0){
+				return u;
+			}
+		}
+		return null;
+	}
+
+	public void addCurrentUnitInSchedule() {
+		this.schedule.add(this.currentUnit);//Actual addition in schedule
+		scheduleUnitsAdded += 1;
+		Utility.getAvailableSlots(this.schedule, this.availableSlots, this.truckTotalTimeRange);		
 	}
 }

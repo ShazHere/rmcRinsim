@@ -3,13 +3,18 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial;
 
+import java.util.Set;
+
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
 import rinde.sim.core.Simulator;
 import rinde.sim.core.Simulator.SimulatorEventType;
+import rinde.sim.core.model.pdp.PDPModel;
+import rinde.sim.core.model.pdp.Vehicle;
 import rinde.sim.event.Event;
 import rinde.sim.event.Listener;
+import shaz.rmc.core.ResultElements;
 
 /**
  * @author Shaza
@@ -21,10 +26,12 @@ public class StatisticTracker implements Listener {
 	protected long computationTime;
 	protected long simulationTime;
 	protected long endTimeSim;
-	private Simulator sim; 
+	final private Simulator sim;
+	final PDPModel pdpModel;
 	
-	public StatisticTracker(Simulator pSim) {
+	public StatisticTracker(Simulator pSim, final PDPModel pPdpModel) {
 		sim = pSim;
+		pdpModel = pPdpModel;
 	}
 
 		@Override
@@ -47,6 +54,24 @@ public class StatisticTracker implements Listener {
 			sb.append("Simulation Time (min): ").append(new Duration(simulationTime).getStandardMinutes()).append("\r");
 			sb.append("Simulation Time (sec): ").append(new Duration(simulationTime).getStandardSeconds()).append("\r");
 			return sb.toString();
-			
+		
+		}
+		public String collectStatistics() {
+			final StringBuilder sb = new StringBuilder();
+			Set<Vehicle> truckSet = pdpModel.getVehicles();
+			int objValue = 0;
+			ResultElements re;
+			ResultElements allResult = new ResultElements();
+			for (Vehicle v: truckSet){
+				re = ((DeliveryTruckInitial)v).getScheduleScore();
+				objValue = re.getTotalValue();
+				allResult.addLagTimeInMin(re.getLagTimeInMin());
+				allResult.addStartTimeDelay(re.getStartTimeDelay());
+				allResult.addTravelMin(re.getTravelMin());
+				allResult.addWastedConcrete(re.getWastedConcrete());
+			}
+			sb.append("Objective Function Value: ").append(objValue).append("\n");
+			sb.append(allResult.toString());
+			return sb.toString();
 		}
 }

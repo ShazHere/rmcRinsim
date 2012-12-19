@@ -13,6 +13,8 @@ import org.junit.Test;
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
+import shaz.rmc.core.domain.Delivery;
+import shaz.rmc.core.domain.Order;
 
 public class DeliveryTruckInitialBeliefTest {
 
@@ -93,5 +95,17 @@ public class DeliveryTruckInitialBeliefTest {
 //		System.out.println(b.getAvailableSlots().get(1));
 //		System.out.println(b.getAvailableSlots().get(2));	
 	}
+//	@Test 
+//	public void testScheduleStillValidWithOneUnit() {
+//		ArrayList<TruckScheduleUnit> oldSch = new ArrayList<TruckScheduleUnit>();
+//		ArrayList<TruckScheduleUnit> newSch = new ArrayList<TruckScheduleUnit>();
+//		
+//		oldSch.add(new TruckScheduleUnit(null));
+//		oldSch.get(0).setDelivery(new Delivery(new OrderAgentInitial(null, null, new Order("20", null, 0, 0, null, null, true, true, "", null)), 0, null, 0, null, null));
+//		newSch.add(new TruckScheduleUnit(null));
+//		newSch.get(0).setDelivery(new Delivery(new OrderAgentInitial(null, null, new Order("20", null, 0, 0, null, null, true, true, "", null)), 0, null, 0, null, null));
+//		
+//		assertTrue(new DeliveryTruckInitialBelief(null, null).scheduleStillValid(oldSch, newSch));
+//	}
 
 }

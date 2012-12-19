@@ -86,7 +86,51 @@ public class IntAnt extends Ant {
 		else
 			return false;
 	}
-
+	
+	/**
+	 * before returning, it also removes the REJECTed unit from the intAnt's schedule
+	 * @return true if the schedule within intAnt contains atleast one unit with both 
+	 * orderReply and psReply != REJECT
+	 * 
+	 * else return false
+	 * 
+	 */
+//	public boolean isConsiderable() {
+//		ArrayList<TruckScheduleUnit> removableUnits = new ArrayList<TruckScheduleUnit>();
+//		if (!this.schedule.isEmpty()){
+//			for (TruckScheduleUnit u : this.schedule)
+//				if (u.getPsReply() == Reply.REJECT || u.getOrderReply() == Reply.REJECT)
+//					removableUnits.add(u); //remove if there are rejected units so that only acceptable units are considered.
+//		}
+//		if (!removableUnits.isEmpty()){
+//			for (TruckScheduleUnit u : removableUnits) {
+//				this.schedule.remove(u);
+//			}
+//		}
+//		if (this.schedule.isEmpty())
+//			return false;
+//		else 
+//			return true;
+//	}
+	//TODO test this method, may use test cases
+	public boolean isConsiderable(final ArrayList<TruckScheduleUnit> existingSchedule) {
+		if (!this.schedule.isEmpty()){
+			for (TruckScheduleUnit u : this.schedule) {
+				if (u.getPsReply() == Reply.REJECT || u.getOrderReply() == Reply.REJECT) {//should be then in existing schedule
+					boolean rejectAble = true;
+					for (TruckScheduleUnit existUnit : existingSchedule) {
+						if (u.getDelivery().equals(existUnit.getDelivery()))    //TODO shud i check timeslots as well?
+							rejectAble = false;
+					}
+					if (rejectAble)
+						return false;
+				}
+			}
+		}
+		else
+			return false;
+		return true;
+	}
 	@Override
 	public CommunicationUser getSender() {
 		return super.getSender();

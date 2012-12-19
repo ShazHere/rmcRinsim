@@ -12,6 +12,8 @@ import java.util.Comparator;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
+import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters;
+
 
 /**
  * @author Shaza
@@ -19,6 +21,13 @@ import org.joda.time.Duration;
  */
 public class Utility {
 	
+	/**
+	 * @param pSchedule the schedule units between which slots need to be found
+	 * @param availableSlots the reference of found arrayList of slots
+	 * @param truckTotalTimeRange the range (boundries) between which slots should be found
+	 * @return An array of available slots of more than GLOBALPARAMETERS.AVAILABLE_SLOT_SIZE found between the units of pSchedule. 
+	 * Also param availableSlot contains the same returning arrayList 
+	 */
 	public static ArrayList<TimeSlot> getAvailableSlots(ArrayList<TruckScheduleUnit> pSchedule , ArrayList<TimeSlot> availableSlots, final TimeSlot truckTotalTimeRange) {
 		if (pSchedule.isEmpty()) {
 			checkArgument(availableSlots.size() == 1 , true);
@@ -37,30 +46,36 @@ public class Utility {
 			av.setLocationAtStartTime(availableSlots.get(0).getLocationAtStartTime(), availableSlots.get(0).getProductionSiteAtStartTime());
 			availableSlots.clear();
 			DateTime initialTime = truckTotalTimeRange.getStartTime();
-			for (TruckScheduleUnit u: pSchedule) {
-				if (initialTime.compareTo(u.getTimeSlot().getStartTime()) < 0) {
-					Duration d = new Duration (initialTime, u.getTimeSlot().getStartTime());
-					if (d.compareTo(new Duration(2l*60l*60l*1000l)) >= 0) { 
+			//for (TruckScheduleUnit u: pSchedule) {
+			for (int i = 0; i< pSchedule.size(); i++) {
+				if (initialTime.compareTo(pSchedule.get(i).getTimeSlot().getStartTime()) < 0) {
+					Duration d = new Duration (initialTime, pSchedule.get(i).getTimeSlot().getStartTime());
+					if (d.compareTo(new Duration(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l*60l*1000l)) >= 0) {  //more than 2 hour slot
 						av.setStartTime(initialTime);
-						av.setEndtime(u.getTimeSlot().getStartTime()); //chk start time or end time are inclusive or not
+						av.setEndtime(pSchedule.get(i).getTimeSlot().getStartTime()); //chk start time or end time are inclusive or not
 						availableSlots.add(av);
 						av = new TimeSlot();
+//						if (i > 0) 
+//							av.setLocationAtStartTime(pSchedule.get(i-1).getDelivery().getReturnStation().getLocation(), pSchedule.get(i-1).getDelivery().getReturnStation());
 						//System.out.println("added slot = " + av.toString());
 						//initialTime = u.getTimeSlot().getEndTime();
 					}
 				}
-				initialTime = u.getTimeSlot().getEndTime().plusMinutes(1);
+				initialTime = pSchedule.get(i).getTimeSlot().getEndTime().plusMinutes(1);
 			}
 			//after last unit
 			//initialTime = pSchedule.get(pSchedule.size()-1).getTimeSlot().getEndTime();
 			if (initialTime.compareTo(truckTotalTimeRange.getEndTime()) < 0) {
 				Duration d = new Duration (initialTime, truckTotalTimeRange.getEndTime());
-				if (d.compareTo(new Duration(2*60*60*1000)) >= 0) {
+				if (d.compareTo(new Duration(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l*60l*1000l)) >= 0) {
 					//System.out.println("last slot added");
 					av.setStartTime(initialTime);
 					av.setEndtime(truckTotalTimeRange.getEndTime()); //chk start time or end time are inclusive or not
 					availableSlots.add(av);
 				}
+			}
+			if (!availableSlots.isEmpty()) {
+				
 			}
 			return availableSlots;
 		}

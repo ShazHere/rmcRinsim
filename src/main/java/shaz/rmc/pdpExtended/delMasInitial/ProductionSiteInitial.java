@@ -121,6 +121,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	private void processIntentionAnts(TimeLapse timeLapse) {
 		if (intentionAnts.isEmpty()) 
 			return;
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
 		Iterator<IntAnt> i = intentionAnts.iterator();
 		while (i.hasNext()) { //include booking of Station
 			IntAnt iAnt = i.next();
@@ -134,7 +135,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				i.remove();
 				continue;
 			}
-			if (station.makeBookingAt(iAnt.getCurrentUnit().getTimeSlot().getStartTime(), iAnt.getOriginator())!= null) { //means station is booked
+			if (station.makeBookingAt(iAnt.getCurrentUnit().getTimeSlot().getStartTime(), iAnt.getOriginator(), iAnt.getCurrentUnit().getDelivery(), currTime)!= null) { //means station is booked
 				iAnt.getCurrentUnit().setPsReply(Reply.ACCEPT);
 				logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " ACCEPTED by PS");
 			}
@@ -150,48 +151,62 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 		checkArgument (intentionAnts.isEmpty(), true);
 	}
 
-	private void processExplorationAnts(TimeLapse timeLapse) throws CloneNotSupportedException {
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+	private void processExplorationAnts(TimeLapse timeLapse)  {
 		if (explorationAnts.isEmpty()) 
 			return;
 		Iterator<ExpAnt> i = explorationAnts.iterator();
-		while (i.hasNext()) { 
+		while (i.hasNext()) {  //first two if-else to check should exp's be sent back to orignator, or let them further explore"?
 			ExpAnt exp = i.next();
-			if (exp.isScheduleComplete()) { //send back to orginator
+			if (exp.isScheduleComplete()) { //send back to orginator if according to GlobalParameters.EXPLORATION_SCHEDULE_SIZE, schedule is done
 				ExpAnt newExp = (ExpAnt)exp.clone(this);
 				logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back since schedule complete with schedule size = " + newExp.getSchedule().size());
 				cApi.send(newExp.getOriginator(), newExp); //sending back to the truck who originated exp ant
 				i.remove();
 				continue;
 			}
-			else if (exp.getSchedule().size() > 0) 
-				if (exp.isReturnEarly()) { //send back to origninator according to probability 
+			else if (exp.getSchedule().size() > 0) {
+				//if (exp.isReturnEarly()) { //send back to origninator according to probability 
 					ExpAnt newExp = (ExpAnt)exp.clone(this);
-					logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back becaise probability true with schedule size = " + newExp.getSchedule().size());
+					ExpAnt newExp2 = (ExpAnt)exp.clone(this);
+					//logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back becaise probability true with schedule size = " + newExp.getSchedule().size());
+					logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back with schedule size = " + newExp.getSchedule().size());
 					cApi.send(newExp.getOriginator(), newExp);
+					sendToOrders(newExp2, timeLapse); //let exp2 further explore
 					i.remove();
 					continue;
 				}
-			if (exp.getSender().getClass() == DeliveryTruckInitial.class)  //this if-else is just for logging purpose
-				logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((DeliveryTruckInitial)exp.getSender()).getId() +"T expScheduleSize = " + exp.getSchedule().size());
-			else if (exp.getSender().getClass() == OrderAgentInitial.class)
-				logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((OrderAgentInitial)exp.getSender()).getOrder().getId() +"O expScheduleSize = " + exp.getSchedule().size());
-			
-			for (OrderAgentInitial or : interestedTime.keySet()) { //check all order pheromones..
-				if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), currTime)) { //is exp intereseted in this particular order?
-					//if (noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) //if interested, and order in't explored too much
-					logger.debug(station.getId() +"P exp-" +exp.getOriginator().getId()+ " is interested " + exp.getCurrentUnit().getTimeSlot().getStartTime() +
-							", orderInterested " + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));
-					checkArgument(noOfExplorations.containsKey(or), true); 
-					noOfExplorations.put(or, noOfExplorations.get(or)+1);
-					exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.Location, this);
-					ExpAnt newExp = (ExpAnt)exp.clone(this);
-					cApi.send(or, newExp); //send exp clones to all orders(or) it is interested in
-				}
-			}
+		//let exp further explore
+			sendToOrders(exp, timeLapse);
 			i.remove(); // if exp is not further intereste it will automaticaly die..
 		}
 		checkArgument (explorationAnts.isEmpty(), true);
+	}
+	/**
+	 * Should be called when the expAnt is not to be sent to its orginator, rather it needed to be further sent to other orders
+	 * @param exp the ExpAnt that needed to be sent around
+	 * @param timeLapse
+	 */
+	private void sendToOrders(ExpAnt exp, TimeLapse timeLapse) {
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+
+		if (exp.getSender().getClass() == DeliveryTruckInitial.class)  //this if-else is just for logging purpose
+			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((DeliveryTruckInitial)exp.getSender()).getId() +"T expScheduleSize = " + exp.getSchedule().size());
+		else if (exp.getSender().getClass() == OrderAgentInitial.class)
+			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((OrderAgentInitial)exp.getSender()).getOrder().getId() +"O expScheduleSize = " + exp.getSchedule().size());
+		
+		for (OrderAgentInitial or : interestedTime.keySet()) { //check all order pheromones..
+			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), currTime)) { //is exp intereseted in this particular order?
+				//if (noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) //if interested, and order in't explored too much
+				logger.debug(station.getId() +"P exp-" +exp.getOriginator().getId()+ " is interested " + exp.getCurrentUnit().getTimeSlot().getStartTime() +
+						", orderInterested " + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));
+				checkArgument(noOfExplorations.containsKey(or), true); 
+				noOfExplorations.put(or, noOfExplorations.get(or)+1);
+				exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.Location, this);
+				ExpAnt newExp = (ExpAnt)exp.clone(this);
+				cApi.send(or, newExp); //send exp clones to all orders(or) it is interested in
+			}
+			logger.debug(station.getId() +"P pheromone table: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
+		}	
 	}
 	//TODO add test cases to confirm its impl
 	private void processFeasibilityAnts(TimeLapse timeLapse) {

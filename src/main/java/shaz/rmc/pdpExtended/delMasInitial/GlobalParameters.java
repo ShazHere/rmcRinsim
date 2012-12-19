@@ -31,9 +31,10 @@ public class GlobalParameters {
 	//public static final int INTENTION_EVAPORATION_RATE = 10; //means 20 ticks
 	//public static final int EXPLORATION_EVAPORATION_RATE = 20; //means  no. of tics
 	public static final int FEASIBILITY_INTERVAL_MIN = 10; //means send feeasibilty ants to near by after every X minutes.
-	public static final int FEASIBILITY_EVAPORATION_INTERVAL_MIN = 15;
-	public static final int EXPLORATION_INTERVAL_MIN = 3; //means no. of mintues
+	public static final int FEASIBILITY_EVAPORATION_INTERVAL_MIN = FEASIBILITY_INTERVAL_MIN + 5;
+	public static final int EXPLORATION_INTERVAL_MIN = 2; //means no. of mintues
 	public static final int INTENTION_INTERVAL_MIN = 5; //means no. of mintues
+	public static final int INTENTION_EVAPORATION_MIN = INTENTION_INTERVAL_MIN * 2;
 	public static final int EXPLORATION_SCHEDULE_SIZE = 3;
 	public static final int TOTAL_TRUCKS = 1; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = true; //will all the vehicles have same capacity
@@ -48,6 +49,7 @@ public class GlobalParameters {
 	public static final int DISCHARGE_RATE_PERHOUR = 10000; //Constant for all orders
 	public static final int LOADING_MINUTES = 5;
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
+	public static final long AVAILABLE_SLOT_SIZE_HOURS = 2;
 	
 	//CHECK NOTES ABOUT INPUT FILES!!
 	public static final String INPUT_FILE = "planning2011-01-10/planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //for the data file in Rmc
