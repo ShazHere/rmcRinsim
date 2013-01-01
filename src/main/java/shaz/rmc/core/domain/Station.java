@@ -16,6 +16,8 @@ import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters;
 import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
 
 import java.util.Comparator;
+import java.util.logging.Logger;
+
 import com.sun.org.apache.bcel.internal.generic.*;
 
 public class Station implements Location {
@@ -63,6 +65,7 @@ public class Station implements Location {
 			{
 				if (del.equals(availabilityList.get(sameUnitLoc).getDelivery())) { //means same truck with same delivery
 					availabilityList.get(sameUnitLoc).setRefreshTime(currTime); //refresh the booking time..
+					System.out.println("Station bookings Refreshed!");
 					return null; //so that PS keeps the reply=REJECT
 				}
 			}

@@ -34,7 +34,7 @@ public class GlobalParameters {
 	public static final int FEASIBILITY_EVAPORATION_INTERVAL_MIN = FEASIBILITY_INTERVAL_MIN + 5;
 	public static final int EXPLORATION_INTERVAL_MIN = 2; //means no. of mintues
 	public static final int INTENTION_INTERVAL_MIN = 5; //means no. of mintues
-	public static final int INTENTION_EVAPORATION_MIN = INTENTION_INTERVAL_MIN * 2;
+	public static final int INTENTION_EVAPORATION_MIN = INTENTION_INTERVAL_MIN +3;
 	public static final int EXPLORATION_SCHEDULE_SIZE = 3;
 	public static final int TOTAL_TRUCKS = 1; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = true; //will all the vehicles have same capacity

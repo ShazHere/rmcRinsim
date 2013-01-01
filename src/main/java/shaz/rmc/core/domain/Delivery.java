@@ -7,6 +7,7 @@ import org.joda.time.Duration;
 
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.ProductionSite;
+import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
 
 public class Delivery implements Serializable {
 
@@ -32,15 +33,13 @@ public class Delivery implements Serializable {
 	//private boolean isExplored; //means is sent as reply to an exploration ant of a truck. not used now.. @shaz 15/03/2012
 	private boolean confirmed; //to record that the truck has confirmed and sent intention ant, that it will pick the delivery at delivery
 	private Agent truck;
-	//private Agent orderAg;
 
 
 
-
-	public Delivery(Agent orderAg, int deliveryNo, Vehicle vehicle, int deliveredVolume,
+	public Delivery(Agent orderAg, int deliveryNo, Agent pTruck, int deliveredVolume,
 			ProductionSite loadingStation, ProductionSite returnStation) {
 		this.order = orderAg;
-		//this.vehicle = vehicle;
+		this.truck = pTruck;
 		this.deliveredVolume = deliveredVolume;
 		this.loadingStation = loadingStation;
 		this.returnStation = returnStation;
@@ -48,7 +47,6 @@ public class Delivery implements Serializable {
 		this.deliveryTime = null;
 		this.confirmed = false;
 		this.deliveryNo = deliveryNo;
-		//this.orderAg = orderAg;
 //		this.isLastDelivery = false;
 		//this.isExplored = false;
 	}
@@ -198,10 +196,10 @@ public class Delivery implements Serializable {
 	public Agent getTruck() {
 		return truck;
 	}
-
-	public void setTruck(Agent truck) {
-		this.truck = truck;
-	}
+//
+//	public void setTruck(Agent truck) {
+//		this.truck = truck;
+//	}
 //	public Agent getOrderAg() {
 //		return orderAg;
 //	}
@@ -230,5 +228,15 @@ public class Delivery implements Serializable {
 
 	public int getDeliveryNo() {
 		return deliveryNo;
+		
+	}
+	
+	@Override
+	public boolean equals(Object obj) {
+		Delivery del = (Delivery)obj;
+		if (this.truck.getId() ==del.truck.getId() && this.order.equals(del.order) 
+				&& this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 && this.deliveryNo == del.deliveryNo)
+			return true;
+		return false;
 	}
 }

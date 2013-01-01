@@ -35,8 +35,13 @@ public class IntAnt extends Ant {
 		schedule = new ArrayList<TruckScheduleUnit>(pSchedule);
 		creationTime = pCreateTime;
 		currentUnitNo = 0;
-		if (!schedule.isEmpty())
+		if (!schedule.isEmpty()) {
 			currentUnit = schedule.get(currentUnitNo);
+			for(TruckScheduleUnit u: schedule) {
+				u.setOrderReply(Reply.NO_REPLY);
+				u.setPsReply(Reply.NO_REPLY);
+			}
+		}
 	}
 
 	//TODO: check if clone requires any other copying stuff?
@@ -117,12 +122,12 @@ public class IntAnt extends Ant {
 		if (!this.schedule.isEmpty()){
 			for (TruckScheduleUnit u : this.schedule) {
 				if (u.getPsReply() == Reply.REJECT || u.getOrderReply() == Reply.REJECT) {//should be then in existing schedule
-					boolean rejectAble = true;
-					for (TruckScheduleUnit existUnit : existingSchedule) {
-						if (u.getDelivery().equals(existUnit.getDelivery()))    //TODO shud i check timeslots as well?
-							rejectAble = false;
-					}
-					if (rejectAble)
+//					boolean rejectAble = true;
+//					for (TruckScheduleUnit existUnit : existingSchedule) {
+//						if (u.getDelivery().equals(existUnit.getDelivery()))    //TODO shud i check timeslots as well?
+//							rejectAble = false;
+//					}
+//					if (rejectAble)
 						return false;
 				}
 			}

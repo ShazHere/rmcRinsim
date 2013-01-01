@@ -43,9 +43,8 @@ public class ExpAnt extends Ant {
 	//private TimeSlot currentSlot;
 	private TruckScheduleUnit currentUnit;
 	
-	private final int returnEarlyProbability; //the probability that exp should return having only one order booking in its schedule..
+//	private final int returnEarlyProbability; //the probability that exp should return having only one order booking in its schedule..
 	//this was introduced because otherwise ants wont return at all, if there are less orders in environment. range is 0 to 9.
-	private final Random returnEarlyProbabilityGen;
 	private final DeliveryTruckInitial originator; //the actual truck agent which initialized the ExpAnt 
 	private int scheduleUnitsAdded; //to keep track that exp ant itself added how many units.
 	
@@ -58,7 +57,7 @@ public class ExpAnt extends Ant {
 	 * @param pReturnEarlyProbability probability that ant can return early (with one unit in schedule)
 	 */
 	public ExpAnt(CommunicationUser sender,
-			ArrayList<TimeSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime, int pReturnEarlyProbability) {
+			ArrayList<TimeSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime) {
 		super(sender);
 		originator = (DeliveryTruckInitial)sender;  //ant originator, creater. Sender means the one who is curreently sending ant after cloning
 		availableSlots = new ArrayList<TimeSlot>(pAvailableSlots);
@@ -67,9 +66,9 @@ public class ExpAnt extends Ant {
 		creationTime = pCreateTime;
 		scheduleUnitsAdded = 0; 		//to keep track how many schedule units are added by the current ant. 
 		
-		returnEarlyProbability = pReturnEarlyProbability;
-		returnEarlyProbabilityGen = new Random(250);
-		
+//		returnEarlyProbability = pReturnEarlyProbability;
+//		returnEarlyProbabilityGen = new Random(250);
+//		
 		truckSpeed = ((DeliveryTruckInitial)originator).getSpeed();
 		truckTotalTimeRange =new TimeSlot(new DateTime(creationTime), originator.getTotalTimeRange().getEndTime());
 //		if (!schedule.isEmpty())
@@ -86,7 +85,7 @@ public class ExpAnt extends Ant {
 	 * @param pOriginator
 	 */
 	private ExpAnt(CommunicationUser sender,
-			ArrayList<TimeSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime, int pReturnEarlyProbability, CommunicationUser pOriginator) {
+			ArrayList<TimeSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime, CommunicationUser pOriginator) {
 		super(sender);
 		originator = (DeliveryTruckInitial)pOriginator;
 		availableSlots = new ArrayList<TimeSlot>(pAvailableSlots);
@@ -94,8 +93,8 @@ public class ExpAnt extends Ant {
 		scheduleComplete = false;
 		creationTime = pCreateTime;
 		
-		returnEarlyProbability = pReturnEarlyProbability;
-		returnEarlyProbabilityGen = new Random(250);
+//		returnEarlyProbability = pReturnEarlyProbability;
+//		returnEarlyProbabilityGen = new Random(250);
 		
 		truckSpeed = ((DeliveryTruckInitial)originator).getSpeed();
 		truckTotalTimeRange = ((DeliveryTruckInitial)originator).getTotalTimeRange();
@@ -139,16 +138,18 @@ public class ExpAnt extends Ant {
 	 */
 	public boolean isInterested(DateTime interestedTime, Double travelDistance, final DateTime currTime) {
 		Duration travelTime = new Duration((long)((travelDistance/truckSpeed)*60*60*1000));
-		//System.out.println("travel time =" +travelTime);
 		Utility.getAvailableSlots(this.schedule, this.availableSlots, new TimeSlot (new DateTime(currTime), this.truckTotalTimeRange.getEndTime()));
 		TimeSlot currentSlot = availableSlots.get(0);
+		DateTime actualInterestedTime = interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES);
 		//System.out.println("in method = " + currentSlot.toString());
-		if (currentSlot.getStartTime().compareTo(interestedTime.minus(travelTime))< 0 //making rough estimation that will order enoughÊ interesting to be visited
-				&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime)) > 0) {
-			currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
-					new TimeSlot (interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES),null)); //EndTime of slot cannot be decided here, It is adjusted at Order
-			return true;
-		}
+			if (currentSlot.getStartTime().compareTo(actualInterestedTime)< 0 //making rough estimation that will order enoughÊ interesting to be visited
+					&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
+				if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
+					currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
+							new TimeSlot (actualInterestedTime,null )); //EndTime of slot cannot be decided here, It is adjusted at Order
+					return true;
+				}
+			}
 		return false;
 	}
 
@@ -165,13 +166,25 @@ public class ExpAnt extends Ant {
 		return schedule;
 	}
 	
-	/**
-	 * @return true if probability returns true accroding to early returnProbability.
-	 */
-	public boolean isReturnEarly() {
-		boolean prob;
-//		if (returnEarlyProbability == 1){
-//			prob = returnEarlyProbabilityGen.nextInt(10) <= 1 ;
+//	/**
+//	 * @return true if probability returns true accroding to early returnProbability.
+//	 */
+//	public boolean isReturnEarly() {
+//		boolean prob;
+////		if (returnEarlyProbability == 1){
+////			prob = returnEarlyProbabilityGen.nextInt(10) <= 1 ;
+////		}
+////		else if (returnEarlyProbability == 5){
+////			prob = returnEarlyProbabilityGen.nextInt(10) <= 5 ;
+////		}
+////		else {
+////			prob = returnEarlyProbabilityGen.nextInt(10) < 9 ;
+////		}
+////		//System.out.println("probability is " + prob);
+////		return prob;
+//		
+//		if (returnEarlyProbability == 6){
+//			prob = returnEarlyProbabilityGen.nextInt(10) <= 6 ;
 //		}
 //		else if (returnEarlyProbability == 5){
 //			prob = returnEarlyProbabilityGen.nextInt(10) <= 5 ;
@@ -179,27 +192,15 @@ public class ExpAnt extends Ant {
 //		else {
 //			prob = returnEarlyProbabilityGen.nextInt(10) < 9 ;
 //		}
-//		//System.out.println("probability is " + prob);
+//		System.out.println("probability is " + prob);
 //		return prob;
-		
-		if (returnEarlyProbability == 6){
-			prob = returnEarlyProbabilityGen.nextInt(10) <= 6 ;
-		}
-		else if (returnEarlyProbability == 5){
-			prob = returnEarlyProbabilityGen.nextInt(10) <= 5 ;
-		}
-		else {
-			prob = returnEarlyProbabilityGen.nextInt(10) < 9 ;
-		}
-		System.out.println("probability is " + prob);
-		return prob;
-	}
+//	}
 	/**
 	 * @param pSender The current sender from which the ant is sent to the recepient
 	 * @return
 	 */
 	public ExpAnt clone(CommunicationUser pSender) {
-		ExpAnt exp = new ExpAnt(pSender,this.availableSlots, this.schedule, this.creationTime, this.returnEarlyProbability, this.originator );
+		ExpAnt exp = new ExpAnt(pSender,this.availableSlots, this.schedule, this.creationTime, this.originator );
 		exp.currentUnit = this.currentUnit;
 		exp.scheduleComplete = this.scheduleComplete;
 		exp.scheduleUnitsAdded = this.scheduleUnitsAdded;

@@ -60,17 +60,22 @@ public class StatisticTracker implements Listener {
 			final StringBuilder sb = new StringBuilder();
 			Set<Vehicle> truckSet = pdpModel.getVehicles();
 			int objValue = 0;
+			int totalTrucksUsed = 0;
 			ResultElements re;
 			ResultElements allResult = new ResultElements();
 			for (Vehicle v: truckSet){
 				re = ((DeliveryTruckInitial)v).getScheduleScore();
-				objValue = re.getTotalValue();
-				allResult.addLagTimeInMin(re.getLagTimeInMin());
-				allResult.addStartTimeDelay(re.getStartTimeDelay());
-				allResult.addTravelMin(re.getTravelMin());
-				allResult.addWastedConcrete(re.getWastedConcrete());
+				if (re != null) {
+					totalTrucksUsed += 1;
+					//objValue = re.getTotalValue();
+					allResult.addLagTimeInMin(re.getLagTimeInMin());
+					allResult.addStartTimeDelay(re.getStartTimeDelay());
+					allResult.addTravelMin(re.getTravelMin());
+					allResult.addWastedConcrete(re.getWastedConcrete());
+				}
 			}
-			sb.append("Objective Function Value: ").append(objValue).append("\n");
+			sb.append("Total Trucks used: ").append(totalTrucksUsed).append("\n");
+			sb.append("Objective Function Value: ").append(allResult.getTotalValue()).append("\n");
 			sb.append(allResult.toString());
 			return sb.toString();
 		}

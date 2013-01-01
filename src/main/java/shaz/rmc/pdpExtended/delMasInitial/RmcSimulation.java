@@ -89,7 +89,7 @@ public class RmcSimulation {
 //		}
 		
 		//Adding Delivery Trucks
-		for (int j = 0; j< 4 /*GlobalParameters.TOTAL_TRUCKS*/ ; j ++){
+		for (int j = 0; j< 6 /*GlobalParameters.TOTAL_TRUCKS*/ ; j ++){
 			sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(j)));
 		}
 		
@@ -119,8 +119,9 @@ public class RmcSimulation {
 		//View.startGui(sim, 1, new PlaneRoadModelRenderer(), new RoadUserRenderer(schema,false));
 		sim.start();
 		//if (!sim.isPlaying()) {
-			log.debug(stTracker.collectDataString());
 			log.debug(stTracker.collectStatistics());
+			log.debug(stTracker.collectDataString());
+			
 		//}
 	}
 

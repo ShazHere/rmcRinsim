@@ -64,7 +64,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private final DeliveryTruckInitialBelief b;
 	private final DeliveryTruckInitialIntention i;
 	private ExpAnt bestAnt;
-	private ExpAnt previousBestAnt;
 	
 	public DeliveryTruckInitial(Point randomPosition, Vehicle pTruck) {
 		setCapacity(pTruck.getNormalVolume());
@@ -80,7 +79,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		lastExpReturnTime = new DateTime(b.getTotalTimeRange().getLocationAtStartTime());
 		
 		bestAnt = null;
-		previousBestAnt = null;
 		truck = pTruck;
 		id = ++totalDeliveryTruck;
 	}
@@ -104,28 +102,31 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 				//currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN )  {
 				b.explorationAnts.size()> 3) {
 			//logger.debug(this.id + "T Investigating exp ants and total are: " +b.explorationAnts.size());
+			boolean bestAntChanged = false;
 			for (ExpAnt eAnt: b.explorationAnts) { //find eAnt with smallest score, i.e least cost
 				if (bestAnt == null) {
 					if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){
 						bestAnt = eAnt;
-						pringBestAnt(startTime);
+						bestAntChanged = true;
 					}
 				}
 				else if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){
 					if (b.schedule.size() <  1) {//select the one with higest no. of nits
 						if (eAnt.getSchedule().size() > bestAnt.getSchedule().size()) {
 							bestAnt = eAnt;
-							pringBestAnt(startTime);
+							bestAntChanged = true;
 						}
 					}
 					else { //decide based on lowest schedul socre
 						if (eAnt.getScheduleScore() < bestAnt.getScheduleScore() ) {
 							bestAnt = eAnt;
-							pringBestAnt(startTime);
+							bestAntChanged = true;
 						}
 					}
 				}
 			}
+			if (bestAntChanged)
+				pringBestAnt(startTime);
 			b.explorationAnts.clear(); 
 		}
 		
@@ -138,8 +139,17 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 				IntAnt iAnt = i.next();
 				if (iAnt.isConsiderable(b.schedule)) 
 				{
+					boolean isProblematic = false;
 					for (TruckScheduleUnit u : iAnt.getSchedule()){
-						if (!alreadyExist(u) && !isOverlapped(u)) {
+						if (alreadyExist(u) || isOverlapped(u)) {
+							checkArgument(u.getDelivery().getDeliveryTime().minus(u.getDelivery().getStationToCYTravelTime()).minusMinutes(GlobalParameters.LOADING_MINUTES).isEqual(u.getTimeSlot().getStartTime()), true);
+							checkArgument(u.getTimeSlot().getEndTime().compareTo(b.getTotalTimeRange().getEndTime()) <= 0 , true);
+							checkArgument(u.getTimeSlot().getStartTime().compareTo(b.getTotalTimeRange().getStartTime()) >= 0 , true);
+							isProblematic = true;
+						}
+					}
+					if (isProblematic == false) {
+						for (TruckScheduleUnit u : iAnt.getSchedule()){
 							checkArgument(u.getDelivery().getDeliveryTime().minus(u.getDelivery().getStationToCYTravelTime()).minusMinutes(GlobalParameters.LOADING_MINUTES).isEqual(u.getTimeSlot().getStartTime()), true);
 							checkArgument(u.getTimeSlot().getEndTime().compareTo(b.getTotalTimeRange().getEndTime()) <= 0 , true);
 							checkArgument(u.getTimeSlot().getStartTime().compareTo(b.getTotalTimeRange().getStartTime()) >= 0 , true);
@@ -148,25 +158,21 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 							logger.debug(this.getId()+"T Schedule unit added in Trucks schedule: " + u.getSummary());
 						}
 					}
+						
 				} //no need of else,coz it will be removed any way..
 				i.remove();
 				if (scheduleDone == true)
 					break;
 			}
-			b.intentionAnts.clear();
+			b.intentionAnts.clear();  //remove all remaining ants if any..
 		}
 	}
 	private void sendExpAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		//check  exp ants to be sent after particular interval only
 		if (currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN ) {
-			int probabilityToReturnEarly = 6;//1; default 1
-			if (new DateTime(startTime + GlobalParameters.START_DATETIME.getMillis()).minusMinutes(15).compareTo(lastExpReturnTime) >= 0)
-				probabilityToReturnEarly = 9;
-			else if (new DateTime(startTime + GlobalParameters.START_DATETIME.getMillis()).minusMinutes(10).compareTo(lastExpReturnTime) >= 0)
-				probabilityToReturnEarly = 5;
 			ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
-					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime, probabilityToReturnEarly);
+					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
 			//logger.debug(this.getId()+"T Exp sent by Truck with probabilityToReturnEarly = " + probabilityToReturnEarly);
 			//Utility.getAvailableSlots(this.b.schedule, b.availableSlots, new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime()));
 			if (b.getAvailableSlots().size()>0) {
@@ -191,7 +197,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 						cApi.send(bestAnt.getSchedule().get(0).getTimeSlot().getProductionSiteAtStartTime(), iAnt); 
 						timeForLastIntAnt = currTime;
 					}
-					previousBestAnt = bestAnt;
 					bestAnt = null;
 				}
 				else {//send old schedule to refresh bookings..
@@ -207,7 +212,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 	private void pringBestAnt(long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		logger.debug(this.getId()+"T Best schedule with total Units = " + bestAnt.getSchedule().size() + "and Score = " + bestAnt.getScheduleScore() +" & total ants="+ b.explorationAnts.size() + "currTime= " + currTime);
+		logger.debug(this.getId()+"T Best schedule changed with total Units = " + bestAnt.getSchedule().size() + "and Score = " + bestAnt.getScheduleScore() +" & total ants="+ b.explorationAnts.size() + "currTime= " + currTime);
 		for (TruckScheduleUnit unit: bestAnt.getSchedule()) {
 			System.out.println(unit.getSummary());
 		}
@@ -218,9 +223,14 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	 */ //TODO add test cases to test  TODO a lot of cases are yet not checked
 	private boolean isOverlapped(TruckScheduleUnit un) {
 		for (TruckScheduleUnit u : b.schedule) {
-			if (un.getTimeSlot().getStartTime().compareTo(u.getTimeSlot().getStartTime()) >= 0)
-				if (un.getTimeSlot().getEndTime().compareTo(u.getTimeSlot().getEndTime()) <= 0)
+			if (un.getTimeSlot().getStartTime().compareTo(u.getTimeSlot().getStartTime()) >= 0) {
+				if (un.getTimeSlot().getStartTime().compareTo(u.getTimeSlot().getEndTime()) <= 0)
 					return true; //if overlap with any unit, then return false
+			}
+			else { //means startTime is less
+				if (un.getTimeSlot().getEndTime().compareTo(u.getTimeSlot().getStartTime()) >= 0)
+					return true;
+			}
 		}
 		return false;
 	}

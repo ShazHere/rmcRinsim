@@ -114,7 +114,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				pheromoneUpdateTime.remove(ord);
 				noOfExplorations.remove(ord);
 			}
-			logger.debug(station.getId() +"P pheromone table: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
+			logger.debug(station.getId() +"P pheromone table after evaporation: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
 		}
 	}
 
@@ -188,7 +188,6 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	 */
 	private void sendToOrders(ExpAnt exp, TimeLapse timeLapse) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-
 		if (exp.getSender().getClass() == DeliveryTruckInitial.class)  //this if-else is just for logging purpose
 			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((DeliveryTruckInitial)exp.getSender()).getId() +"T expScheduleSize = " + exp.getSchedule().size());
 		else if (exp.getSender().getClass() == OrderAgentInitial.class)
@@ -201,12 +200,13 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 						", orderInterested " + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));
 				checkArgument(noOfExplorations.containsKey(or), true); 
 				noOfExplorations.put(or, noOfExplorations.get(or)+1);
-				exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.Location, this);
+				
+					exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.getPosition(), this); //normally make this as start PS
 				ExpAnt newExp = (ExpAnt)exp.clone(this);
 				cApi.send(or, newExp); //send exp clones to all orders(or) it is interested in
 			}
-			logger.debug(station.getId() +"P pheromone table: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
 		}	
+		logger.debug(station.getId() +"P pheromone table: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
 	}
 	//TODO add test cases to confirm its impl
 	private void processFeasibilityAnts(TimeLapse timeLapse) {
