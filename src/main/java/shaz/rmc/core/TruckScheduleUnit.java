@@ -24,6 +24,7 @@ public class TruckScheduleUnit {
 	//TODO: Should be added some where else, since not all truck unit scheule will be usint it..
 	private Reply psReply;  //ps can have NO_REPLY, ACCEPT, REJECT
 	private Reply orderReply;  //order can NO_REPLY, ACCEPT, WEEK_ACCEPT, REJECT
+	private double fixedCapacityAmount;
 
 	
 	public TruckScheduleUnit(Agent pTruck) {
@@ -32,6 +33,7 @@ public class TruckScheduleUnit {
 		truck = pTruck;
 		psReply = Reply.NO_REPLY;
 		orderReply = Reply.NO_REPLY;
+		fixedCapacityAmount = 0;
 	}
 	public TruckScheduleUnit(Agent pTruck, TimeSlot pSlot) {
 		truck = pTruck;
@@ -128,6 +130,12 @@ public class TruckScheduleUnit {
 	}
 	public void setOrderReply(Reply orderReply) {
 		this.orderReply = orderReply;
+	}
+	public double getFixedCapacityAmount() {
+		return fixedCapacityAmount;
+	}
+	public void setFixedCapacityAmount(double fixedCapacityAmount) {
+		this.fixedCapacityAmount = fixedCapacityAmount;
 	}
 
 

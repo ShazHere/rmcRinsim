@@ -57,6 +57,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	private final Map<OrderAgentInitial, Double> travelDistanceToOrder; 
 	private final Map<OrderAgentInitial, Long > pheromoneUpdateTime;
 	private final Map<OrderAgentInitial, Long > noOfExplorations;
+	private final Map<OrderAgentInitial, Double > fixedCapacityAmount; //delivery has a fixed capacity? this will be case when there a previous delivery (
 	
 	private ArrayList<FeaAnt> feasibilityAnts;
 	private ArrayList<ExpAnt> explorationAnts;
@@ -71,10 +72,11 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 		feasibilityAnts = new ArrayList<FeaAnt>();
 		explorationAnts = new ArrayList<ExpAnt>();
 		intentionAnts = new ArrayList<IntAnt>();
-		interestedTime = new LinkedHashMap();
-		travelDistanceToOrder = new LinkedHashMap();
-		pheromoneUpdateTime = new LinkedHashMap();
-		noOfExplorations = new LinkedHashMap();
+		interestedTime = new LinkedHashMap<OrderAgentInitial, DateTime>(); 
+		travelDistanceToOrder = new LinkedHashMap<OrderAgentInitial, Double>();
+		pheromoneUpdateTime = new LinkedHashMap<OrderAgentInitial, Long >();
+		noOfExplorations = new LinkedHashMap<OrderAgentInitial, Long >();
+		fixedCapacityAmount = new LinkedHashMap<OrderAgentInitial, Double >();
 	}
 	
 	@Override
@@ -113,6 +115,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				travelDistanceToOrder.remove(ord);
 				pheromoneUpdateTime.remove(ord);
 				noOfExplorations.remove(ord);
+				fixedCapacityAmount.remove(ord);
 			}
 			logger.debug(station.getId() +"P pheromone table after evaporation: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
 		}
@@ -165,7 +168,6 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				continue;
 			}
 			else if (exp.getSchedule().size() > 0) {
-				//if (exp.isReturnEarly()) { //send back to origninator according to probability 
 					ExpAnt newExp = (ExpAnt)exp.clone(this);
 					ExpAnt newExp2 = (ExpAnt)exp.clone(this);
 					//logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back becaise probability true with schedule size = " + newExp.getSchedule().size());
@@ -178,7 +180,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 		//let exp further explore
 			sendToOrders(exp, timeLapse);
 			i.remove(); // if exp is not further intereste it will automaticaly die..
-		}
+		} //end while (i.hasNext())
 		checkArgument (explorationAnts.isEmpty(), true);
 	}
 	/**
@@ -194,7 +196,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((OrderAgentInitial)exp.getSender()).getOrder().getId() +"O expScheduleSize = " + exp.getSchedule().size());
 		
 		for (OrderAgentInitial or : interestedTime.keySet()) { //check all order pheromones..
-			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), currTime)) { //is exp intereseted in this particular order?
+			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), fixedCapacityAmount.get(or), currTime)) { //is exp intereseted in this particular order?
 				//if (noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) //if interested, and order in't explored too much
 				logger.debug(station.getId() +"P exp-" +exp.getOriginator().getId()+ " is interested " + exp.getCurrentUnit().getTimeSlot().getStartTime() +
 						", orderInterested " + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));
@@ -217,6 +219,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			travelDistanceToOrder.put((OrderAgentInitial)f.getSender(), Point.distance(this.getPosition(), ((OrderAgentInitial)f.getSender()).getPosition()));
 			pheromoneUpdateTime.put((OrderAgentInitial)f.getSender(), timeLapse.getStartTime());
 			noOfExplorations.put((OrderAgentInitial)f.getSender(),0l); //so current info is acquired by none..
+			fixedCapacityAmount.put((OrderAgentInitial)f.getSender(), f.getFixedCapacityAmount());
 		}
 		feasibilityAnts.clear();
 		logger.debug(station.getId() +"P pheromone table: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
@@ -303,6 +306,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			sb.append("[time = " + this.interestedTime.get(or));
 			sb.append(", travelDistance = " + this.travelDistanceToOrder.get(or));
 			sb.append(", explorations = " + this.noOfExplorations.get(or));
+			sb.append(", capacity = " + this.fixedCapacityAmount.get(or));
 			sb.append("] \n");
 		}
 		return sb.toString();

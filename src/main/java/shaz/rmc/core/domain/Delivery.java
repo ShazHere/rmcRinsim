@@ -24,7 +24,7 @@ public class Delivery implements Serializable {
 	
 	
 	//added by shaz
-	private boolean isReserved;
+	private boolean isReserved; // used like isPhysically created? 15/12/2012
 	private DateTime deliveryTime;  //according to d1 which might be settled
 	//private boolean isLastDelivery; //to track that is this the last delivery of order, Truck may give different priority based on this fact..may be used in waste calculation
 	private int wastedVolume; // filed by truck while adding unit
@@ -228,7 +228,6 @@ public class Delivery implements Serializable {
 
 	public int getDeliveryNo() {
 		return deliveryNo;
-		
 	}
 	
 	@Override
@@ -236,6 +235,13 @@ public class Delivery implements Serializable {
 		Delivery del = (Delivery)obj;
 		if (this.truck.getId() ==del.truck.getId() && this.order.equals(del.order) 
 				&& this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 && this.deliveryNo == del.deliveryNo)
+			return true;
+		return false;
+	}
+
+	public boolean equalsWithDiffTruck(Delivery del) {
+		if (this.order.equals(del.order) && this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 
+				&& this.deliveryNo == del.deliveryNo)
 			return true;
 		return false;
 	}

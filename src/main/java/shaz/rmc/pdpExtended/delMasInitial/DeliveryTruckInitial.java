@@ -249,7 +249,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private void checkMsgs(long currentTime) {
 		Queue<Message> messages = mailbox.getMessages();
 		if (messages.size() > 0) {
-			//logger.debug(this.getId()+"T messages received are = " + messages.size());
 			for (Message m : messages) {
 				if (m.getClass() == ExpAnt.class) {
 					b.explorationAnts.add((ExpAnt)m);
@@ -277,7 +276,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		//in the begining truck is at start location
 		b.getAvailableSlots().get(0).setLocationAtStartTime(sites.get(rand).getLocation(), sites.get(rand)); //setting start location
 		b.setStartLocation( sites.get(rand).getLocation());
-		//setStartPosition(b.startLocation);
 		roadModel.addObjectAt(this, b.getStartLocation());
 	}
 	public shaz.rmc.core.domain.Vehicle getTruck() {

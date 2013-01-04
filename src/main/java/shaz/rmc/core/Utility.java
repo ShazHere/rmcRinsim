@@ -41,7 +41,9 @@ public class Utility {
 		            return (int)((a.getTimeSlot().getStartTime().getMillis()/1000)- (b.getTimeSlot().getStartTime().getMillis()/1000));
 		        }
 			});
-			//checkArgument(availableSlots.size()>0, "T Unexpectedly Available slots empty"); //there shud b one slot any way..
+			//checkArgument(availableSlots.size()>0, "T Unexpectedly Available slots empty and schedule size is " + pSchedule.size()); //there shud b one slot any way..
+			if (availableSlots.isEmpty()) //means in some previous call, they were already empty
+				return availableSlots; 
 			TimeSlot av = new TimeSlot();
 			av.setLocationAtStartTime(availableSlots.get(0).getLocationAtStartTime(), availableSlots.get(0).getProductionSiteAtStartTime());
 			availableSlots.clear();
@@ -74,8 +76,8 @@ public class Utility {
 					availableSlots.add(av);
 				}
 			}
-			if (!availableSlots.isEmpty()) {
-				
+			if (availableSlots.isEmpty()) {
+				return availableSlots;
 			}
 			return availableSlots;
 		}

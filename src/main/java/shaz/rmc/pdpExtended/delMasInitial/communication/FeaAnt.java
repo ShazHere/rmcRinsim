@@ -15,25 +15,22 @@ import shaz.rmc.core.Ant;
  */
 public class FeaAnt extends Ant {
 	private final DateTime interestedAt; //for storing the time at which order wants Trucks to propose it.
-	private Double travelDistance; //chk if required or shud it b directley added in pheromone
+	private final Double fixedCapacityAmount; //i.e order is looking for specific amount of capacity
 	
-	
-	public FeaAnt(CommunicationUser sender, DateTime interestedTime) {
+	public FeaAnt(CommunicationUser sender, DateTime interestedTime, double fixedCapacityAmount) {
 		super(sender);
 		this.interestedAt = interestedTime;
+		this.fixedCapacityAmount = fixedCapacityAmount;
 	}
-	public void setTravelDistance (double pTravelDistance) { 
-		this.travelDistance = pTravelDistance;
-	}
+
 	public DateTime getInterestedAt() {
 		return interestedAt;
 	}
-	public Double getTravelDistance() {
-		return travelDistance;
+
+	public Double getFixedCapacityAmount() {
+		return fixedCapacityAmount;
 	}
-	public void setTravelDistance(Double travelDistance) {
-		this.travelDistance = travelDistance;
-	}
+
 	@Override
 	public FeaAnt clone(CommunicationUser currentSender)  {
 		

@@ -66,13 +66,8 @@ public class ExpAnt extends Ant {
 		creationTime = pCreateTime;
 		scheduleUnitsAdded = 0; 		//to keep track how many schedule units are added by the current ant. 
 		
-//		returnEarlyProbability = pReturnEarlyProbability;
-//		returnEarlyProbabilityGen = new Random(250);
-//		
 		truckSpeed = ((DeliveryTruckInitial)originator).getSpeed();
 		truckTotalTimeRange =new TimeSlot(new DateTime(creationTime), originator.getTotalTimeRange().getEndTime());
-//		if (!schedule.isEmpty())
-//			currentUnit = schedule.get(0);
 		currentUnit = null; // It should not contain any unit if currently expAnt isn't interested in any order.
 	}
 	/**
@@ -92,14 +87,10 @@ public class ExpAnt extends Ant {
 		schedule = new ArrayList<TruckScheduleUnit>(pSchedule);
 		scheduleComplete = false;
 		creationTime = pCreateTime;
-		
-//		returnEarlyProbability = pReturnEarlyProbability;
-//		returnEarlyProbabilityGen = new Random(250);
-		
+				
 		truckSpeed = ((DeliveryTruckInitial)originator).getSpeed();
 		truckTotalTimeRange = ((DeliveryTruckInitial)originator).getTotalTimeRange();
 		
-		//currentUnit = schedule.get(0);
 	}
 /**
  * similar to int.isScheduleComplete
@@ -136,18 +127,28 @@ public class ExpAnt extends Ant {
 	 * @return true if the ExpAnt is interested at interested time even though it has to travel through 
 	 * the travelDistance after loading time (LOADING_MINUTES). 
 	 */
-	public boolean isInterested(DateTime interestedTime, Double travelDistance, final DateTime currTime) {
+	public boolean isInterested(DateTime interestedTime, Double travelDistance, final double fixedCapacity, final DateTime currTime) {
 		Duration travelTime = new Duration((long)((travelDistance/truckSpeed)*60*60*1000));
 		Utility.getAvailableSlots(this.schedule, this.availableSlots, new TimeSlot (new DateTime(currTime), this.truckTotalTimeRange.getEndTime()));
+		if (availableSlots.size() == 0)
+			return false;
 		TimeSlot currentSlot = availableSlots.get(0);
 		DateTime actualInterestedTime = interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES);
 		//System.out.println("in method = " + currentSlot.toString());
 			if (currentSlot.getStartTime().compareTo(actualInterestedTime)< 0 //making rough estimation that will order enoughÊ interesting to be visited
 					&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
 				if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
-					currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
-							new TimeSlot (actualInterestedTime,null )); //EndTime of slot cannot be decided here, It is adjusted at Order
-					return true;
+					if (fixedCapacity == 0) {
+						currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
+								new TimeSlot (actualInterestedTime,null )); //EndTime of slot cannot be decided here, It is adjusted at Order
+						return true;
+					}
+					else if (fixedCapacity <= this.originator.getCapacity()) {
+						currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
+								new TimeSlot (actualInterestedTime,null )); //EndTime of slot cannot be decided here, It is adjusted at Order
+						currentUnit.setFixedCapacityAmount(fixedCapacity);
+						return true;
+					}
 				}
 			}
 		return false;
