@@ -12,6 +12,13 @@ import java.util.Comparator;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.FileWriter;
+
 import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters;
 
 
@@ -48,7 +55,6 @@ public class Utility {
 			av.setLocationAtStartTime(availableSlots.get(0).getLocationAtStartTime(), availableSlots.get(0).getProductionSiteAtStartTime());
 			availableSlots.clear();
 			DateTime initialTime = truckTotalTimeRange.getStartTime();
-			//for (TruckScheduleUnit u: pSchedule) {
 			for (int i = 0; i< pSchedule.size(); i++) {
 				if (initialTime.compareTo(pSchedule.get(i).getTimeSlot().getStartTime()) < 0) {
 					Duration d = new Duration (initialTime, pSchedule.get(i).getTimeSlot().getStartTime());
@@ -70,7 +76,6 @@ public class Utility {
 			if (initialTime.compareTo(truckTotalTimeRange.getEndTime()) < 0) {
 				Duration d = new Duration (initialTime, truckTotalTimeRange.getEndTime());
 				if (d.compareTo(new Duration(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l*60l*1000l)) >= 0) {
-					//System.out.println("last slot added");
 					av.setStartTime(initialTime);
 					av.setEndtime(truckTotalTimeRange.getEndTime()); //chk start time or end time are inclusive or not
 					availableSlots.add(av);
@@ -81,5 +86,71 @@ public class Utility {
 			}
 			return availableSlots;
 		}
+	}
+	public static boolean wrtieInFile(String fileName, boolean isAppend, String text, ResultElements resultElement) {
+		// PrintWriter out; //not using it any more because it swallows any exceptions and  
+		boolean addComment = false;
+		fileName = fileName + GlobalParameters.INPUT_INSTANCE_TYPE.toString();
+		String columnSeperator = "\t"; 
+		String commentText = "# Data file for input file: " + GlobalParameters.DATA_FOLDER + GlobalParameters.INPUT_FILE + "\n" +
+							"# Experiment Date: " + new DateTime(System.currentTimeMillis()) + "\n";
+		try {
+			
+			try {
+			//first check if file already contains anything
+			String line;
+			FileReader fileReader = 
+                new FileReader(fileName);
+
+            // Always wrap FileReader in BufferedReader.
+            BufferedReader bufferedReader = 
+                new BufferedReader(fileReader);
+            
+            if (fileReader == null || bufferedReader == null) {
+            	addComment = true;
+	              System.out.println("File or buffere reader Null!..Comment should be added!!");
+            }
+            else {
+	            while((line = bufferedReader.readLine()) == null) {
+	                addComment = true;
+	                System.out.println("Comment should be added!!");
+	                break;
+	            }
+	            bufferedReader.close();
+            }
+			}
+			catch (IOException exx) {
+				   addComment = true;
+	                System.out.println("Caught exception..Comment should be added!!");
+			}
+			 
+			//prepare for WRITING in file
+			FileWriter fileWriter =
+	                new FileWriter(fileName,isAppend);
+
+	            // Always wrap FileWriter in BufferedWriter.
+	            BufferedWriter bufferedWriter =
+	                new BufferedWriter(fileWriter);
+
+	            // Note that write() does not automatically
+	            // append a newline character.
+	            if (addComment) {
+	            	
+	            	bufferedWriter.write(commentText);
+	            	bufferedWriter.write( resultElement.getColumnNames(columnSeperator)+ columnSeperator + fileName +"\n");
+	            }
+	            bufferedWriter.write(resultElement.getResultDetailsInColumnForm(columnSeperator)+ columnSeperator + fileName +"\r");
+	            //bufferedWriter.write("\n");
+	            
+	            // Always close files.
+	            bufferedWriter.close();
+			//System.out.printf("Testing String");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		  
+		
+		return false;
+		
 	}
 }

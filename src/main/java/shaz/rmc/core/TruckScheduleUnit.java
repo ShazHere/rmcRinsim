@@ -6,9 +6,9 @@ package shaz.rmc.core;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
-import shaz.rmc.pdpExtended.masDisco.RmcDelivery;
-import shaz.rmc.pdpExtended.masDisco.RmcOrderAgent;
-import shaz.rmc.pdpExtended.masDisco.RmcProductionSite;
+//import shaz.rmc.pdpExtended.masDisco.RmcDelivery;
+//import shaz.rmc.pdpExtended.masDisco.RmcOrderAgent;
+//import shaz.rmc.pdpExtended.masDisco.RmcProductionSite;
 
 /**
  * @author Shaza
@@ -76,27 +76,27 @@ public class TruckScheduleUnit {
 //	public void setSequenceNo(int sequenceNo) {
 //		this.sequenceNo = sequenceNo;
 //	}
-	@Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
-		
-		sb.append("Delivery[");
-		sb.append("\n  order=").append(((RmcOrderAgent)delivery.getOrder()).getOrder().getId());
-		sb.append("\n  truck=").append(truck.getId());
-		sb.append("\n Unit start time=").append(timeSlot.getStartTime());
-		sb.append("\n  loading time=").append(delivery.getDeliveryTime().minus(delivery.getLoadingDuration()).minus(delivery.getStationToCYTravelTime()));
-		sb.append("\n  departs from station = ").append(((RmcProductionSite)delivery.getLoadingStation()).getStation().getId() + 
-				" at time "+ delivery.getDeliveryTime().minus(delivery.getStationToCYTravelTime()));
-		sb.append("\n  unloading time=").append(delivery.getDeliveryTime());
-		sb.append("\n leaves CY at =").append(delivery.getDeliveryTime().plus(delivery.getUnloadingDuration()));
-		sb.append("\n reaches at Station = ").append(((RmcProductionSite)delivery.getReturnStation()).getStation().getId() + 
-				" at time "+delivery.getDeliveryTime().plus(delivery.getUnloadingDuration()).plus(delivery.getCYToStationTravelTime()));
-		sb.append("\n Unit end time=").append(timeSlot.getEndTime());
-
-		sb.append("]");
-		
-		return sb.toString();
-	}
+//	@Override
+//	public String toString() {
+//		StringBuilder sb = new StringBuilder();
+//		
+//		sb.append("Delivery[");
+//		sb.append("\n  order=").append(((RmcOrderAgent)delivery.getOrder()).getOrder().getId());
+//		sb.append("\n  truck=").append(truck.getId());
+//		sb.append("\n Unit start time=").append(timeSlot.getStartTime());
+//		sb.append("\n  loading time=").append(delivery.getDeliveryTime().minus(delivery.getLoadingDuration()).minus(delivery.getStationToCYTravelTime()));
+//		sb.append("\n  departs from station = ").append(((RmcProductionSite)delivery.getLoadingStation()).getStation().getId() + 
+//				" at time "+ delivery.getDeliveryTime().minus(delivery.getStationToCYTravelTime()));
+//		sb.append("\n  unloading time=").append(delivery.getDeliveryTime());
+//		sb.append("\n leaves CY at =").append(delivery.getDeliveryTime().plus(delivery.getUnloadingDuration()));
+//		sb.append("\n reaches at Station = ").append(((RmcProductionSite)delivery.getReturnStation()).getStation().getId() + 
+//				" at time "+delivery.getDeliveryTime().plus(delivery.getUnloadingDuration()).plus(delivery.getCYToStationTravelTime()));
+//		sb.append("\n Unit end time=").append(timeSlot.getEndTime());
+//
+//		sb.append("]");
+//		
+//		return sb.toString();
+//	}
 	public String getSummary() {
 		StringBuilder sb = new StringBuilder();
 		

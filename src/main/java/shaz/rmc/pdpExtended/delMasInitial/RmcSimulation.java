@@ -34,11 +34,12 @@ public class RmcSimulation {
 	private static Logger log = Logger.getLogger(RmcSimulation.class);
 	private static Simulator sim;
 	public static void main(String[] args) {
-	
-		final RandomGenerator rng = new MersenneTwister(250);
+		System.out.println(java.lang.Runtime.getRuntime().maxMemory()); 
+		int randomSeed = 250;
+		final RandomGenerator rng = new MersenneTwister(randomSeed);
 		sim = new Simulator(rng, 200); //tick is one milli second, step = 200ms 
-		/* Discussed with Rinde that truck.getSpeed and roadModel.maxSpeed should always be in same units. 
-		 * Here I use unit/hour or km/hour.
+		/* Discussed with Rinde that truck.getSpeed and roadModel.maxSpeed should always be in same units.  
+		 * Here I use unit/hour or km/hour.																	
 		 * Also if useSpeedConversion = true, then distance per hour will be matched with the tick time, and the move
 		 * of truck will be accrodingly. I haven't tested this yet. Rin was saying that its simple to use useSpeedConversion = false
 		 * and set a greater valueto the maxSpeed so that vehicles actual speed is used by model and maxSpeed doesn't 
@@ -47,49 +48,32 @@ public class RmcSimulation {
 		final PlaneRoadModel prm = new PlaneRoadModel(new Point(0, 0), new Point(10, 10), true, 10);//10by10 km plane
 		CommunicationModel communicationModel = new CommunicationModel(rng, true);
 		final PDPModel pdpModel = new PDPModel();
-		final StatisticTracker stTracker = new StatisticTracker(sim , pdpModel);
-		sim.register(prm);
+		OrderManagerInitial omi = new OrderManagerInitial(sim, randomSeed, prm); 
+		// Statistic Tracker
+		final StatisticTracker stTracker = new StatisticTracker(sim , pdpModel, omi);
+		sim.getEventAPI().addListener(stTracker, SimulatorEventType.values());
+		sim.register(prm); 
 		sim.register(pdpModel);
 		sim.register(communicationModel);
-		sim.getEventAPI().addListener(stTracker, SimulatorEventType.values());
+		
 		sim.configure();
 		final RmcSimulation rmSim = new RmcSimulation(); 
 		rmSim.loadProblem(sim);
+		
+		//adding order manager	
+		sim.register(omi);
 
+		
 		//Adding prodcuction Sites
 		for (int j = 0; j<2 ; j++) 
 			sim.register(new ProductionSiteInitial(rng, GlobalParameters.PROBLEM.getStations().get(j)));
 		
 		//Adding orders
-		int  k =0, l =0, m =0, n =0 ; //4, 43, 19, 55
-		for (int i = 0; i< GlobalParameters.PROBLEM.getOrders().size(); i++){
-			if (GlobalParameters.PROBLEM.getOrders().get(i).getId().equals("43")) {
-				k = i;
-				System.out.println(GlobalParameters.PROBLEM.getOrders().get(i).toString());
-			}
-			else if (GlobalParameters.PROBLEM.getOrders().get(i).getId().equals("4")) {
-				l = i;
-				System.out.println(GlobalParameters.PROBLEM.getOrders().get(i).toString());
-			}
-//			else if (GlobalParameters.PROBLEM.getOrders().get(i).getId().equals("19"))
-//				m = i;
-			else if (GlobalParameters.PROBLEM.getOrders().get(i).getId().equals("55")) {				
-				n = i;		
-				System.out.println(GlobalParameters.PROBLEM.getOrders().get(i).toString());
-			}
-		}
-
-		System.out.println("k= " +k+", l = " +l+ ", m = "+m+ ", n =" + n);
-		sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(k<GlobalParameters.PROBLEM.getOrders().size()?k:k-1)));
-		sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(l<GlobalParameters.PROBLEM.getOrders().size()?l:l-1)));
-		//sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(m<GlobalParameters.PROBLEM.getOrders().size()?m:m-1)));
-		sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(n<GlobalParameters.PROBLEM.getOrders().size()?n:n-1)));
-//		for (int i = 0; i< GlobalParameters.PROBLEM.getOrders().size()-1; i++){
-//			sim.register(new OrderAgentInitial(sim, prm.getRandomPosition(rng), GlobalParameters.PROBLEM.getOrders().get(i)));
-//		}
+		omi.addOrders();
+		
 		
 		//Adding Delivery Trucks
-		for (int j = 0; j< 6 /*GlobalParameters.TOTAL_TRUCKS*/ ; j ++){
+		for (int j = 0; j< 14 /*GlobalParameters.TOTAL_TRUCKS*/ ; j ++){
 			sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(j)));
 		}
 		
@@ -119,7 +103,9 @@ public class RmcSimulation {
 		//View.startGui(sim, 1, new PlaneRoadModelRenderer(), new RoadUserRenderer(schema,false));
 		sim.start();
 		//if (!sim.isPlaying()) {
-			log.debug(stTracker.collectStatistics());
+		String writeString = stTracker.collectStatistics(); 
+			log.debug(writeString);
+			stTracker.writeFile(writeString);
 			log.debug(stTracker.collectDataString());
 			
 		//}

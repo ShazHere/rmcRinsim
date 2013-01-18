@@ -4,34 +4,45 @@
 package shaz.rmc.pdpExtended.delMasInitial;
 
 import java.util.Set;
+import static java.util.Collections.unmodifiableSet;
+
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
 import rinde.sim.core.Simulator;
 import rinde.sim.core.Simulator.SimulatorEventType;
+import rinde.sim.core.model.pdp.Depot;
 import rinde.sim.core.model.pdp.PDPModel;
 import rinde.sim.core.model.pdp.Vehicle;
 import rinde.sim.event.Event;
 import rinde.sim.event.Listener;
 import shaz.rmc.core.ResultElements;
+import shaz.rmc.core.ResultElementsOrder;
+import shaz.rmc.core.ResultElementsTruck;
+import shaz.rmc.core.Utility;
+import shaz.rmc.core.domain.Delivery;
 
 /**
  * @author Shaza
  *
  */
 public class StatisticTracker implements Listener {
-	protected long startTimeReal;
-	protected long startTimeSim;
-	protected long computationTime;
-	protected long simulationTime;
-	protected long endTimeSim;
-	final private Simulator sim;
-	final PDPModel pdpModel;
+	private long startTimeReal;
+	private long startTimeSim;
+	private long computationTime;
+	private long simulationTime;
+	private long endTimeSim;
+	private final Simulator sim;
+	private final PDPModel pdpModel;
+	private final OrderManagerInitial orm; 
+	private ResultElements stats;
 	
-	public StatisticTracker(Simulator pSim, final PDPModel pPdpModel) {
+	public StatisticTracker(Simulator pSim, final PDPModel pPdpModel, OrderManagerInitial pOrm) {
 		sim = pSim;
 		pdpModel = pPdpModel;
+		orm = pOrm;
+		stats = null;
 	}
 
 		@Override
@@ -59,24 +70,21 @@ public class StatisticTracker implements Listener {
 		public String collectStatistics() {
 			final StringBuilder sb = new StringBuilder();
 			Set<Vehicle> truckSet = pdpModel.getVehicles();
-			int objValue = 0;
-			int totalTrucksUsed = 0;
-			ResultElements re;
-			ResultElements allResult = new ResultElements();
-			for (Vehicle v: truckSet){
-				re = ((DeliveryTruckInitial)v).getScheduleScore();
-				if (re != null) {
-					totalTrucksUsed += 1;
-					//objValue = re.getTotalValue();
-					allResult.addLagTimeInMin(re.getLagTimeInMin());
-					allResult.addStartTimeDelay(re.getStartTimeDelay());
-					allResult.addTravelMin(re.getTravelMin());
-					allResult.addWastedConcrete(re.getWastedConcrete());
-				}
-			}
-			sb.append("Total Trucks used: ").append(totalTrucksUsed).append("\n");
-			sb.append("Objective Function Value: ").append(allResult.getTotalValue()).append("\n");
-			sb.append(allResult.toString());
+			Set<OrderAgentInitial> orderSet = orm.getOrders();
+			stats = new ResultElements(orderSet, truckSet);
+			//order related
+			sb.append("TotalOrdersGiven: ").append(stats.getTotalOrderGiven()).append("\n");
+			sb.append("UndeliveredConcrete: ").append(stats.getUndeliveredConcrete()).append("\n");
+			sb.append(stats.getResultOrder().toString());
+			//truck related
+			sb.append("\n").append("TotalTrucksUsed: ").append(stats.getTotalTrucksUsed()).append("\n");
+			sb.append("TotalTrucksGiven: ").append(stats.getTotalTrucksGiven()).append("\n");
+			sb.append(stats.getResultTruck().toString());
+			//objfunc
+			sb.append("ObjectiveFunctionValue: ").append(stats.getTotalValue()).append("\n");
 			return sb.toString();
+		}
+		public void writeFile(String writeString) {
+			Utility.wrtieInFile(GlobalParameters.INPUT_FILE, true, writeString, stats);
 		}
 }

@@ -52,21 +52,30 @@ public class GlobalParameters {
 	public static final long AVAILABLE_SLOT_SIZE_HOURS = 2;
 	
 	//CHECK NOTES ABOUT INPUT FILES!!
-	public static final String INPUT_FILE = "planning2011-01-10/planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //for the data file in Rmc
+	//public static final String INPUT_FILE = "planning2011-01-10/planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //for the data file in Rmc
 	//public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 27
 	//public static final String INPUT_FILE = "planning2011-01-11/planning2011-01-11-update-ucy-shaz-requiredRateFixed.xml";
-	//public static final String INPUT_FILE = "planning2011-01-20-update-ucy-SameTruck.xml";  //total trucks = 28
-	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/";
+	public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 28
+	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-20/";
 	public static final String LOG_LOCATION = "hh";  //not used 
 	
 	public static Problem PROBLEM = null;	//the problem loader
 	
-	public static final DateTime START_DATETIME = new DateTime(2011, 1, 10, 11, 0, 0 ,0, GregorianChronology.getInstance()); //07AM on 10Jan, 2011
-	public static final DateTime END_DATETIME = new DateTime(2011, 1, 10, 23, 55, 0, 0, GregorianChronology.getInstance());//10PM on 12Jan, 2011
+	/**
+	 * Simulation Start time, w.r.t real time clock
+	 */
+	public static final DateTime START_DATETIME = new DateTime(2011, 1, 20, 02, 0, 0 ,0, GregorianChronology.getInstance()); //07AM on 10Jan, 2011
+	/**
+	 * Simulation End time, w.r.t real time clock
+	 */
+	public static final DateTime END_DATETIME = new DateTime(2011, 1, 20, 23, 55, 0, 0, GregorianChronology.getInstance());//10PM on 12Jan, 2011
 	
 //	public static OrderManager om; //temprary solution for accessing all the trucks and orders at the end, value is saved by RmcAgentInitialization
 	
 	public static RandomData RANDOM_DATA_GEN = new RandomDataImpl();  // for generating random sequence having good values..
+	
+	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per50;
+	
 	
 	//RINSIM PARAMETERS
 	public static final int TOTAL_PRODUCTION_SITES = 2;
@@ -76,6 +85,26 @@ public class GlobalParameters {
 		public static final int CONCRETE_WASTAGE = 10;
 		public static final int STARTTIME_DELAY = 10;
 		public static final int PREFFERED_STATION =1;
+	}
+	
+	public enum PERCENT {
+		per100 (0), //100 percent dynamic, so zero orders should be know before start of simulation, 
+					//	rather, after simulaton started, orderManagerInitial should add orders according to their startTime 
+		per50 (50),  ///50 percent orders are dynamic, so in the begining randomly 50percent orders added, irrespective of their start time.
+					//later, in first tick of orderManagerInitial, the 
+		per0(100); //nothing will be dynamic, all orders are known before hand, irrespective of their start Time
+		
+		private final int value;
+		
+		PERCENT (int pValue) {
+			this.value = pValue;
+		}
+		
+		public int getPerOfX(int X) {
+			int perOfX = this.value * X/100;
+			
+			return perOfX;
+		}
 	}
 }
 

@@ -3,10 +3,10 @@ package shaz.rmc.pdpExtended.core;
 import rinde.sim.core.model.pdp.PDPModel;
 import rinde.sim.core.model.pdp.Parcel;
 import rinde.sim.core.model.pdp.Vehicle;
-import shaz.rmc.pdpExtended.trial.RmcDelivery;
-import shaz.rmc.pdpExtended.trial.RmcDeliveryTruck;
-import shaz.rmc.pdpExtended.trial.RmcProductionSite;
-import shaz.rmc.pdpExtended.trial.RmcStrictTimeWindowPolicy;
+//import shaz.rmc.pdpExtended.trial.RmcDelivery;
+//import shaz.rmc.pdpExtended.trial.RmcDeliveryTruck;
+//import shaz.rmc.pdpExtended.trial.RmcProductionSite;
+//import shaz.rmc.pdpExtended.trial.RmcStrictTimeWindowPolicy;
 
 
 
@@ -63,8 +63,8 @@ public class RmcPDPExtendedModel extends PDPModel {
 	/**
 	 * @param twp The {@link RmcStrictTimeWindowPolicy} used for this model
 	 */
-	RmcPDPExtendedModel(RmcStrictTimeWindowPolicy twp) {
-		super(twp);		
+	RmcPDPExtendedModel() {
+		super();		
 	}
 	
 	

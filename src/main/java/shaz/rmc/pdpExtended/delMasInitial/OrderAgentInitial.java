@@ -28,6 +28,8 @@ import rinde.sim.core.model.road.RoadModel;
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
+import shaz.rmc.core.ResultElementsOrder;
+import shaz.rmc.core.ResultElementsTruck;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.core.domain.Order;
@@ -47,7 +49,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private final Simulator sim;
 	private final Point Location;
 	private final Order order;
-	private ArrayList<Delivery> deliveries; //virtual deliveries..twhich stores general information of the deliveries that have been intended by other trucks
+	private final ArrayList<Delivery> deliveries; //virtual deliveries..twhich stores general information of the deliveries that have been intended by other trucks
 	
 	private final Logger logger; //for logging
 	private ArrayList<ExpAnt> explorationAnts;
@@ -120,7 +122,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			for (Delivery d : deliveries) { //5 min cushion time, 5min for PS fillling time
 				DateTime deliveryTime = d.getDeliveryTime().minus(d.getStationToCYTravelTime()).minusMinutes(cushionMinutes).minusMinutes(GlobalParameters.LOADING_MINUTES); 
 				if (currTime.compareTo(deliveryTime) >= 0) {
-					if (d.isReserved() == false){ //isReservd means isPhysically created..
+					if (d.isReserved() == false && d.isConfirmed() == true){ //isReservd means isPhysically created..
 						DeliveryInitial pd = new DeliveryInitial(this, d, dNo, d.getLoadingStation().getPosition(), 
 								this.getPosition(), d.getLoadingDuration().getMillis(), d.getUnloadingDuration().getMillis(), (double)d.getDeliveredVolume());
 						sim.register(pd);
@@ -399,6 +401,21 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			}
 		}
 	}
+	
+	public ResultElementsOrder getOrderResult() { 
+		
+		int deliveredConcrete = 0;
+		if (deliveries.size() > 0) {
+			for (Delivery d : deliveries) { //there might b some error in this calculation.
+				DeliveryInitial di = this.getDeliveryForDomainDelivery(d);
+				if (di != null) {
+					deliveredConcrete += di.getDelivery().getDeliveredVolume();
+				}
+			}
+			return new ResultElementsOrder(deliveries.size(), this.getOrder().getRequiredTotalVolume(), deliveredConcrete);
+		}
+		return null;
+	}
 	/* 
 	 * Should serve same as getLocation, returns location in PDP model
 	 */
@@ -440,5 +457,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	public DateTime getInterestedTime() {
 		return interestedTime;
 	}
+	
 	
 }

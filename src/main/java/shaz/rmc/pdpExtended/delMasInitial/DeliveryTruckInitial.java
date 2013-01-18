@@ -26,7 +26,7 @@ import rinde.sim.core.model.road.MovingRoadUser;
 import rinde.sim.core.model.road.RoadModel;
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.Reply;
-import shaz.rmc.core.ResultElements;
+import shaz.rmc.core.ResultElementsTruck;
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.Utility;
 
@@ -332,7 +332,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	/**
 	 * @return score of the proposed schedule 
 	 */
-	public ResultElements getScheduleScore() {
+	public ResultElementsTruck getTruckResult() {
 		/*
 		 * score concerns: lagTime (20), travelDistance(20), ST Delay (10), wasted Concrete (10), preferred station (1)
 		 *  
@@ -341,14 +341,16 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		int lagTimeInMin = 0;
 		int startTimeDelay = 0; //already included in lag time
 		int wastedConcrete = 0;
+		int deliveredConcrete =0;
 		if (!b.schedule.isEmpty()) {
 			for(TruckScheduleUnit u: b.schedule) {
 				travelMin += u.getDelivery().getStationToCYTravelTime().getStandardMinutes();
 				travelMin += u.getDelivery().getCYToStationTravelTime().getStandardMinutes();
 				lagTimeInMin += u.getDelivery().getLagTime().getStandardMinutes();
 				wastedConcrete += u.getDelivery().getWastedVolume();
+				deliveredConcrete += u.getDelivery().getDeliveredVolume(); //truck used to deliver all concrete, even the one that will go wastage for order site. so unloading times would also have boht values
 			}
-		ResultElements re = new ResultElements(travelMin, lagTimeInMin, startTimeDelay, wastedConcrete);
+		ResultElementsTruck re = new ResultElementsTruck(b.schedule.size(), travelMin, lagTimeInMin, startTimeDelay, wastedConcrete,deliveredConcrete);
 			return re; 
 		}
 		else 

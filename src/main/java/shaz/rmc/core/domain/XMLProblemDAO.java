@@ -4,8 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+//import java.util.HashSet;
+//import java.util.Set;
 
 import javax.xml.datatype.DatatypeConfigurationException;
 import javax.xml.datatype.DatatypeFactory;
@@ -106,7 +107,7 @@ public class XMLProblemDAO implements Serializable {
 		throws XPathExpressionException {
 		
 		log.debug("Parsing stations.");
-		Set<Station> stations = new HashSet<Station>();
+		ArrayList<Station> stations = new ArrayList<Station>();
 		
 		XPathExpression xPathExpression = xPath.compile("//Stations/Station");
 		Object result = xPathExpression.evaluate(doc,XPathConstants.NODESET);
@@ -146,7 +147,7 @@ public class XMLProblemDAO implements Serializable {
 		throws XPathExpressionException {
 		
 		log.debug("Parsing vehicles.");
-		Set<Vehicle> vehicles = new HashSet<Vehicle>();
+		ArrayList<Vehicle> vehicles = new ArrayList<Vehicle>();
 		
 		XPathExpression xPathExpression = xPath.compile("//Vehicles/Vehicle");
 		Object result = xPathExpression.evaluate(doc,XPathConstants.NODESET);
@@ -229,7 +230,8 @@ public class XMLProblemDAO implements Serializable {
 		throws XPathExpressionException, DatatypeConfigurationException {
 		
 		log.trace("Parsing orders.");
-		Set<Order> orders = new HashSet<Order>();
+		//Set<Order> orders = new HashSet<Order>();
+		ArrayList<Order> orders = new ArrayList<Order>();
 		
 		XPathExpression xPathExpression = xPath.compile("//Orders/Order");
 		Object result = xPathExpression.evaluate(doc,XPathConstants.NODESET);
@@ -302,7 +304,7 @@ public class XMLProblemDAO implements Serializable {
 		
 		node = orderElement.getElementsByTagName("ProhibitedVehicleTypes").item(0);
 		
-		Set<VehicleType> prohibitedVehicleTypes = new HashSet<VehicleType>();
+		ArrayList<VehicleType> prohibitedVehicleTypes = new ArrayList<VehicleType>();
 		if(node != null) {
 			prohibitedVehicleTypes.addAll(parseProhibitedVehicleTypes((Element)node,problem));
 
@@ -325,10 +327,10 @@ public class XMLProblemDAO implements Serializable {
 		return order;
 	}
 	
-	private Set<VehicleType> parseProhibitedVehicleTypes(Element vehicleTypesNode,
+	private ArrayList<VehicleType> parseProhibitedVehicleTypes(Element vehicleTypesNode,
 			Problem problem) {
 		log.trace("    Parsing prohibited vehicle types:");
-		Set<VehicleType> vehicleTypes = new HashSet<VehicleType>();
+		ArrayList<VehicleType> vehicleTypes = new ArrayList<VehicleType>();
 		
 		NodeList childNodes = vehicleTypesNode.getChildNodes();
 		
