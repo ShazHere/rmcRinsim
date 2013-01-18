@@ -137,9 +137,9 @@ public class Utility {
 	            if (addComment) {
 	            	
 	            	bufferedWriter.write(commentText);
-	            	bufferedWriter.write( resultElement.getColumnNames(columnSeperator)+ columnSeperator + fileName +"\n");
+	            	bufferedWriter.write( resultElement.getColumnNames(columnSeperator)+ columnSeperator + GlobalParameters.INPUT_INSTANCE_TYPE.toString() +"\n");
 	            }
-	            bufferedWriter.write(resultElement.getResultDetailsInColumnForm(columnSeperator)+ columnSeperator + fileName +"\r");
+	            bufferedWriter.write(resultElement.getResultDetailsInColumnForm(columnSeperator)+ columnSeperator + GlobalParameters.INPUT_INSTANCE_TYPE.toString() +"\r");
 	            //bufferedWriter.write("\n");
 	            
 	            // Always close files.

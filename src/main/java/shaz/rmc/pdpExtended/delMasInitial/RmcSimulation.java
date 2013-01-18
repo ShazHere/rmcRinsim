@@ -34,7 +34,6 @@ public class RmcSimulation {
 	private static Logger log = Logger.getLogger(RmcSimulation.class);
 	private static Simulator sim;
 	public static void main(String[] args) {
-		System.out.println(java.lang.Runtime.getRuntime().maxMemory()); 
 		int randomSeed = 250;
 		final RandomGenerator rng = new MersenneTwister(randomSeed);
 		sim = new Simulator(rng, 200); //tick is one milli second, step = 200ms 
