@@ -57,23 +57,25 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	
 	private static int totalDeliveryTruck = 0;
 	private final int id;
+	private final int dePhaseByMin;
 	private final shaz.rmc.core.domain.Vehicle truck;
 	private final DeliveryTruckInitialBelief b;
 	private final DeliveryTruckInitialIntention i;
 	private ExpAnt bestAnt;
 	
-	public DeliveryTruckInitial(Point randomPosition, Vehicle pTruck) {
+	public DeliveryTruckInitial(Point randomPosition, Vehicle pTruck, int pDePhaseByMin) {
 		setCapacity(pTruck.getNormalVolume());
-		
+		dePhaseByMin = pDePhaseByMin;
+		System.out.println("Dephase no. is " + dePhaseByMin);
 		randomPCSelector = new RandomDataImpl(); //this won't generate the exact random no. required by us..:(.
 		mailbox = new Mailbox();
 		b = new DeliveryTruckInitialBelief(this, new ArrayList<TruckScheduleUnit>());
 		
 		i = new DeliveryTruckInitialIntention(this, b);
 		
-		timeForLastExpAnt = new DateTime(b.getTotalTimeRange().getLocationAtStartTime());
-		timeForLastIntAnt = new DateTime(b.getTotalTimeRange().getLocationAtStartTime());
-		lastExpReturnTime = new DateTime(b.getTotalTimeRange().getLocationAtStartTime());
+		timeForLastExpAnt = new DateTime(b.getTotalTimeRange().getStartTime().plusMinutes(dePhaseByMin));
+		timeForLastIntAnt = new DateTime(b.getTotalTimeRange().getStartTime().plusMinutes(dePhaseByMin));
+		lastExpReturnTime = new DateTime(b.getTotalTimeRange().getStartTime().plusMinutes(dePhaseByMin));
 		
 		bestAnt = null;
 		truck = pTruck;

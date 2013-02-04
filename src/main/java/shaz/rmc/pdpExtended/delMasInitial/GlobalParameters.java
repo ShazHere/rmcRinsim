@@ -30,6 +30,7 @@ public class GlobalParameters {
 	//public static final int TICK_INTERVAL = 200000; 
 	//public static final int INTENTION_EVAPORATION_RATE = 10; //means 20 ticks
 	//public static final int EXPLORATION_EVAPORATION_RATE = 20; //means  no. of tics
+	public static final int DEPHASE_INTERVAL_MIN = 2; //means ants shud be de-phased randomly between 0 to X min
 	public static final int FEASIBILITY_INTERVAL_MIN = 8; //means send feeasibilty ants to near by after every X minutes.
 	public static final int FEASIBILITY_EVAPORATION_INTERVAL_MIN = FEASIBILITY_INTERVAL_MIN + 5;
 	public static final int EXPLORATION_INTERVAL_MIN = 2; //means no. of mintues

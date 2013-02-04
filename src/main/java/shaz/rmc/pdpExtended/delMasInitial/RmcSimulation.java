@@ -74,12 +74,13 @@ public class RmcSimulation {
 		//Adding orders
 		omi.addOrders();
 		
-		
 		//Adding Delivery Trucks
 		for (int j = 0; j< GlobalParameters.TOTAL_TRUCKS ; j ++){
-			if (randomSeed != 0)
-				sim.register(new DeliveryTruckInitial(prm.getRandomPosition(new MersenneTwister(randomSeed)), rmSim.getTruck(j)));
-			else sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(j)));
+			if (randomSeed == 0)
+				sim.register(new DeliveryTruckInitial(prm.getRandomPosition(new MersenneTwister(randomSeed)), rmSim.getTruck(j), 
+						new MersenneTwister(randomSeed).nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN)));
+			else sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(j), 
+					rng.nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN)));
 		}
 		
 		sim.register(new TickListener() {
