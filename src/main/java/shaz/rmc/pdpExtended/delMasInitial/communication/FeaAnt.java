@@ -5,7 +5,6 @@ package shaz.rmc.pdpExtended.delMasInitial.communication;
 
 import org.joda.time.DateTime;
 
-import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationUser;
 import shaz.rmc.core.Ant;
 

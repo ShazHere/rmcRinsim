@@ -1,9 +1,7 @@
 package shaz.rmc.core.domain;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 
-import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
 public class ConstructionYard implements Location, Serializable {

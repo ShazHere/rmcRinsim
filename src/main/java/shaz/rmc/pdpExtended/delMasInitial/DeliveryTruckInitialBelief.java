@@ -5,7 +5,6 @@ package shaz.rmc.pdpExtended.delMasInitial;
 
 import java.util.ArrayList;
 
-import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
 import rinde.sim.core.graph.Point;
@@ -14,7 +13,7 @@ import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 
-import static com.google.common.base.Preconditions.checkArgument;
+//import static com.google.common.base.Preconditions.checkArgument;
 /**
  * @author Shaza
  *
@@ -86,14 +85,15 @@ public class DeliveryTruckInitialBelief {
 	 * @return true if all b.schedule units are still in newSch, and false if not.
 	 */ //TODO check do i need to compare sizes of newSch and b.schedule? to validate that newSch also contains new explored stuff
 	protected boolean scheduleStillValid(ArrayList<TruckScheduleUnit> oldSch, ArrayList<TruckScheduleUnit> newSch) {
-		boolean foundMatch = false;
 		if (oldSch.isEmpty()) //if already existing schedule is empty, then what ever new schedule is, its ok for truck
 			return true;
+		boolean foundMatch = false;
 		for (TruckScheduleUnit u : oldSch) {
 			foundMatch = false;
 			for (TruckScheduleUnit newUnit: newSch) {
-				if (((OrderAgentInitial)u.getDelivery().getOrder()).getOrder().getId().equals(((OrderAgentInitial)newUnit.getDelivery().getOrder()).getOrder().getId())  //add timeSlot match as well
-						&& u.getDelivery().getDeliveryNo() == newUnit.getDelivery().getDeliveryNo()) {
+//				if (((OrderAgentInitial)u.getDelivery().getOrder()).getOrder().getId().equals(((OrderAgentInitial)newUnit.getDelivery().getOrder()).getOrder().getId())  //add timeSlot match as well
+//						&& u.getDelivery().getDeliveryNo() == newUnit.getDelivery().getDeliveryNo()) {
+				if (u.getDelivery().equalsWithSameTruck(newUnit.getDelivery())) {
 					foundMatch = true;
 					break;
 				}
@@ -101,7 +101,7 @@ public class DeliveryTruckInitialBelief {
 			if (!foundMatch)
 				return false;
 		}
-		if (foundMatch ) //&& newSch.size() > b.schedule.size())
+		if (foundMatch && (newSch.size() > oldSch.size()))
 			return true;
 		else 
 			return false;

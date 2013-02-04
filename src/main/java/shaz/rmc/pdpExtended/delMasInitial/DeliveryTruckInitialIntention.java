@@ -54,8 +54,8 @@ public class DeliveryTruckInitialIntention {
 	 * 					unloading time, then isLoaded = false, destination = station
 	 * 					CYtoStationtime, then destination = null 
 	 * 
-	 * At the begining, currentUnitNo = 0, isLoaded = false, destination = null
-	 * The between two units could be long, but it will keep on passing quietly, without moving.
+	 * At the beginning, currentUnitNo = 0, isLoaded = false, destination = null
+	 * The time between two units could be long, but it will keep on passing quietly, without moving.
 	 */
 	public void followSchedule(TimeLapse time) {
 		long currentTime = GlobalParameters.START_DATETIME.getMillis() + (time.getStartTime()); //currentTime contains value in millis

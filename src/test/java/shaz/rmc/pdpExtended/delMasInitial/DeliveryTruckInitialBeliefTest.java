@@ -13,8 +13,8 @@ import org.junit.Test;
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
-import shaz.rmc.core.domain.Delivery;
-import shaz.rmc.core.domain.Order;
+//import shaz.rmc.core.domain.Delivery;
+//import shaz.rmc.core.domain.Order;
 
 public class DeliveryTruckInitialBeliefTest {
 

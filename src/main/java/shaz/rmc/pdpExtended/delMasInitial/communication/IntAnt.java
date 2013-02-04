@@ -3,15 +3,16 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial.communication;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
+
 import java.util.ArrayList;
-import java.util.Random;
 
 import org.joda.time.DateTime;
 
 import rinde.sim.core.model.communication.CommunicationUser;
 import shaz.rmc.core.Ant;
 import shaz.rmc.core.Reply;
-import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
 
@@ -33,6 +34,7 @@ public class IntAnt extends Ant {
 		super(sender);
 		originator = (DeliveryTruckInitial)sender;
 		schedule = new ArrayList<TruckScheduleUnit>(pSchedule);
+		//for ()
 		creationTime = pCreateTime;
 		currentUnitNo = 0;
 		if (!schedule.isEmpty()) {
@@ -78,11 +80,11 @@ public class IntAnt extends Ant {
 	}
 	
 	/**
-	 * similar to exp.isSchedule complete
+	 * similar to exp.isSchedule complete. Checks if whole schedule is completed
 	 * @return
 	 */
-	public boolean isScheduleComplete() { //is whole schedule completed 
-		if (currentUnitNo >= schedule.size()-1){
+	public boolean isScheduleComplete() { 
+		if (currentUnitNo >= schedule.size()-1){ //still need to check if currentUnit is required to be checked 
 			if (currentUnit.getOrderReply() != Reply.NO_REPLY && currentUnit.getPsReply() != Reply.NO_REPLY) //check if the currentUnit is processed and replies got
 				return true;
 			else 
@@ -119,22 +121,38 @@ public class IntAnt extends Ant {
 //	}
 	//TODO test this method, may use test cases
 	public boolean isConsiderable(final ArrayList<TruckScheduleUnit> existingSchedule) {
-		if (!this.schedule.isEmpty()){
-			for (TruckScheduleUnit u : this.schedule) {
-				if (u.getPsReply() == Reply.REJECT || u.getOrderReply() == Reply.REJECT) {//should be then in existing schedule
-//					boolean rejectAble = true;
-//					for (TruckScheduleUnit existUnit : existingSchedule) {
-//						if (u.getDelivery().equals(existUnit.getDelivery()))    //TODO shud i check timeslots as well?
-//							rejectAble = false;
-//					}
-//					if (rejectAble)
+		if (!existingSchedule.isEmpty()){
+			boolean unitExist = false;
+			for (TruckScheduleUnit u : existingSchedule) {//for each of existing schedule in truck
+				unitExist = false;
+				for (TruckScheduleUnit newu: this.schedule) { //chek if existing unit, exists in iAnt as well..
+					if (newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) {//should be then in existing schedule
 						return false;
+					} 
+					else if (u.getDelivery().equalsWithSameTruck(newu.getDelivery()) && unitExist == false) {
+						unitExist = true;
+						checkArgument(newu.getOrderReply() == Reply.WEEK_ACCEPT && newu.getPsReply() == Reply.WEEK_ACCEPT, true);
+					}
+//					else
+//						checkArgument(newu.getOrderReply() == Reply.UNDER_PROCESS && newu.getPsReply() == Reply.UNDER_PROCESS, true);
 				}
+				checkArgument(unitExist, true);
+				if (!unitExist) //means a previous unit doesn't exist...theoratically this should never be the case, because none deletes the existing units of an ant!
+					return false;
+			}
+			
+		}
+		else {
+			if (this.schedule.isEmpty())
+				return false;
+			for (TruckScheduleUnit newu: this.schedule) {
+				if (newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) {//should be then in existing schedule
+					return false;
+				}
+				//else return true;
 			}
 		}
-		else
-			return false;
-		return true;
+		return true; //if not returned due to any reason so far then probably its valid..
 	}
 	@Override
 	public CommunicationUser getSender() {

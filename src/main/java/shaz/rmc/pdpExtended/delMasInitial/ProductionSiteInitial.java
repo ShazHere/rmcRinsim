@@ -63,9 +63,12 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	private ArrayList<ExpAnt> explorationAnts;
 	private ArrayList<IntAnt> intentionAnts;
 	
-	public ProductionSiteInitial(RandomGenerator pRnd, Station pStation) {
+	public ProductionSiteInitial(int pRandomSeed, Station pStation) {
+		//public ProductionSiteInitial(RandomGenerator pRnd, Station pStation) {
 		station = pStation;	
-		rnd = pRnd;
+		if (pRandomSeed != 0)
+			rnd = new MersenneTwister(pRandomSeed);
+		else rnd = new MersenneTwister();
 		mailbox = new Mailbox();
 		logger = Logger.getLogger(ProductionSiteInitial.class);
 		
@@ -82,31 +85,25 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	@Override
 	public void tick(TimeLapse timeLapse) {
 		try {
-		checkMsgs (timeLapse.getStartTime());
-		evaporatePheromones(timeLapse);
-		processFeasibilityAnts(timeLapse);
-		processExplorationAnts(timeLapse);
-		processIntentionAnts(timeLapse);
-		/*it shoud check the messages, then 
-		if feas, then generate pheromone accrodingly..
-			create set for making pheromone..chk pdpmodel for inspiration..
-		if exp, let it see the pheromones..
-			also exp shud include station booking in schedule as well
-		
-		*/
+			checkMsgs (timeLapse.getStartTime());
+			evaporatePheromones(timeLapse);
+			DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+			processFeasibilityAnts(timeLapse);
+			processExplorationAnts(currTime);
+			processIntentionAnts(currTime);
+			station.evaporateBookings(currTime); //related to truck intentions of loading concrete
 		}
 		catch (Exception ex) {
-			//logger.debug(ex.getStackTrace());
 			ex.printStackTrace();
 		}
 	}
 	private void evaporatePheromones(TimeLapse timeLapse) {
 		long currMilli; 
 		ArrayList<OrderAgentInitial> removeAbleOrd = new ArrayList<OrderAgentInitial>();
-		for (OrderAgentInitial or:pheromoneUpdateTime.keySet()) { //one order culd be removed at one tick..
+		for (OrderAgentInitial or:pheromoneUpdateTime.keySet()) { 
 			currMilli = timeLapse.getStartTime() -  pheromoneUpdateTime.get(or);
 			if (new Duration(currMilli).getStandardMinutes() >= GlobalParameters.FEASIBILITY_EVAPORATION_INTERVAL_MIN ) {
-				removeAbleOrd.add(or);
+				removeAbleOrd.add(or); //FEASIBILITY_EVAPORATION_INTERVAL_MIN is used since this info is only feasiblity related
 			}
 		}		
 		if (!removeAbleOrd.isEmpty()) {
@@ -121,40 +118,43 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 		}
 	}
 
-	private void processIntentionAnts(TimeLapse timeLapse) {
+	private void processIntentionAnts(DateTime currTime) {
 		if (intentionAnts.isEmpty()) 
 			return;
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
 		Iterator<IntAnt> i = intentionAnts.iterator();
-		while (i.hasNext()) { //include booking of Station
+		while (i.hasNext()) { //includes booking of Station
 			IntAnt iAnt = i.next();
 			checkArgument(iAnt.getCurrentUnit().getTimeSlot().getProductionSiteAtStartTime() == iAnt.getCurrentUnit().getDelivery().getLoadingStation(),
 					"UnExpectedly, INtAnt getProductionAtStartTime != getDelivery.getLoadingStation");
-			//checkArgument(iAnt.getCurrentUnit().getDelivery().getLoadingStation() == this, "Unexpected: Int Ant not at properLoading station");
-			if (iAnt.isScheduleComplete()) { //send back to orginator
+			if (iAnt.isScheduleComplete()) { //send back to originator
 				IntAnt newAnt = (IntAnt)iAnt.clone(this);
 				logger.debug(station.getId() +"P Int-" +newAnt.getOriginator().getId()+ " is being sent back since schedule complete with schedule size = " + newAnt.getSchedule().size());
 				cApi.send(newAnt.getOriginator(), newAnt); //sending back to the truck who originated exp ant
 				i.remove();
 				continue;
 			}
-			if (station.makeBookingAt(iAnt.getCurrentUnit().getTimeSlot().getStartTime(), iAnt.getOriginator(), iAnt.getCurrentUnit().getDelivery(), currTime)!= null) { //means station is booked
-				iAnt.getCurrentUnit().setPsReply(Reply.ACCEPT);
-				logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " ACCEPTED by PS");
+			DateTime stationReplyDate = station.makeBookingAt(iAnt.getCurrentUnit().getTimeSlot().getStartTime(), iAnt.getOriginator(), iAnt.getCurrentUnit().getDelivery(), currTime);
+			if (stationReplyDate != null) { //means station is booked or refreshed
+				if (stationReplyDate.equals(new DateTime(0))) { //means booking refrehed
+					iAnt.getCurrentUnit().setPsReply(Reply.WEEK_ACCEPT);
+				}
+				else { //the dateTime booked is returned
+					iAnt.getCurrentUnit().setPsReply(Reply.UNDER_PROCESS);
+				}
 			}
 			else {
 				iAnt.getCurrentUnit().setPsReply(Reply.REJECT);
-				logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " REJECT by PS");
 			}
-			logger.debug(station.getId() +"P STATTION  Availability List = " + station.pringAvailabilityList());
+			logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " " + iAnt.getCurrentUnit().getPsReply() +" by PS");
 			IntAnt newAnt = iAnt.clone(this);
 			cApi.send(iAnt.getCurrentUnit().getDelivery().getOrder(), newAnt);
 			i.remove();
 		}
+		logger.debug(station.getId() +"P STATTION  Availability List = " + station.pringAvailabilityList());
 		checkArgument (intentionAnts.isEmpty(), true);
 	}
 
-	private void processExplorationAnts(TimeLapse timeLapse)  {
+	private void processExplorationAnts(DateTime currTime)  {
 		if (explorationAnts.isEmpty()) 
 			return;
 		Iterator<ExpAnt> i = explorationAnts.iterator();
@@ -167,18 +167,13 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				i.remove();
 				continue;
 			}
-			else if (exp.getSchedule().size() > 0) {
+			else if (exp.getSchedule().size() > 0) { //send an exp back any way
 					ExpAnt newExp = (ExpAnt)exp.clone(this);
-					ExpAnt newExp2 = (ExpAnt)exp.clone(this);
-					//logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back becaise probability true with schedule size = " + newExp.getSchedule().size());
 					logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back with schedule size = " + newExp.getSchedule().size());
 					cApi.send(newExp.getOriginator(), newExp);
-					sendToOrders(newExp2, timeLapse); //let exp2 further explore
-					i.remove();
-					continue;
 				}
 		//let exp further explore
-			sendToOrders(exp, timeLapse);
+			sendToOrders(exp, currTime);
 			i.remove(); // if exp is not further intereste it will automaticaly die..
 		} //end while (i.hasNext())
 		checkArgument (explorationAnts.isEmpty(), true);
@@ -188,29 +183,26 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	 * @param exp the ExpAnt that needed to be sent around
 	 * @param timeLapse
 	 */
-	private void sendToOrders(ExpAnt exp, TimeLapse timeLapse) {
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+	private void sendToOrders(ExpAnt exp, DateTime currTime) {
 		if (exp.getSender().getClass() == DeliveryTruckInitial.class)  //this if-else is just for logging purpose
 			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((DeliveryTruckInitial)exp.getSender()).getId() +"T expScheduleSize = " + exp.getSchedule().size());
 		else if (exp.getSender().getClass() == OrderAgentInitial.class)
 			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((OrderAgentInitial)exp.getSender()).getOrder().getId() +"O expScheduleSize = " + exp.getSchedule().size());
 		
 		for (OrderAgentInitial or : interestedTime.keySet()) { //check all order pheromones..
-			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), fixedCapacityAmount.get(or), currTime)) { //is exp intereseted in this particular order?
-				//if (noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) //if interested, and order in't explored too much
+			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), fixedCapacityAmount.get(or), currTime) 
+					&& noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) { //if interested, and order in't explored too much
 				logger.debug(station.getId() +"P exp-" +exp.getOriginator().getId()+ " is interested " + exp.getCurrentUnit().getTimeSlot().getStartTime() +
 						", orderInterested " + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));
 				checkArgument(noOfExplorations.containsKey(or), true); 
 				noOfExplorations.put(or, noOfExplorations.get(or)+1);
-				
-					exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.getPosition(), this); //normally make this as start PS
+				exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.getPosition(), this); //normally make this as start PS
 				ExpAnt newExp = (ExpAnt)exp.clone(this);
 				cApi.send(or, newExp); //send exp clones to all orders(or) it is interested in
+				logger.debug(station.getId() +"P pheromone table: (curTime="+ currTime +")\n" + this.pheromoneToString());
 			}
 		}	
-		logger.debug(station.getId() +"P pheromone table: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
 	}
-	//TODO add test cases to confirm its impl
 	private void processFeasibilityAnts(TimeLapse timeLapse) {
 		if (feasibilityAnts.isEmpty())
 			return;
@@ -232,20 +224,15 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	
 	private void checkMsgs(long currentTime) {
 		Queue<Message> messages = mailbox.getMessages();
-//		if (messages.size() > 0)
-//			logger.debug(station.getId() +"P received messages quantity = " + messages.size());
 		for (Message m : messages) {
 			if (m.getClass() == FeaAnt.class) {
 				this.feasibilityAnts.add((FeaAnt)m);
-				//logger.debug(station.getId() +"P received F-ants quantity = " + messages.size());
 			}
 			else if (m.getClass() == IntAnt.class) {
 				this.intentionAnts.add((IntAnt)m);
-				//logger.debug(station.getId() +"P received IntAnts quantity = " + intentionAnts.size());
 			}
 			else if (m.getClass() == ExpAnt.class) {
 				this.explorationAnts.add((ExpAnt)m);
-				//logger.debug(station.getId() +"P received Exp-ants quantity = " + explorationAnts.size());
 			}
 		}
 	}

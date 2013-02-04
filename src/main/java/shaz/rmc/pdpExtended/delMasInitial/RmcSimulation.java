@@ -45,7 +45,11 @@ public class RmcSimulation {
 		 * have to constraint vehicles speed.
 		 * */
 		final PlaneRoadModel prm = new PlaneRoadModel(new Point(0, 0), new Point(10, 10), true, 10);//10by10 km plane
-		CommunicationModel communicationModel = new CommunicationModel(rng, true);
+		CommunicationModel communicationModel;
+		if (randomSeed !=0)
+			 communicationModel = new CommunicationModel(new MersenneTwister(randomSeed), true);
+		else
+			 communicationModel = new CommunicationModel(rng, true);
 		final PDPModel pdpModel = new PDPModel();
 		OrderManagerInitial omi = new OrderManagerInitial(sim, randomSeed, prm); 
 		// Statistic Tracker
@@ -65,15 +69,17 @@ public class RmcSimulation {
 		
 		//Adding prodcuction Sites
 		for (int j = 0; j<2 ; j++) 
-			sim.register(new ProductionSiteInitial(rng, GlobalParameters.PROBLEM.getStations().get(j)));
+			sim.register(new ProductionSiteInitial(randomSeed, GlobalParameters.PROBLEM.getStations().get(j)));
 		
 		//Adding orders
 		omi.addOrders();
 		
 		
 		//Adding Delivery Trucks
-		for (int j = 0; j< 14 /*GlobalParameters.TOTAL_TRUCKS*/ ; j ++){
-			sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(j)));
+		for (int j = 0; j< GlobalParameters.TOTAL_TRUCKS ; j ++){
+			if (randomSeed != 0)
+				sim.register(new DeliveryTruckInitial(prm.getRandomPosition(new MersenneTwister(randomSeed)), rmSim.getTruck(j)));
+			else sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(j)));
 		}
 		
 		sim.register(new TickListener() {

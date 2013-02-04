@@ -55,7 +55,7 @@ public class Station implements Location {
 	 * or it will be nearest available time available for loading at the station.
 	 */
 	public synchronized DateTime makeBookingAt (DateTime dt, Agent truck, Delivery del, DateTime currTime){
-		evaporateBookings(currTime);
+		//evaporateBookings(currTime);
 		int slotNo = dt.getHourOfDay()*12 + (dt.getMinuteOfHour()/loadingDurationInMin)-1; 
 		StationBookingUnit unit = new StationBookingUnit(truck, new TimeSlot(dt, new DateTime (dt.plus(loadingDuration ))), del, currTime);
 		int sameUnitLoc = unitWithSlotExist(slotNo); 
@@ -63,10 +63,10 @@ public class Station implements Location {
 		if ( sameUnitLoc >= 0) { //means some other booking at the same slot..
 			if (availabilityList.get(sameUnitLoc).getTruck().equals(truck) ) // same truck made the previous booking
 			{
-				if (del.equals(availabilityList.get(sameUnitLoc).getDelivery())) { //means same truck with same delivery
+				if (del.equalsWithSameTruck(availabilityList.get(sameUnitLoc).getDelivery())) { //means same truck with same delivery
 					availabilityList.get(sameUnitLoc).setRefreshTime(currTime); //refresh the booking time..
 					System.out.println("Station bookings Refreshed!");
-					return null; //so that PS keeps the reply=REJECT
+					return new DateTime(0); //so that PS keeps the reply=WEEK_ACCEPT which could be previously UNDER_PROCESS
 				}
 			}
 			else
@@ -90,7 +90,7 @@ public class Station implements Location {
 	            return a.slotNo - b.slotNo;
 	        }
 		});
-		if (sameUnitLoc >= 0) {
+		if (sameUnitLoc >= 0) { //this wont execute any way..24/01/2013
 			DateTime bookingTime = new DateTime(dt.getYear(), dt.getMonthOfYear(), dt.getDayOfMonth(), hour, min, 0, 0, dt.getChronology());
 			return bookingTime; //the slotNo that is actually booked for the truck..
 		}

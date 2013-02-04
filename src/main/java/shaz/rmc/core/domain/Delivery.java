@@ -7,7 +7,6 @@ import org.joda.time.Duration;
 
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.ProductionSite;
-import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
 
 public class Delivery implements Serializable {
 
@@ -17,7 +16,7 @@ public class Delivery implements Serializable {
 	private Duration loadingDuration, unloadingDuration;
 	private Duration stationToCYTravelTime, CYToStationTravelTime;
 	//private Vehicle vehicle;
-	private Agent order;
+	private final Agent order;
 	private int deliveredVolume;
 	private Duration lagTime;// for storing lagTime before this delivery
 	final private int deliveryNo; //which delivery of order it could be?
@@ -32,7 +31,7 @@ public class Delivery implements Serializable {
 	
 	//private boolean isExplored; //means is sent as reply to an exploration ant of a truck. not used now.. @shaz 15/03/2012
 	private boolean confirmed; //to record that the truck has confirmed and sent intention ant, that it will pick the delivery at delivery
-	private Agent truck;
+	private final Agent truck;
 
 
 
@@ -51,13 +50,13 @@ public class Delivery implements Serializable {
 		//this.isExplored = false;
 	}
 	
-	public void getCopyOf(Delivery delivery){
-		order = delivery.getOrder();
-		//vehicle = delivery.getVehicle();
-		deliveredVolume = delivery.getDeliveredVolume();
-		loadingStation = delivery.getLoadingStation();
-		returnStation = delivery.getReturnStation();
-	}
+//	public void getCopyOf(Delivery delivery){
+//		order = delivery.getOrder();
+//		//vehicle = delivery.getVehicle();
+//		deliveredVolume = delivery.getDeliveredVolume();
+//		loadingStation = delivery.getLoadingStation();
+//		returnStation = delivery.getReturnStation();
+//	}
 	
 	public Agent getOrder() {
 		return order;
@@ -230,16 +229,27 @@ public class Delivery implements Serializable {
 		return deliveryNo;
 	}
 	
-	@Override
-	public boolean equals(Object obj) {
-		Delivery del = (Delivery)obj;
+	/**
+	 * @param del delivery to be checked
+	 * @return true if two deliveries have same values of truckId, order, deliverTime, and delivery no.
+	 * false if any of these values doesn't match 
+	 */
+	public boolean equalsWithSameTruck(Delivery del) {
 		if (this.truck.getId() ==del.truck.getId() && this.order.equals(del.order) 
 				&& this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 && this.deliveryNo == del.deliveryNo)
 			return true;
 		return false;
 	}
 
-	public boolean equalsWithDiffTruck(Delivery del) {
+	/** 
+	 * Returns true if two deliveries have same values of order, deliverTime, and delivery no. 
+	 * false otherwise.
+	 */
+	@Override
+	public boolean equals(Object obj) {
+		if (obj == null)
+			return false;
+		Delivery del = (Delivery)obj;
 		if (this.order.equals(del.order) && this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 
 				&& this.deliveryNo == del.deliveryNo)
 			return true;

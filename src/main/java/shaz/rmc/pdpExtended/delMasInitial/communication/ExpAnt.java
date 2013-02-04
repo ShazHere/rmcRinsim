@@ -3,13 +3,8 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial.communication;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import java.util.ArrayList;
-import java.util.Random;
 
-import org.apache.commons.math3.random.RandomData;
-import org.apache.commons.math3.random.RandomDataImpl;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
@@ -87,7 +82,6 @@ public class ExpAnt extends Ant {
 		schedule = new ArrayList<TruckScheduleUnit>(pSchedule);
 		scheduleComplete = false;
 		creationTime = pCreateTime;
-				
 		truckSpeed = ((DeliveryTruckInitial)originator).getSpeed();
 		truckTotalTimeRange = ((DeliveryTruckInitial)originator).getTotalTimeRange();
 		
@@ -97,23 +91,12 @@ public class ExpAnt extends Ant {
  * @return
  */
 	public boolean isScheduleComplete() {
-//		if (schedule.size() >= GlobalParameters.EXPLORATION_SCHEDULE_SIZE)
-//			scheduleComplete = true;
-//		else
-//			scheduleComplete = false;			
-//		return scheduleComplete;
 		if (scheduleUnitsAdded >= GlobalParameters.EXPLORATION_SCHEDULE_SIZE) //TODO: shouldn't i make currentUnit = null now?
 			scheduleComplete = true;
 		else
 			scheduleComplete = false;			
 		return scheduleComplete;
 	}
-	
-
-//	public void setScheduleComplete(boolean scheduleComplete) {
-//		this.scheduleComplete = scheduleComplete;
-//	}
-
 	public DateTime getCreationTime() {
 		return creationTime;
 	}
@@ -128,24 +111,20 @@ public class ExpAnt extends Ant {
 	 * the travelDistance after loading time (LOADING_MINUTES). 
 	 */
 	public boolean isInterested(DateTime interestedTime, Double travelDistance, final double fixedCapacity, final DateTime currTime) {
-		Duration travelTime = new Duration((long)((travelDistance/truckSpeed)*60*60*1000));
+		Duration travelTime = new Duration((long)((travelDistance/truckSpeed)*60*60*1000)); //travel time required to reach order from specific PS
 		Utility.getAvailableSlots(this.schedule, this.availableSlots, new TimeSlot (new DateTime(currTime), this.truckTotalTimeRange.getEndTime()));
 		if (availableSlots.size() == 0)
 			return false;
 		TimeSlot currentSlot = availableSlots.get(0);
 		DateTime actualInterestedTime = interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES);
-		//System.out.println("in method = " + currentSlot.toString());
 			if (currentSlot.getStartTime().compareTo(actualInterestedTime)< 0 //making rough estimation that will order enoughÊ interesting to be visited
 					&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
 				if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
-					if (fixedCapacity == 0) {
-						currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
-								new TimeSlot (actualInterestedTime,null )); //EndTime of slot cannot be decided here, It is adjusted at Order
+					currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
+							new TimeSlot (actualInterestedTime,null )); //EndTime of slot cannot be decided here, It is adjusted at Order
+					if (fixedCapacity == 0) 	
 						return true;
-					}
 					else if (fixedCapacity <= this.originator.getCapacity()) {
-						currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
-								new TimeSlot (actualInterestedTime,null )); //EndTime of slot cannot be decided here, It is adjusted at Order
 						currentUnit.setFixedCapacityAmount(fixedCapacity);
 						return true;
 					}

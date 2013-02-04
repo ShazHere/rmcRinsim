@@ -36,7 +36,7 @@ public class GlobalParameters {
 	public static final int INTENTION_INTERVAL_MIN = 5; //means no. of mintues
 	public static final int INTENTION_EVAPORATION_MIN = INTENTION_INTERVAL_MIN +3;
 	public static final int EXPLORATION_SCHEDULE_SIZE = 3;
-	public static final int TOTAL_TRUCKS = 1; //almost 29 trucks are there in the instances
+	public static final int TOTAL_TRUCKS = 3; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = true; //will all the vehicles have same capacity
 	//public static final int FIXED_VEHICLE_CAPACITY =10000;
 	public static final int TRUCKS_PLAN_IN_ADVANCE_HOURS = 6; //specifies how much time in advance the truck can plan. but if deliveries are so many, the truck
@@ -52,11 +52,11 @@ public class GlobalParameters {
 	public static final long AVAILABLE_SLOT_SIZE_HOURS = 2;
 	
 	//CHECK NOTES ABOUT INPUT FILES!!
-	//public static final String INPUT_FILE = "planning2011-01-10/planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //for the data file in Rmc
+	public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //for the data file in Rmc
 	//public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 27
 	//public static final String INPUT_FILE = "planning2011-01-11/planning2011-01-11-update-ucy-shaz-requiredRateFixed.xml";
-	public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 28
-	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-20/";
+	//public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 28
+	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10/"; //planning2011-01-20/";
 	public static final String LOG_LOCATION = "hh";  //not used 
 	
 	public static Problem PROBLEM = null;	//the problem loader
@@ -64,17 +64,17 @@ public class GlobalParameters {
 	/**
 	 * Simulation Start time, w.r.t real time clock
 	 */
-	public static final DateTime START_DATETIME = new DateTime(2011, 1, 20, 02, 0, 0 ,0, GregorianChronology.getInstance()); //07AM on 10Jan, 2011
+	public static final DateTime START_DATETIME = new DateTime(2011, 1, 10, 12, 0, 0 ,0, GregorianChronology.getInstance()); //07AM on 10Jan, 2011
 	/**
 	 * Simulation End time, w.r.t real time clock
 	 */
-	public static final DateTime END_DATETIME = new DateTime(2011, 1, 20, 23, 55, 0, 0, GregorianChronology.getInstance());//10PM on 12Jan, 2011
+	public static final DateTime END_DATETIME = new DateTime(2011, 1, 10, 23, 55, 0, 0, GregorianChronology.getInstance());//10PM on 12Jan, 2011
 	
 //	public static OrderManager om; //temprary solution for accessing all the trucks and orders at the end, value is saved by RmcAgentInitialization
 	
 	public static RandomData RANDOM_DATA_GEN = new RandomDataImpl();  // for generating random sequence having good values..
 	
-	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per50;
+	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per0;
 	
 	
 	//RINSIM PARAMETERS

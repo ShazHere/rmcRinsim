@@ -14,7 +14,6 @@ import org.apache.commons.math3.random.RandomData;
 import org.apache.commons.math3.random.RandomDataImpl;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
-import org.joda.time.Duration;
 
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.graph.Point;
@@ -32,7 +31,6 @@ import shaz.rmc.core.Utility;
 
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.domain.Vehicle;
-import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters.Weights;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 
@@ -41,7 +39,6 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
  *
  */
 public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle implements MovingRoadUser, Agent {
-
 	private final Mailbox mailbox;
 	private CommunicationAPI cApi;
 	
@@ -84,16 +81,13 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 	@Override
 	protected void tickImpl(TimeLapse timeLapse) {
-		checkMsgs(timeLapse.getStartTime());
-		sendExpAnts(timeLapse.getStartTime());
-		
+		checkMsgs(timeLapse.getStartTime());		
 		deliberate(timeLapse.getStartTime());
+		sendExpAnts(timeLapse.getStartTime());
 		sendIntAnts(timeLapse.getStartTime());
 		//acting on intentions
 		if (!b.schedule.isEmpty()) {
 			assert ((ProductionSiteInitial)(b.schedule.get(b.schedule.size()-1).getTimeSlot().getProductionSiteAtStartTime())).getStation() != null : truck.getId()+"T: The return location of Truck shouldn't be null";
-			//TODO  if last unit is activated then change slot..15/05/2012
-			//arrangeSlots(schedule.get(schedule.size()-1).getTimeSlot()); //so the end time of last schedule unit is the next available slot..
 			i.followSchedule(timeLapse);
 		}
 	}	
@@ -101,37 +95,31 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		if (//b.explorationAnts.size()>=2 && 
 				//currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN )  {
 				b.explorationAnts.size()> 3) {
-			//logger.debug(this.id + "T Investigating exp ants and total are: " +b.explorationAnts.size());
-			boolean bestAntChanged = false;
+			boolean bestAntChanged = false; //only to track if it should be printed or not
 			for (ExpAnt eAnt: b.explorationAnts) { //find eAnt with smallest score, i.e least cost
-				if (bestAnt == null) {
-					if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){
-						bestAnt = eAnt;
-						bestAntChanged = true;
-					}
-				}
-				else if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){
-					if (b.schedule.size() <  1) {//select the one with higest no. of nits
-						if (eAnt.getSchedule().size() > bestAnt.getSchedule().size()) {
+				if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){				
+					if (b.schedule.size() == 0) {//select the one with highest no. of units
+						if (bestAnt == null || (eAnt.getSchedule().size() > bestAnt.getSchedule().size())) {
 							bestAnt = eAnt;
 							bestAntChanged = true;
 						}
 					}
-					else { //decide based on lowest schedul socre
-						if (eAnt.getScheduleScore() < bestAnt.getScheduleScore() ) {
-							bestAnt = eAnt;
-							bestAntChanged = true;
+					else { //decide based on lowest schedule score
+						if (bestAnt != null) {
+							if (eAnt.getScheduleScore() < bestAnt.getScheduleScore() ) {
+								bestAnt = eAnt;
+								bestAntChanged = true;
+							}
 						}
 					}
 				}
 			}
 			if (bestAntChanged)
-				pringBestAnt(startTime);
+				printBestAnt(startTime);
 			b.explorationAnts.clear(); 
-		}
-		
+		}	
 		// Checking Intention Ants
-		if (!b.intentionAnts.isEmpty() && b.schedule.isEmpty()) { //TODO Have to change this condition. Actual should be that intention ants are still checked, 
+		if (!b.intentionAnts.isEmpty() && b.intentionAnts.size() > 1) { //TODO Have to change this condition. Actual should be that intention ants are still checked, 
 			//if some thing interesting found that sould be added in the trucks schedule
 			boolean scheduleDone = false;
 			Iterator<IntAnt> i = b.intentionAnts.iterator();
@@ -139,29 +127,33 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 				IntAnt iAnt = i.next();
 				if (iAnt.isConsiderable(b.schedule)) 
 				{
-					boolean isProblematic = false;
+					boolean scheduleAcceptable = false;
 					for (TruckScheduleUnit u : iAnt.getSchedule()){
-						if (alreadyExist(u) || isOverlapped(u)) {
-							checkArgument(u.getDelivery().getDeliveryTime().minus(u.getDelivery().getStationToCYTravelTime()).minusMinutes(GlobalParameters.LOADING_MINUTES).isEqual(u.getTimeSlot().getStartTime()), true);
-							checkArgument(u.getTimeSlot().getEndTime().compareTo(b.getTotalTimeRange().getEndTime()) <= 0 , true);
-							checkArgument(u.getTimeSlot().getStartTime().compareTo(b.getTotalTimeRange().getStartTime()) >= 0 , true);
-							isProblematic = true;
+						scheduleAcceptable = false;
+						if (!alreadyExist(u) ) {
+							if (!isOverlapped(u)) {
+								checkArgument(u.getDelivery().getDeliveryTime().minus(u.getDelivery().getStationToCYTravelTime()).minusMinutes(GlobalParameters.LOADING_MINUTES).isEqual(u.getTimeSlot().getStartTime()), true);
+								checkArgument(u.getTimeSlot().getEndTime().compareTo(b.getTotalTimeRange().getEndTime()) <= 0 , true);
+								checkArgument(u.getTimeSlot().getStartTime().compareTo(b.getTotalTimeRange().getStartTime()) >= 0 , true);
+								scheduleAcceptable = true;
+							}
 						}
+						else { //means already exists
+							
+						}
+						if (!scheduleAcceptable)
+							break;
 					}
-					if (isProblematic == false) {
-						for (TruckScheduleUnit u : iAnt.getSchedule()){
-							checkArgument(u.getDelivery().getDeliveryTime().minus(u.getDelivery().getStationToCYTravelTime()).minusMinutes(GlobalParameters.LOADING_MINUTES).isEqual(u.getTimeSlot().getStartTime()), true);
-							checkArgument(u.getTimeSlot().getEndTime().compareTo(b.getTotalTimeRange().getEndTime()) <= 0 , true);
-							checkArgument(u.getTimeSlot().getStartTime().compareTo(b.getTotalTimeRange().getStartTime()) >= 0 , true);
+					if (scheduleAcceptable) {
+						for (TruckScheduleUnit u : iAnt.getSchedule()){ 
 							b.schedule.add(u);
 							scheduleDone = true;
 							logger.debug(this.getId()+"T Schedule unit added in Trucks schedule: " + u.getSummary());
 						}
 					}
-						
 				} //no need of else,coz it will be removed any way..
 				i.remove();
-				if (scheduleDone == true)
+				if (scheduleDone)
 					break;
 			}
 			b.intentionAnts.clear();  //remove all remaining ants if any..
@@ -173,8 +165,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		if (currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN ) {
 			ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
 					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
-			//logger.debug(this.getId()+"T Exp sent by Truck with probabilityToReturnEarly = " + probabilityToReturnEarly);
-			//Utility.getAvailableSlots(this.b.schedule, b.availableSlots, new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime()));
 			if (b.getAvailableSlots().size()>0) {
 				checkArgument(b.getAvailableSlots().get(0).getProductionSiteAtStartTime() != null, true);
 				cApi.send(b.getAvailableSlots().get(0).getProductionSiteAtStartTime(), eAnt); 				
@@ -184,33 +174,43 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 	
 	private void sendIntAnts(long startTime) { 
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		//send int ants to book again the whole schedule..
-		//chk what to do with ACCETED  ///already need changes..
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);//send int ants to book again the whole schedule..
 		if (currTime.minusMinutes(timeForLastIntAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.INTENTION_INTERVAL_MIN ) {
-			if (b.schedule.size() > 0 || bestAnt != null) { //any way send exp to refresh bookings
-				if (bestAnt != null) {
-					if (b.scheduleStillValid(b.schedule, bestAnt.getSchedule())){
-						IntAnt iAnt = new IntAnt(this, bestAnt.getSchedule(), currTime);
-						logger.debug(this.getId()+"T int sent by Truck");
-						checkArgument(bestAnt.getSchedule().get(0).getTimeSlot().getProductionSiteAtStartTime() != null, true);
-						cApi.send(bestAnt.getSchedule().get(0).getTimeSlot().getProductionSiteAtStartTime(), iAnt); 
-						timeForLastIntAnt = currTime;
-					}
-					bestAnt = null;
-				}
-				else {//send old schedule to refresh bookings..
-					IntAnt iAnt = new IntAnt(this, b.schedule, currTime);
-					logger.debug(this.getId()+"T int sent by Truck with Old schedule");
-					checkArgument(b.schedule.get(0).getTimeSlot().getProductionSiteAtStartTime() != null, true);
-					cApi.send(b.schedule.get(0).getTimeSlot().getProductionSiteAtStartTime(), iAnt); 
+			if (bestAnt != null) {
+				if (b.scheduleStillValid(b.schedule, bestAnt.getSchedule())){
+					adjustFixedCapacity(bestAnt.getSchedule());
+					IntAnt iAnt = new IntAnt(this, bestAnt.getSchedule(), currTime);
+					logger.debug(this.getId()+"T int sent by Truck");
+					checkArgument(bestAnt.getSchedule().get(0).getTimeSlot().getProductionSiteAtStartTime() != null, true);
+					cApi.send(bestAnt.getSchedule().get(0).getTimeSlot().getProductionSiteAtStartTime(), iAnt); 
 					timeForLastIntAnt = currTime;
+					bestAnt = null;
+					return;
 				}
 			}
-
+			if (b.schedule.size()> 0 && timeForLastIntAnt.equals(currTime) == false){//send old schedule to refresh bookings..
+				adjustFixedCapacity(b.schedule);
+				IntAnt iAnt = new IntAnt(this, b.schedule, currTime);
+				logger.debug(this.getId()+"T int sent by Truck with Old schedule");
+				checkArgument(b.schedule.get(0).getTimeSlot().getProductionSiteAtStartTime() != null, true);
+				cApi.send(b.schedule.get(0).getTimeSlot().getProductionSiteAtStartTime(), iAnt); 
+				timeForLastIntAnt = currTime; //here no need to make bestAnt = null, since it coud compete with future explorations
+			}
 		}
 	}
-	private void pringBestAnt(long startTime) {
+	private void adjustFixedCapacity(ArrayList<TruckScheduleUnit> schedule) {
+		if (schedule.isEmpty())
+			return;
+		for (TruckScheduleUnit u : schedule) {
+			if (u.getOrderReply() != Reply.NO_REPLY){
+				checkArgument(u.getPsReply() != Reply.REJECT, true);
+				checkArgument(u.getOrderReply() != Reply.REJECT, true);
+				checkArgument (u.getPsReply() == u.getOrderReply(), true);
+				u.setFixedCapacityAmount(0);
+			}
+		}		
+	}
+	private void printBestAnt(long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		logger.debug(this.getId()+"T Best schedule changed with total Units = " + bestAnt.getSchedule().size() + "and Score = " + bestAnt.getScheduleScore() +" & total ants="+ b.explorationAnts.size() + "currTime= " + currTime);
 		for (TruckScheduleUnit unit: bestAnt.getSchedule()) {
@@ -241,7 +241,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	 */	//TODO add test cases to test
 	private boolean alreadyExist(TruckScheduleUnit un) {
 		for (TruckScheduleUnit u : b.schedule) { 
-			if (u.getDelivery().equals(un.getDelivery()) && u.getTimeSlot().equals(un.getTimeSlot())) //is it oke, or check further details inside delivery?
+			if (u.getDelivery().equalsWithSameTruck(un.getDelivery())) //is it oke, or check further details inside delivery?
 				return true;
 		}
 		return false;
@@ -252,20 +252,14 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			for (Message m : messages) {
 				if (m.getClass() == ExpAnt.class) {
 					b.explorationAnts.add((ExpAnt)m);
-					//logger.debug(this.getId()+"T received exp ant with schedule size = " + ((ExpAnt)m).getSchedule().size());
 					this.lastExpReturnTime = new DateTime (GlobalParameters.START_DATETIME.getMillis() + currentTime);
 				}
 				else if (m.getClass() == IntAnt.class) {
 					b.intentionAnts.add((IntAnt)m);
-					//logger.debug(this.getId()+"T received int ant quantity = " + b.intentionAnts.size());
 				}
-				else ; 
-					//logger.debug(this.getId()+"T message class is " + m.getClass() ); //Do nothing
-				
 			}
 		}
 	}
-
 	@Override
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
 		roadModel = pRoadModel;
@@ -329,13 +323,16 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	public TimeSlot getTotalTimeRange() {
 		return b.getTotalTimeRange();
 	}
+	@Override
+	public String toString() {
+		return "Id = " + this.getId();
+	}
 	/**
 	 * @return score of the proposed schedule 
 	 */
 	public ResultElementsTruck getTruckResult() {
 		/*
 		 * score concerns: lagTime (20), travelDistance(20), ST Delay (10), wasted Concrete (10), preferred station (1)
-		 *  
 		 */
 		int travelMin = 0;
 		int lagTimeInMin = 0;

@@ -16,14 +16,14 @@ import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
  */
 public class TruckScheduleUnit {
 	private Delivery delivery; //TODO The type should not be RmcDlivery, rather, it shud b some common type like prodcution site. BUt abi kaam chuloa mamla hay..:(
-	private Agent truck;
+	private final Agent truck;
 	private TimeSlot timeSlot; //It includes full slot, including loading time at station, then St to CY time then unloading time then CY to next ST time include travel time etc.
 //	int sequenceNo;  // I don't think it is required now..3/05/2012
 	private long travelTime;
 	
 	//TODO: Should be added some where else, since not all truck unit scheule will be usint it..
-	private Reply psReply;  //ps can have NO_REPLY, ACCEPT, REJECT
-	private Reply orderReply;  //order can NO_REPLY, ACCEPT, WEEK_ACCEPT, REJECT
+	private Reply psReply;  //ps can have NO_REPLY, UNDERPROCESS, WEEK_ACCEPT, REJECT
+	private Reply orderReply;  //order can NO_REPLY, UNDERPROCESS, ACCEPT, WEEK_ACCEPT, REJECT
 	private double fixedCapacityAmount;
 
 	
@@ -118,6 +118,11 @@ public class TruckScheduleUnit {
 		sb.append("]");
 		
 		return sb.toString();
+	}
+	
+	@Override
+	public String toString() {
+		return this.getSummary();
 	}
 	public Reply getPsReply() {
 		return psReply;
