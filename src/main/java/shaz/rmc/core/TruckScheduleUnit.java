@@ -25,7 +25,7 @@ public class TruckScheduleUnit {
 	private Reply psReply;  //ps can have NO_REPLY, UNDERPROCESS, WEEK_ACCEPT, REJECT
 	private Reply orderReply;  //order can NO_REPLY, UNDERPROCESS, ACCEPT, WEEK_ACCEPT, REJECT
 	private double fixedCapacityAmount;
-
+	private boolean isAddedInTruckSchedule;
 	
 	public TruckScheduleUnit(Agent pTruck) {
 		delivery = null;
@@ -34,6 +34,7 @@ public class TruckScheduleUnit {
 		psReply = Reply.NO_REPLY;
 		orderReply = Reply.NO_REPLY;
 		fixedCapacityAmount = 0;
+		isAddedInTruckSchedule = false;
 	}
 	public TruckScheduleUnit(Agent pTruck, TimeSlot pSlot) {
 		truck = pTruck;
@@ -141,6 +142,12 @@ public class TruckScheduleUnit {
 	}
 	public void setFixedCapacityAmount(double fixedCapacityAmount) {
 		this.fixedCapacityAmount = fixedCapacityAmount;
+	}
+	public boolean isAddedInTruckSchedule() {
+		return isAddedInTruckSchedule;
+	}
+	public void setAddedInTruckSchedule(boolean isAddedInTruckSchedule) {
+		this.isAddedInTruckSchedule = isAddedInTruckSchedule;
 	}
 
 

@@ -10,10 +10,15 @@ import java.util.ArrayList;
 
 import org.joda.time.DateTime;
 
+import com.rits.cloning.Cloner;
+
 import rinde.sim.core.model.communication.CommunicationUser;
+import shaz.rmc.core.Agent;
 import shaz.rmc.core.Ant;
+import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
 import shaz.rmc.core.TruckScheduleUnit;
+import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
 
 /**
@@ -33,8 +38,14 @@ public class IntAnt extends Ant {
 			 ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime) {
 		super(sender);
 		originator = (DeliveryTruckInitial)sender;
-		schedule = new ArrayList<TruckScheduleUnit>(pSchedule);
-		//for ()
+		final Cloner cl = new Cloner();
+		cl.dontCloneInstanceOf(Agent.class);
+		cl.dontCloneInstanceOf(ProductionSite.class);
+		cl.registerImmutable(DateTime.class);
+		//cl.dontCloneInstanceOf(Delivery.class);
+		//cl.setDumpClonedClasses(true);
+		schedule = cl.deepClone(pSchedule);
+		
 		creationTime = pCreateTime;
 		currentUnitNo = 0;
 		if (!schedule.isEmpty()) {

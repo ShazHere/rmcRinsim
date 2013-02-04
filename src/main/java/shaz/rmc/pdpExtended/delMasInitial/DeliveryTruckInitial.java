@@ -145,7 +145,8 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 							break;
 					}
 					if (scheduleAcceptable) {
-						for (TruckScheduleUnit u : iAnt.getSchedule()){ 
+						for (TruckScheduleUnit u : iAnt.getSchedule()){
+							u.setAddedInTruckSchedule(true);
 							b.schedule.add(u);
 							scheduleDone = true;
 							logger.debug(this.getId()+"T Schedule unit added in Trucks schedule: " + u.getSummary());

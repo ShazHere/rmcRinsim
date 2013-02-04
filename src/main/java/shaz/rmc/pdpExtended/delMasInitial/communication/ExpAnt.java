@@ -8,8 +8,12 @@ import java.util.ArrayList;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
+import com.rits.cloning.Cloner;
+
 import rinde.sim.core.model.communication.CommunicationUser;
+import shaz.rmc.core.Agent;
 import shaz.rmc.core.Ant;
+import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
@@ -55,8 +59,14 @@ public class ExpAnt extends Ant {
 			ArrayList<TimeSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime) {
 		super(sender);
 		originator = (DeliveryTruckInitial)sender;  //ant originator, creater. Sender means the one who is curreently sending ant after cloning
-		availableSlots = new ArrayList<TimeSlot>(pAvailableSlots);
-		schedule = new ArrayList<TruckScheduleUnit>(pSchedule);
+		final Cloner cl = new Cloner();
+		cl.dontCloneInstanceOf(Agent.class);
+		cl.dontCloneInstanceOf(ProductionSite.class);
+		cl.registerImmutable(DateTime.class);
+		//cl.dontCloneInstanceOf(Delivery.class);
+		//cl.setDumpClonedClasses(true);
+		schedule = cl.deepClone(pSchedule);
+		availableSlots = cl.deepClone(pAvailableSlots);
 		scheduleComplete = false; 		// to keep track if the schedule is explored by ant, now it could return to orignator.
 		creationTime = pCreateTime;
 		scheduleUnitsAdded = 0; 		//to keep track how many schedule units are added by the current ant. 
