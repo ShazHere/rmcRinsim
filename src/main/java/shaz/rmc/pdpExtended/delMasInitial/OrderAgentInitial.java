@@ -176,7 +176,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		checkArgument (explorationAnts.isEmpty(), true);
 		return true;
 	}
-	private Delivery prepareNewDelivery(int pDeliveryNo, ExpAnt exp, DateTime pDeliveryTime, long psToCyDur) {
+	private Delivery prepareNewDelivery(int pDeliveryNo, ExpAnt exp, DateTime pDeliveryTime, long travelDur) {
 		
 		ProductionSiteInitial selectedPs;
 		if (exp.nextAfterCurrentUnit()!= null) {//next slot in schedule exists, select the start PS of next slot
@@ -190,9 +190,9 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 		Delivery del=  new Delivery(this, pDeliveryNo, exp.getOriginator(), (int)(exp.getOriginator().getCapacity()), 
 				exp.getCurrentUnit().getTimeSlot().getProductionSiteAtStartTime(),selectedPs );
-		del.setStationToCYTravelTime(new Duration (psToCyDur));
-		psToCyDur = (long)((Point.distance(selectedPs.getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //CY to returnStation distance
-		del.setCYToStationTravelTime(new Duration(psToCyDur));
+		del.setStationToCYTravelTime(new Duration (travelDur));
+		travelDur = (long)((Point.distance(selectedPs.getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //CY to returnStation distance
+		del.setCYToStationTravelTime(new Duration(travelDur));
 		del.setDeliveryTime(pDeliveryTime);
 		if (this.deliveries.size() == 0 ) //means at the moment decesions are for first delivery so ST shud b included
 			{ 
@@ -204,7 +204,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		if (remainingToBookVolume < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
 			int wastedVolume = (int)(exp.getOriginator().getCapacity() - remainingToBookVolume);
 			del.setWastedVolume(wastedVolume);
-			del.setUnloadingDuration(new Duration((long)(wastedVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
+			del.setUnloadingDuration(new Duration((long)(remainingToBookVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
 		}
 		else {
 			del.setWastedVolume(0);// no wastage 
@@ -231,7 +231,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		while (i.hasNext()) { //at the moment just select the first one
 			IntAnt iAnt = i.next();
 			if (iAnt.getCurrentUnit().getDelivery().getDeliveryTime().equals(this.interestedTime) //so iAnt is according to order's current interest
-					&& iAnt.getCurrentUnit().getDelivery().getDeliveryNo() == this.interestedDeliveryNo && orderReserved == false) {
+					&& iAnt.getCurrentUnit().getDelivery().getDeliveryNo() == this.interestedDeliveryNo && orderReserved == false
+					&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == false) {
 				Delivery d = deliveryExistWithDiffTruck(iAnt.getCurrentUnit().getDelivery());
 				boolean iAntAccepted = false;
 				if (d != null && refreshTimes.get(d.getDeliveryNo()).equals(currTime) == false && iAnt.getCurrentUnit().getFixedCapacityAmount() > 0) { //means re-booking of a previous delivery
@@ -258,7 +259,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			else { //order isn't interested, yet it could be refreshing of a previous booking
 				Delivery d = deliveryExistWithSameTruck(iAnt.getCurrentUnit().getDelivery());
 				if (d != null && refreshTimes.get(d.getDeliveryNo()).compareTo(currTime) < 0 
-						&& iAnt.getCurrentUnit().getPsReply() == Reply.WEEK_ACCEPT ) { //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
+						&& iAnt.getCurrentUnit().getPsReply() == Reply.WEEK_ACCEPT  
+						&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == true) { //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
 					checkArgument(iAnt.getCurrentUnit().getFixedCapacityAmount() == 0, true);
 					d.setConfirmed(true); 
 					refreshTimes.put(iAnt.getCurrentUnit().getDelivery().getDeliveryNo(), currTime);

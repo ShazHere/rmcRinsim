@@ -36,7 +36,7 @@ public class GlobalParameters {
 	public static final int EXPLORATION_INTERVAL_MIN = 2; //means no. of mintues
 	public static final int INTENTION_INTERVAL_MIN = 5; //means no. of mintues
 	public static final int INTENTION_EVAPORATION_MIN = INTENTION_INTERVAL_MIN +3;
-	public static final int EXPLORATION_SCHEDULE_SIZE = 3;
+	public static final int EXPLORATION_SCHEDULE_SIZE = 2; //earlier 3 (5/02/2014)
 	public static final int TOTAL_TRUCKS = 3; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = true; //will all the vehicles have same capacity
 	//public static final int FIXED_VEHICLE_CAPACITY =10000;
@@ -75,7 +75,7 @@ public class GlobalParameters {
 	
 	public static RandomData RANDOM_DATA_GEN = new RandomDataImpl();  // for generating random sequence having good values..
 	
-	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per0;
+	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per100;
 	
 	
 	//RINSIM PARAMETERS

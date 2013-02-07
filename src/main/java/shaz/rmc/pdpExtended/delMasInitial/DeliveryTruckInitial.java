@@ -15,6 +15,8 @@ import org.apache.commons.math3.random.RandomDataImpl;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 
+import com.rits.cloning.Cloner;
+
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationAPI;
@@ -24,6 +26,7 @@ import rinde.sim.core.model.pdp.PDPModel;
 import rinde.sim.core.model.road.MovingRoadUser;
 import rinde.sim.core.model.road.RoadModel;
 import shaz.rmc.core.Agent;
+import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
 import shaz.rmc.core.ResultElementsTruck;
 import shaz.rmc.core.TimeSlot;
@@ -84,7 +87,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	@Override
 	protected void tickImpl(TimeLapse timeLapse) {
 		checkMsgs(timeLapse.getStartTime());		
-		deliberate(timeLapse.getStartTime());
+		processIntentionAnts(timeLapse.getStartTime());
 		sendExpAnts(timeLapse.getStartTime());
 		sendIntAnts(timeLapse.getStartTime());
 		//acting on intentions
@@ -92,11 +95,9 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			assert ((ProductionSiteInitial)(b.schedule.get(b.schedule.size()-1).getTimeSlot().getProductionSiteAtStartTime())).getStation() != null : truck.getId()+"T: The return location of Truck shouldn't be null";
 			i.followSchedule(timeLapse);
 		}
-	}	
-	private void deliberate(long startTime) {
-		if (//b.explorationAnts.size()>=2 && 
-				//currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN )  {
-				b.explorationAnts.size()> 3) {
+	}
+	private void processExplorationAnts(long startTime) {
+		if 	(b.explorationAnts.size()> 0) {
 			boolean bestAntChanged = false; //only to track if it should be printed or not
 			for (ExpAnt eAnt: b.explorationAnts) { //find eAnt with smallest score, i.e least cost
 				if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){				
@@ -120,9 +121,9 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 				printBestAnt(startTime);
 			b.explorationAnts.clear(); 
 		}	
-		// Checking Intention Ants
-		if (!b.intentionAnts.isEmpty() && b.intentionAnts.size() > 1) { //TODO Have to change this condition. Actual should be that intention ants are still checked, 
-			//if some thing interesting found that sould be added in the trucks schedule
+	}
+	private void processIntentionAnts(long startTime) {
+		if (!b.intentionAnts.isEmpty() && b.intentionAnts.size() > 1) { 
 			boolean scheduleDone = false;
 			Iterator<IntAnt> i = b.intentionAnts.iterator();
 			while (i.hasNext()) { //at the moment just select the first one
@@ -132,27 +133,31 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 					boolean scheduleAcceptable = false;
 					for (TruckScheduleUnit u : iAnt.getSchedule()){
 						scheduleAcceptable = false;
-						if (!alreadyExist(u) ) {
-							if (!isOverlapped(u)) {
-								checkArgument(u.getDelivery().getDeliveryTime().minus(u.getDelivery().getStationToCYTravelTime()).minusMinutes(GlobalParameters.LOADING_MINUTES).isEqual(u.getTimeSlot().getStartTime()), true);
-								checkArgument(u.getTimeSlot().getEndTime().compareTo(b.getTotalTimeRange().getEndTime()) <= 0 , true);
-								checkArgument(u.getTimeSlot().getStartTime().compareTo(b.getTotalTimeRange().getStartTime()) >= 0 , true);
-								scheduleAcceptable = true;
-							}
+						if (u.isAddedInTruckSchedule() == false ) {
+							checkArgument(isOverlapped(u) == false, true);
+							checkArgument(u.getDelivery().getDeliveryTime().minus(u.getDelivery().getStationToCYTravelTime()).minusMinutes(GlobalParameters.LOADING_MINUTES).isEqual(u.getTimeSlot().getStartTime()), true);
+							checkArgument(u.getTimeSlot().getEndTime().compareTo(b.getTotalTimeRange().getEndTime()) <= 0 , true);
+							checkArgument(u.getTimeSlot().getStartTime().compareTo(b.getTotalTimeRange().getStartTime()) >= 0 , true);
+							scheduleAcceptable = true;
 						}
-						else { //means already exists
-							
-						}
+						
 						if (!scheduleAcceptable)
 							break;
 					}
 					if (scheduleAcceptable) {
+						final Cloner cl = new Cloner();
+						cl.dontCloneInstanceOf(Agent.class);
+						cl.dontCloneInstanceOf(ProductionSite.class);
+						cl.registerImmutable(DateTime.class);
 						for (TruckScheduleUnit u : iAnt.getSchedule()){
-							u.setAddedInTruckSchedule(true);
-							b.schedule.add(u);
-							scheduleDone = true;
-							logger.debug(this.getId()+"T Schedule unit added in Trucks schedule: " + u.getSummary());
+							if (u.isAddedInTruckSchedule() == false) {
+								TruckScheduleUnit tu = cl.deepClone(u);
+								tu.setAddedInTruckSchedule(true);
+								b.schedule.add(tu);
+								logger.debug(this.getId()+"T Schedule unit added in Trucks schedule: " + u.getSummary());
+							}
 						}
+						scheduleDone = true;
 					}
 				} //no need of else,coz it will be removed any way..
 				i.remove();
@@ -162,6 +167,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			b.intentionAnts.clear();  //remove all remaining ants if any..
 		}
 	}
+	
 	private void sendExpAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		//check  exp ants to be sent after particular interval only
@@ -179,6 +185,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private void sendIntAnts(long startTime) { 
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);//send int ants to book again the whole schedule..
 		if (currTime.minusMinutes(timeForLastIntAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.INTENTION_INTERVAL_MIN ) {
+			processExplorationAnts(startTime);
 			if (bestAnt != null) {
 				if (b.scheduleStillValid(b.schedule, bestAnt.getSchedule())){
 					adjustFixedCapacity(bestAnt.getSchedule());
@@ -202,8 +209,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		}
 	}
 	private void adjustFixedCapacity(ArrayList<TruckScheduleUnit> schedule) {
-		if (schedule.isEmpty())
-			return;
+		checkArgument(schedule.isEmpty() == false, true);
 		for (TruckScheduleUnit u : schedule) {
 			if (u.getOrderReply() != Reply.NO_REPLY){
 				checkArgument(u.getPsReply() != Reply.REJECT, true);

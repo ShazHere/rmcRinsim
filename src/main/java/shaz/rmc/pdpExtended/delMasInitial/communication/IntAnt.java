@@ -132,36 +132,34 @@ public class IntAnt extends Ant {
 //	}
 	//TODO test this method, may use test cases
 	public boolean isConsiderable(final ArrayList<TruckScheduleUnit> existingSchedule) {
+		checkArgument(this.schedule.isEmpty() == false, true);
+		for (TruckScheduleUnit newu: this.schedule) {
+			if (newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) {//if any reply REJECT, dnot consider schedule
+				return false;
+			}
+		}
+		
+		
 		if (!existingSchedule.isEmpty()){
 			boolean unitExist = false;
 			for (TruckScheduleUnit u : existingSchedule) {//for each of existing schedule in truck
 				unitExist = false;
 				for (TruckScheduleUnit newu: this.schedule) { //chek if existing unit, exists in iAnt as well..
-					if (newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) {//should be then in existing schedule
-						return false;
-					} 
-					else if (u.getDelivery().equalsWithSameTruck(newu.getDelivery()) && unitExist == false) {
+					if (u.getDelivery().equalsWithSameTruck(newu.getDelivery()) && unitExist == false) {
 						unitExist = true;
+						checkArgument(u.isAddedInTruckSchedule() == true, true);
 						checkArgument(newu.getOrderReply() == Reply.WEEK_ACCEPT && newu.getPsReply() == Reply.WEEK_ACCEPT, true);
 					}
-//					else
-//						checkArgument(newu.getOrderReply() == Reply.UNDER_PROCESS && newu.getPsReply() == Reply.UNDER_PROCESS, true);
+					else {
+						//checkArgument(u.isAddedInTruckSchedule() == false, true);
+						//checkArgument(newu.getOrderReply() == Reply.UNDER_PROCESS && newu.getPsReply() == Reply.UNDER_PROCESS, true);
+					}
 				}
 				checkArgument(unitExist, true);
 				if (!unitExist) //means a previous unit doesn't exist...theoratically this should never be the case, because none deletes the existing units of an ant!
 					return false;
 			}
 			
-		}
-		else {
-			if (this.schedule.isEmpty())
-				return false;
-			for (TruckScheduleUnit newu: this.schedule) {
-				if (newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) {//should be then in existing schedule
-					return false;
-				}
-				//else return true;
-			}
 		}
 		return true; //if not returned due to any reason so far then probably its valid..
 	}
