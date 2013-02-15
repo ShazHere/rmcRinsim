@@ -124,7 +124,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 		Iterator<IntAnt> i = intentionAnts.iterator();
 		while (i.hasNext()) { //includes booking of Station
 			IntAnt iAnt = i.next();
-			checkArgument(iAnt.getCurrentUnit().getTimeSlot().getProductionSiteAtStartTime() == iAnt.getCurrentUnit().getDelivery().getLoadingStation(),
+			checkArgument(iAnt.getCurrentUnit().getTunit().getTimeSlot().getProductionSiteAtStartTime() == iAnt.getCurrentUnit().getTunit().getDelivery().getLoadingStation(),
 					"UnExpectedly, INtAnt getProductionAtStartTime != getDelivery.getLoadingStation");
 			if (iAnt.isScheduleComplete()) { //send back to originator
 				IntAnt newAnt = (IntAnt)iAnt.clone(this);
@@ -133,7 +133,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				i.remove();
 				continue;
 			}
-			DateTime stationReplyDate = station.makeBookingAt(iAnt.getCurrentUnit().getTimeSlot().getStartTime(), iAnt.getOriginator(), iAnt.getCurrentUnit().getDelivery(), currTime);
+			DateTime stationReplyDate = station.makeBookingAt(iAnt.getCurrentUnit().getTunit().getTimeSlot().getStartTime(), iAnt.getOriginator(), iAnt.getCurrentUnit().getTunit().getDelivery(), currTime);
 			if (stationReplyDate != null) { //means station is booked or refreshed
 				if (stationReplyDate.equals(new DateTime(0))) { //means booking refrehed
 					iAnt.getCurrentUnit().setPsReply(Reply.WEEK_ACCEPT);
@@ -147,7 +147,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			}
 			logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " " + iAnt.getCurrentUnit().getPsReply() +" by PS");
 			IntAnt newAnt = iAnt.clone(this);
-			cApi.send(iAnt.getCurrentUnit().getDelivery().getOrder(), newAnt);
+			cApi.send(iAnt.getCurrentUnit().getTunit().getDelivery().getOrder(), newAnt);
 			i.remove();
 		}
 		logger.debug(station.getId() +"P STATTION  Availability List = " + station.pringAvailabilityList());
@@ -192,11 +192,11 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 		for (OrderAgentInitial or : interestedTime.keySet()) { //check all order pheromones..
 			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), fixedCapacityAmount.get(or), currTime) 
 					&& noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) { //if interested, and order in't explored too much
-				logger.debug(station.getId() +"P exp-" +exp.getOriginator().getId()+ " is interested " + exp.getCurrentUnit().getTimeSlot().getStartTime() +
+				logger.debug(station.getId() +"P exp-" +exp.getOriginator().getId()+ " is interested " + exp.getCurrentInterestedTime() +
 						", orderInterested " + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));
 				checkArgument(noOfExplorations.containsKey(or), true); 
 				noOfExplorations.put(or, noOfExplorations.get(or)+1);
-				exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.getPosition(), this); //normally make this as start PS
+				//exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.getPosition(), this); //normally make this as start PS
 				ExpAnt newExp = (ExpAnt)exp.clone(this);
 				cApi.send(or, newExp); //send exp clones to all orders(or) it is interested in
 				logger.debug(station.getId() +"P pheromone table: (curTime="+ currTime +")\n" + this.pheromoneToString());

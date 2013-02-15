@@ -18,6 +18,7 @@ import shaz.rmc.core.Ant;
 import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
 import shaz.rmc.core.TruckScheduleUnit;
+import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
 
@@ -27,51 +28,47 @@ import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
  */
 public class IntAnt extends Ant {
 
-	private final ArrayList<TruckScheduleUnit> schedule;
+	private final ArrayList<communicateAbleUnit> communicateAbleSchedule;
 	private final DeliveryTruckInitial originator; //the actual truck agent which initialized the intAnt
-	private TruckScheduleUnit currentUnit;
+	private communicateAbleUnit currentUnit;
 	private int currentUnitNo;
 	private final DateTime creationTime;
 
 	
 	public IntAnt(CommunicationUser sender,
-			 ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime) {
+			 ArrayList<communicateAbleUnit> pSchedule, DateTime pCreateTime) {
 		super(sender);
 		originator = (DeliveryTruckInitial)sender;
-		final Cloner cl = new Cloner();
-		cl.dontCloneInstanceOf(Agent.class);
-		cl.dontCloneInstanceOf(ProductionSite.class);
-		cl.registerImmutable(DateTime.class);
-		//cl.dontCloneInstanceOf(Delivery.class);
-		//cl.setDumpClonedClasses(true);
-		schedule = cl.deepClone(pSchedule);
-		
+		communicateAbleSchedule = pSchedule;
 		creationTime = pCreateTime;
 		currentUnitNo = 0;
-		if (!schedule.isEmpty()) {
-			currentUnit = schedule.get(currentUnitNo);
-			for(TruckScheduleUnit u: schedule) {
-				u.setOrderReply(Reply.NO_REPLY);
-				u.setPsReply(Reply.NO_REPLY);
-			}
-		}
+		if (!communicateAbleSchedule.isEmpty())
+			currentUnit = communicateAbleSchedule.get(0);
+
 	}
 
 	//TODO: check if clone requires any other copying stuff?
+	/**
+	 * only to be used by the clone method.
+	 * @param sender
+	 * @param pSchedule
+	 * @param pCreateTime
+	 * @param pOriginator
+	 */
 	public IntAnt(CommunicationUser sender,
-			 ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime, CommunicationUser pOriginator) {
+			 ArrayList<communicateAbleUnit> pSchedule, DateTime pCreateTime, CommunicationUser pOriginator) {
 		super(sender);
 		originator = (DeliveryTruckInitial)pOriginator;
-		schedule = new ArrayList<TruckScheduleUnit>(pSchedule);
+		communicateAbleSchedule = new ArrayList<communicateAbleUnit>(pSchedule);
 		creationTime = pCreateTime;
 		
-		if (!schedule.isEmpty())
-			currentUnit = schedule.get(0);
+		if (!communicateAbleSchedule.isEmpty())
+			currentUnit = communicateAbleSchedule.get(0);
 	}
 
 	@Override
 	public IntAnt clone(CommunicationUser pSender) {
-		IntAnt iAnt = new IntAnt(pSender, this.schedule, this.creationTime, this.originator );
+		IntAnt iAnt = new IntAnt(pSender, this.communicateAbleSchedule, this.creationTime, this.originator );
 		iAnt.currentUnit = this.currentUnit;
 		iAnt.currentUnitNo= this.currentUnitNo;
 		return iAnt;
@@ -79,14 +76,14 @@ public class IntAnt extends Ant {
 	public DeliveryTruckInitial getOriginator() {
 		return originator;
 	}
-
-	public TruckScheduleUnit getCurrentUnit() {
+	//TODO: shouldn't i return defensive copy? or what to do?
+	public communicateAbleUnit getCurrentUnit() {
 		return this.currentUnit;
 	}
 	public void setNextCurrentUnit() {
-		if (currentUnitNo < schedule.size()-1) {
+		if (currentUnitNo < communicateAbleSchedule.size()-1) {
 			currentUnitNo += 1;
-			currentUnit = schedule.get(currentUnitNo);
+			currentUnit = communicateAbleSchedule.get(currentUnitNo);
 		}
 	}
 	
@@ -95,7 +92,7 @@ public class IntAnt extends Ant {
 	 * @return
 	 */
 	public boolean isScheduleComplete() { 
-		if (currentUnitNo >= schedule.size()-1){ //still need to check if currentUnit is required to be checked 
+		if (currentUnitNo >= communicateAbleSchedule.size()-1){ //still need to check if currentUnit is required to be checked 
 			if (currentUnit.getOrderReply() != Reply.NO_REPLY && currentUnit.getPsReply() != Reply.NO_REPLY) //check if the currentUnit is processed and replies got
 				return true;
 			else 
@@ -132,8 +129,8 @@ public class IntAnt extends Ant {
 //	}
 	//TODO test this method, may use test cases
 	public boolean isConsiderable(final ArrayList<TruckScheduleUnit> existingSchedule) {
-		checkArgument(this.schedule.isEmpty() == false, true);
-		for (TruckScheduleUnit newu: this.schedule) {
+		checkArgument(this.communicateAbleSchedule.isEmpty() == false, true);
+		for (communicateAbleUnit newu: this.communicateAbleSchedule) {
 			if (newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) {//if any reply REJECT, dnot consider schedule
 				return false;
 			}
@@ -144,15 +141,12 @@ public class IntAnt extends Ant {
 			boolean unitExist = false;
 			for (TruckScheduleUnit u : existingSchedule) {//for each of existing schedule in truck
 				unitExist = false;
-				for (TruckScheduleUnit newu: this.schedule) { //chek if existing unit, exists in iAnt as well..
-					if (u.getDelivery().equalsWithSameTruck(newu.getDelivery()) && unitExist == false) {
+				for (communicateAbleUnit newu: this.communicateAbleSchedule) { //chek if existing unit, exists in iAnt as well..
+					if (u.getDelivery().equalsWithSameTruck(newu.getTunit().getDelivery()) && unitExist == false) {
 						unitExist = true;
-						checkArgument(u.isAddedInTruckSchedule() == true, true);
+						//checkArgument(u.isAddedInTruckSchedule() == true, true);
 						checkArgument(newu.getOrderReply() == Reply.WEEK_ACCEPT && newu.getPsReply() == Reply.WEEK_ACCEPT, true);
-					}
-					else {
-						//checkArgument(u.isAddedInTruckSchedule() == false, true);
-						//checkArgument(newu.getOrderReply() == Reply.UNDER_PROCESS && newu.getPsReply() == Reply.UNDER_PROCESS, true);
+						break;
 					}
 				}
 				checkArgument(unitExist, true);
@@ -168,8 +162,8 @@ public class IntAnt extends Ant {
 		return super.getSender();
 	}
 
-	public ArrayList<TruckScheduleUnit> getSchedule() {
-		return schedule;
+	public ArrayList<communicateAbleUnit> getSchedule() {
+		return communicateAbleSchedule;
 	}
 
 	public DateTime getCreationTime() {

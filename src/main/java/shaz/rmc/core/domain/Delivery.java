@@ -1,6 +1,6 @@
 package shaz.rmc.core.domain;
 
-import java.io.Serializable;
+//import java.io.Serializable;
 
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
@@ -8,56 +8,135 @@ import org.joda.time.Duration;
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.ProductionSite;
 
-public class Delivery implements Serializable {
+/**
+ * @author Shaza
+ * Immutable class for saving details of a delivery object. 
+ */
+final public class Delivery {
 
-	private ProductionSite loadingStation;
-	private ProductionSite returnStation;
-	//private DateTime loadingTime, unloadingTime; //Start time
-	private Duration loadingDuration, unloadingDuration;
-	private Duration stationToCYTravelTime, CYToStationTravelTime;
+	final private ProductionSite loadingStation;
+	final private ProductionSite returnStation;
+	//final private DateTime loadingTime, unloadingTime; //Start time
+	final private Duration loadingDuration, unloadingDuration;
+	final private Duration stationToCYTravelTime, CYToStationTravelTime;
 	//private Vehicle vehicle;
-	private final Agent order;
-	private int deliveredVolume;
-	private Duration lagTime;// for storing lagTime before this delivery
+	final private  Agent order;
+	final private int deliveredVolume;
+	final private Duration lagTime;// for storing lagTime before this delivery
 	final private int deliveryNo; //which delivery of order it could be?
 	
 	
 	//added by shaz
-	private boolean isReserved; // used like isPhysically created? 15/12/2012
-	private DateTime deliveryTime;  //according to d1 which might be settled
-	//private boolean isLastDelivery; //to track that is this the last delivery of order, Truck may give different priority based on this fact..may be used in waste calculation
-	private int wastedVolume; // filed by truck while adding unit
+	//private boolean isReserved; // used like isPhysically created? 15/12/2012 [Goes to Agent itself like a hashmap]
+	final private DateTime deliveryTime;  //according to d1 which might be settled
+	final private int wastedVolume; // filed by truck while adding unit
 
-	
 	//private boolean isExplored; //means is sent as reply to an exploration ant of a truck. not used now.. @shaz 15/03/2012
-	private boolean confirmed; //to record that the truck has confirmed and sent intention ant, that it will pick the delivery at delivery
+	//private boolean confirmed; //to record that the truck has confirmed and sent intention ant, that it will pick the delivery at delivery [goti truck itself]
 	private final Agent truck;
 
-
-
-	public Delivery(Agent orderAg, int deliveryNo, Agent pTruck, int deliveredVolume,
-			ProductionSite loadingStation, ProductionSite returnStation) {
-		this.order = orderAg;
-		this.truck = pTruck;
-		this.deliveredVolume = deliveredVolume;
-		this.loadingStation = loadingStation;
-		this.returnStation = returnStation;
-		this.isReserved = false;
-		this.deliveryTime = null;
-		this.confirmed = false;
-		this.deliveryNo = deliveryNo;
-//		this.isLastDelivery = false;
-		//this.isExplored = false;
+	private Delivery(Builder builder) {
+		this.order = builder.order;
+		this.truck = builder.truck;
+		this.deliveredVolume = builder.deliveredVolume;
+		this.loadingStation = builder.loadingStation;
+		this.returnStation = builder.returnStation;
+		this.deliveryTime = builder.deliveryTime;
+		this.deliveryNo = builder.deliveryNo;
+		this.loadingDuration = builder.loadingDuration;
+		this.unloadingDuration = builder.unloadingDuration;
+		this.stationToCYTravelTime = builder.stationToCYTravelTime;
+		this.CYToStationTravelTime = builder.CYToStationTravelTime;
+		this.lagTime = builder.lagTime;
+		this.wastedVolume =  builder.wastedVolume;
 	}
 	
-//	public void getCopyOf(Delivery delivery){
-//		order = delivery.getOrder();
-//		//vehicle = delivery.getVehicle();
-//		deliveredVolume = delivery.getDeliveredVolume();
-//		loadingStation = delivery.getLoadingStation();
-//		returnStation = delivery.getReturnStation();
-//	}
-	
+	public static class Builder {
+		private ProductionSite loadingStation;
+		private ProductionSite returnStation;
+		private Duration loadingDuration, unloadingDuration;
+		private Duration stationToCYTravelTime, CYToStationTravelTime;
+		private Agent order;
+		private int deliveredVolume;
+		private Duration lagTime;// for storing lagTime before this delivery
+		private int deliveryNo; //which delivery of order it could be?
+		private DateTime deliveryTime;  //according to d1 which might be settled
+		private int wastedVolume; // filed by truck while adding unit
+		private Agent truck;
+		
+		public Builder() {}
+
+		public Builder setLoadingStation(ProductionSite loadingStation) {
+			this.loadingStation = loadingStation;
+			return this;
+		}
+
+		public Builder setReturnStation(ProductionSite returnStation) {
+			this.returnStation = returnStation;
+			return this;
+		}
+
+		public Builder setLoadingDuration(Duration loadingDuration) {
+			this.loadingDuration = loadingDuration;
+			return this;
+		}
+
+		public Builder setUnloadingDuration(Duration unloadingDuration) {
+			this.unloadingDuration = unloadingDuration;
+			return this;
+		}
+
+		public Builder setStationToCYTravelTime(Duration stationToCYTravelTime) {
+			this.stationToCYTravelTime = stationToCYTravelTime;
+			return this;
+		}
+
+		public Builder setCYToStationTravelTime(Duration cYToStationTravelTime) {
+			CYToStationTravelTime = cYToStationTravelTime;
+			return this;
+		}
+
+		public Builder setOrder(Agent order) {
+			this.order = order;
+			return this;
+		}
+
+		public Builder setDeliveredVolume(int deliveredVolume) {
+			this.deliveredVolume = deliveredVolume;
+			return this;
+		}
+
+		public Builder setLagTime(Duration lagTime) {
+			this.lagTime = lagTime;
+			return this;
+		}
+
+		public Builder setDeliveryNo(int deliveryNo) {
+			this.deliveryNo = deliveryNo;
+			return this;
+		}
+
+		public Builder setDeliveryTime(DateTime deliveryTime) {
+			this.deliveryTime = deliveryTime;
+			return this;
+		}
+
+		public Builder setWastedVolume(int wastedVolume) {
+			this.wastedVolume = wastedVolume;
+			return this;
+		}
+
+		public Builder setTruck(Agent truck) {
+			this.truck = truck;
+			return this;
+		}
+		
+		public Delivery build(){
+			return new Delivery (this);
+		}
+		
+	}
+
 	public Agent getOrder() {
 		return order;
 	}
@@ -98,50 +177,18 @@ public class Delivery implements Serializable {
 		return loadingDuration;
 	}
 
-	public void setLoadingDuration(Duration loadingDuration) {
-		this.loadingDuration = loadingDuration;
-	}
-
 	public Duration getUnloadingDuration() {
 		return unloadingDuration;
-	}
-
-	public void setUnloadingDuration(Duration unloadingDuration) {
-		this.unloadingDuration = unloadingDuration;
 	}
 
 	public Duration getStationToCYTravelTime() {
 		return stationToCYTravelTime;
 	}
 
-	public void setStationToCYTravelTime(Duration stationToCYTravelTime) {
-		this.stationToCYTravelTime = stationToCYTravelTime;
-	}
-
 	public Duration getCYToStationTravelTime() {
 		return CYToStationTravelTime;
 	}
 
-	public void setCYToStationTravelTime(Duration cYToStationTravelTime) {
-		CYToStationTravelTime = cYToStationTravelTime;
-	}
-
-	public void setLoadingStation(ProductionSite loadingStation) {
-		this.loadingStation = loadingStation;
-	}
-
-	public void setReturnStation(ProductionSite returnStation) {
-		this.returnStation = returnStation;
-	}
-
-//	public void setVehicle(Vehicle vehicle) {
-//		this.vehicle = vehicle;
-//	}
-
-	public void setDeliveredVolume(int deliveredVolume) {
-		this.deliveredVolume = deliveredVolume;
-	}
-	
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -165,65 +212,36 @@ public class Delivery implements Serializable {
 //	public void setExplored (boolean val) {
 //		this.isExplored = val;
 //	}
-	public synchronized void setReserved(boolean isRes) {
-		this.isReserved = isRes;
-	}
-	public synchronized boolean isReserved() {
-		return this.isReserved;
-	}
+
 	
 	public DateTime getDeliveryTime() {
 		return deliveryTime;
 	}
-	public void setDeliveryTime(DateTime deliveryTime) {
-		this.deliveryTime = deliveryTime;
-	}
-	
+//	public void setDeliveryTime(DateTime deliveryTime) {
+//		this.deliveryTime = deliveryTime;
+//	}
+//	
 	//not sure if its required.. 13/12/2011
 	public Duration requiredTimetoDeliver() {
 		
 		return null;
 	}
-	public boolean isConfirmed() {
-		return confirmed;
-	}
-
-	public void setConfirmed(boolean confirmed) {
-		this.confirmed = confirmed;
-	}
 
 	public Agent getTruck() {
 		return truck;
 	}
-//
-//	public void setTruck(Agent truck) {
-//		this.truck = truck;
-//	}
-//	public Agent getOrderAg() {
-//		return orderAg;
-//	}
+
 	public int getWastedVolume() {
 		return wastedVolume;
 	}
-
-	public void setWastedVolume(int wastedVolume) {
-		this.wastedVolume = wastedVolume;
-	}
-//	public boolean isLastDelivery() {
-//		return isLastDelivery;
-//	}
-//
-//	public void setLastDelivery(boolean isLastDelivery) {
-//		this.isLastDelivery = isLastDelivery;
-//	}
 
 	public Duration getLagTime() {
 		return lagTime;
 	}
 
-	public void setLagTime(Duration lagTime) {
-		this.lagTime = lagTime;
-	}
+//	public void setLagTime(Duration lagTime) {
+//		this.lagTime = lagTime;
+//	}
 
 	public int getDeliveryNo() {
 		return deliveryNo;
@@ -249,10 +267,18 @@ public class Delivery implements Serializable {
 	public boolean equals(Object obj) {
 		if (obj == null)
 			return false;
+		if (obj == this)
+			return true;
 		Delivery del = (Delivery)obj;
 		if (this.order.equals(del.order) && this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 
 				&& this.deliveryNo == del.deliveryNo)
 			return true;
 		return false;
 	}
+	@Override
+	public int hashCode() {
+	  assert false : "hashCode not designed";
+	  return 0; // any arbitrary constant will do
+	}
+
 }

@@ -12,6 +12,8 @@ import java.util.Comparator;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
+import com.rits.cloning.Cloner;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
@@ -19,6 +21,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.FileWriter;
 
+import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters;
 
 
@@ -148,9 +151,15 @@ public class Utility {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		  
-		
 		return false;
-		
+	} 
+	public static Cloner getCloner() {
+		final Cloner cl = new Cloner();
+		cl.dontCloneInstanceOf(Agent.class);
+		cl.dontCloneInstanceOf(ProductionSite.class);
+		cl.registerImmutable(DateTime.class);
+		cl.registerImmutable(Delivery.class);
+		//cl.setDumpClonedClasses(true);
+		return cl;
 	}
 }

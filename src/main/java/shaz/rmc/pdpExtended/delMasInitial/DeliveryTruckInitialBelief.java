@@ -23,16 +23,16 @@ public class DeliveryTruckInitialBelief {
 	private Point startLocation;
 	private final TimeSlot totalTimeRange; //for storing the actual period of activity of truck. i.e when trucks start its day, and ends it
 	//only start and endTime will be used
-	ArrayList<ExpAnt> explorationAnts;
-	ArrayList<IntAnt> intentionAnts;
+	protected final ArrayList<ExpAnt> explorationAnts;
+	protected final ArrayList<IntAnt> intentionAnts;
 	
 	//for Objective function
 	Duration totalTravelTime; //keeps record of the time vehicle kept on traveling
 	private int wastedConcrete; // to keep record of wasted concrete
 	
-	ArrayList<TimeSlot> availableSlots;
-	DeliveryTruckInitial deliveryTruckAgent;
-	 ArrayList<TruckScheduleUnit> schedule;
+	protected ArrayList<TimeSlot> availableSlots;
+	private final DeliveryTruckInitial deliveryTruckAgent;
+	protected final ArrayList<TruckScheduleUnit> schedule;
 	
 	
 	public DeliveryTruckInitialBelief(DeliveryTruckInitial pDeliveryTruck,  ArrayList<TruckScheduleUnit> pSch) {

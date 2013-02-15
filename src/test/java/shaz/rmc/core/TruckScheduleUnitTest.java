@@ -76,13 +76,5 @@ public class TruckScheduleUnitTest {
 		fail("Not yet implemented");
 	}
 
-	/**
-	 * Test method for {@link shaz.rmc.core.TruckScheduleUnit#getTravelTime()}.
-	 */
-	@Test
-	public void testGetTravelTime() {
-		TruckScheduleUnit unit = new TruckScheduleUnit(truck);
-		unit.getTravelTime();
-	}
-
+	
 }

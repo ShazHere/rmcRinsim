@@ -1,8 +1,8 @@
 package shaz.rmc.pdpExtended.core;
 
 import rinde.sim.core.model.pdp.PDPModel;
-import rinde.sim.core.model.pdp.Parcel;
-import rinde.sim.core.model.pdp.Vehicle;
+//import rinde.sim.core.model.pdp.Parcel;
+//import rinde.sim.core.model.pdp.Vehicle;
 //import shaz.rmc.pdpExtended.trial.RmcDelivery;
 //import shaz.rmc.pdpExtended.trial.RmcDeliveryTruck;
 //import shaz.rmc.pdpExtended.trial.RmcProductionSite;

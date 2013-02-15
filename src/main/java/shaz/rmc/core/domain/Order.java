@@ -84,7 +84,7 @@ public class Order implements Serializable {
         return requiredDischargePerHour;
     }
     public int getRequiredDischargePerMinute(){
-    	return (int)Math.ceil(requiredDischargePerHour/60);
+    	return (int)Math.ceil((double)requiredDischargePerHour/60d);
     }
     
     public boolean hasRequiredDischargeRate() {

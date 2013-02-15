@@ -8,7 +8,6 @@ package shaz.rmc.pdpExtended.delMasInitial;
 import org.apache.commons.math3.random.RandomData;
 import org.apache.commons.math3.random.RandomDataImpl;
 
-import org.joda.time.Chronology;
 import org.joda.time.DateTime;
 import org.joda.time.chrono.GregorianChronology;
 
@@ -75,7 +74,7 @@ public class GlobalParameters {
 	
 	public static RandomData RANDOM_DATA_GEN = new RandomDataImpl();  // for generating random sequence having good values..
 	
-	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per100;
+	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per0;
 	
 	
 	//RINSIM PARAMETERS

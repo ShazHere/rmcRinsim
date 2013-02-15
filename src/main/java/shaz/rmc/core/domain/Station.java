@@ -2,6 +2,7 @@ package shaz.rmc.core.domain;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -20,7 +21,7 @@ import java.util.logging.Logger;
 
 import com.sun.org.apache.bcel.internal.generic.*;
 
-public class Station implements Location {
+public class Station implements Location, Serializable {
 
 	private final String id;
 	private final Duration loadingDuration;
