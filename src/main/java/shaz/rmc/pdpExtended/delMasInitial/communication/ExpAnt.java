@@ -28,10 +28,6 @@ import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters.Weights;
  */
 public class ExpAnt extends Ant {
 
-//	public ExpAnt(CommunicationUser sender) {
-//		super(sender);
-//		// TODO Auto-generated constructor stub
-//	}
 	private ArrayList<TimeSlot> availableSlots;
 	private final ArrayList<TruckScheduleUnit> schedule;
 	private boolean scheduleComplete;
@@ -44,8 +40,7 @@ public class ExpAnt extends Ant {
 	private TruckScheduleUnit currentUnit;
 	private DateTime currentInterestedTime;
 	
-//	private final int returnEarlyProbability; //the probability that exp should return having only one order booking in its schedule..
-	//this was introduced because otherwise ants wont return at all, if there are less orders in environment. range is 0 to 9.
+
 	private final DeliveryTruckInitial originator; //the actual truck agent which initialized the ExpAnt 
 	private int scheduleUnitsAdded; //to keep track that exp ant itself added how many units.
 	
@@ -61,15 +56,15 @@ public class ExpAnt extends Ant {
 			ArrayList<TimeSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime) {
 		super(sender);
 		originator = (DeliveryTruckInitial)sender;  //ant originator, creater. Sender means the one who is curreently sending ant after cloning
-		final Cloner cl = Utility.getCloner();
-		schedule = cl.deepClone(pSchedule);
-		availableSlots = cl.deepClone(pAvailableSlots);
+		
+		schedule = Utility.getCloner().deepClone(pSchedule);
+		availableSlots = Utility.getCloner().deepClone(pAvailableSlots);
 		scheduleComplete = false; 		// to keep track if the schedule is explored by ant, now it could return to orignator.
 		creationTime = pCreateTime;
 		scheduleUnitsAdded = 0; 		//to keep track how many schedule units are added by the current ant. 
 		
 		truckSpeed = ((DeliveryTruckInitial)originator).getSpeed();
-		truckTotalTimeRange =new TimeSlot(new DateTime(creationTime), originator.getTotalTimeRange().getEndTime());
+		truckTotalTimeRange = new TimeSlot(new DateTime(creationTime), originator.getTotalTimeRange().getEndTime());
 		currentUnit = null; // It should not contain any unit if currently expAnt isn't interested in any order.
 		currentInterestedTime = null;
 	}
@@ -86,8 +81,8 @@ public class ExpAnt extends Ant {
 			ArrayList<TimeSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime, CommunicationUser pOriginator) {
 		super(sender);
 		originator = (DeliveryTruckInitial)pOriginator;
-		availableSlots = new ArrayList<TimeSlot>(pAvailableSlots);
-		schedule = new ArrayList<TruckScheduleUnit>(pSchedule);
+		availableSlots = Utility.getCloner().deepClone(pAvailableSlots);
+		schedule = Utility.getCloner().deepClone(pSchedule);
 		scheduleComplete = false;
 		creationTime = pCreateTime;
 		truckSpeed = ((DeliveryTruckInitial)originator).getSpeed();
@@ -118,7 +113,7 @@ public class ExpAnt extends Ant {
 	 * @return true if the ExpAnt is interested at interested time even though it has to travel through 
 	 * the travelDistance after loading time (LOADING_MINUTES). 
 	 */
-	public boolean isInterested(DateTime interestedTime, Double travelDistance, final double fixedCapacity, final DateTime currTime) {
+	public boolean isInterested(DateTime interestedTime, Double travelDistance,  final DateTime currTime) {
 		Duration travelTime = new Duration((long)((travelDistance/truckSpeed)*60*60*1000)); //travel time required to reach order from specific PS
 		Utility.getAvailableSlots(this.schedule, this.availableSlots, new TimeSlot (new DateTime(currTime), this.truckTotalTimeRange.getEndTime()));
 		if (availableSlots.size() == 0)
@@ -128,8 +123,6 @@ public class ExpAnt extends Ant {
 			if (currentSlot.getStartTime().compareTo(actualInterestedTime)< 0 //making rough estimation that will order enoughÊ interesting to be visited
 					&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
 				if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
-//					currentUnit = new TruckScheduleUnit((DeliveryTruckInitial)originator, //start time also includes the travel distance and loading at production
-//							new TimeSlot (actualInterestedTime,null )); //EndTime of slot cannot be decided here, It is adjusted at Order
 					currentInterestedTime = actualInterestedTime;
 						return true;
 				}
@@ -154,42 +147,15 @@ public class ExpAnt extends Ant {
 		return schedule;
 	}
 	
-//	/**
-//	 * @return true if probability returns true accroding to early returnProbability.
-//	 */
-//	public boolean isReturnEarly() {
-//		boolean prob;
-////		if (returnEarlyProbability == 1){
-////			prob = returnEarlyProbabilityGen.nextInt(10) <= 1 ;
-////		}
-////		else if (returnEarlyProbability == 5){
-////			prob = returnEarlyProbabilityGen.nextInt(10) <= 5 ;
-////		}
-////		else {
-////			prob = returnEarlyProbabilityGen.nextInt(10) < 9 ;
-////		}
-////		//System.out.println("probability is " + prob);
-////		return prob;
-//		
-//		if (returnEarlyProbability == 6){
-//			prob = returnEarlyProbabilityGen.nextInt(10) <= 6 ;
-//		}
-//		else if (returnEarlyProbability == 5){
-//			prob = returnEarlyProbabilityGen.nextInt(10) <= 5 ;
-//		}
-//		else {
-//			prob = returnEarlyProbabilityGen.nextInt(10) < 9 ;
-//		}
-//		System.out.println("probability is " + prob);
-//		return prob;
-//	}
+
 	/**
 	 * @param pSender The current sender from which the ant is sent to the recepient
 	 * @return new exp, clone of the current one. 
 	 */
 	public ExpAnt clone(CommunicationUser pSender) {
-		ExpAnt exp = new ExpAnt(pSender,this.availableSlots, this.schedule, this.creationTime, this.originator );
-		exp.currentUnit = this.currentUnit;
+		final Cloner cl = Utility.getCloner();
+		ExpAnt exp = new ExpAnt(pSender,cl.deepClone(this.availableSlots), cl.deepClone(this.schedule), this.creationTime, this.originator );
+		exp.currentUnit = cl.deepClone(this.currentUnit); // i guess even its not deepCloned it will be fine since its immutable object.
 		exp.currentInterestedTime = this.currentInterestedTime;
 		exp.scheduleComplete = this.scheduleComplete;
 		exp.scheduleUnitsAdded = this.scheduleUnitsAdded;

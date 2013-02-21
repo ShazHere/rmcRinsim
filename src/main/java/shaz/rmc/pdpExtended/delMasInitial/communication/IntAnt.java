@@ -18,6 +18,7 @@ import shaz.rmc.core.Ant;
 import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
 import shaz.rmc.core.TruckScheduleUnit;
+import shaz.rmc.core.Utility;
 import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
@@ -43,8 +44,7 @@ public class IntAnt extends Ant {
 		creationTime = pCreateTime;
 		currentUnitNo = 0;
 		if (!communicateAbleSchedule.isEmpty())
-			currentUnit = communicateAbleSchedule.get(0);
-
+			currentUnit = communicateAbleSchedule.get(currentUnitNo);
 	}
 
 	//TODO: check if clone requires any other copying stuff?
@@ -55,11 +55,11 @@ public class IntAnt extends Ant {
 	 * @param pCreateTime
 	 * @param pOriginator
 	 */
-	public IntAnt(CommunicationUser sender,
+	private IntAnt(CommunicationUser sender,
 			 ArrayList<communicateAbleUnit> pSchedule, DateTime pCreateTime, CommunicationUser pOriginator) {
 		super(sender);
 		originator = (DeliveryTruckInitial)pOriginator;
-		communicateAbleSchedule = new ArrayList<communicateAbleUnit>(pSchedule);
+		communicateAbleSchedule = pSchedule;
 		creationTime = pCreateTime;
 		
 		if (!communicateAbleSchedule.isEmpty())
@@ -68,9 +68,10 @@ public class IntAnt extends Ant {
 
 	@Override
 	public IntAnt clone(CommunicationUser pSender) {
-		IntAnt iAnt = new IntAnt(pSender, this.communicateAbleSchedule, this.creationTime, this.originator );
-		iAnt.currentUnit = this.currentUnit;
-		iAnt.currentUnitNo= this.currentUnitNo;
+		final Cloner cl = Utility.getCloner();
+		IntAnt iAnt = new IntAnt(pSender, cl.deepClone(this.communicateAbleSchedule), this.creationTime, this.originator );
+		iAnt.currentUnitNo = this.currentUnitNo;
+		iAnt.currentUnit = iAnt.communicateAbleSchedule.get(iAnt.currentUnitNo);
 		return iAnt;
 	}
 	public DeliveryTruckInitial getOriginator() {
@@ -134,15 +135,15 @@ public class IntAnt extends Ant {
 			if (newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) {//if any reply REJECT, dnot consider schedule
 				return false;
 			}
+			checkArgument((newu.getPsReply() == Reply.NO_REPLY || newu.getOrderReply() == Reply.NO_REPLY) == false, true);
+				//return false;
 		}
-		
-		
 		if (!existingSchedule.isEmpty()){
 			boolean unitExist = false;
 			for (TruckScheduleUnit u : existingSchedule) {//for each of existing schedule in truck
 				unitExist = false;
 				for (communicateAbleUnit newu: this.communicateAbleSchedule) { //chek if existing unit, exists in iAnt as well..
-					if (u.getDelivery().equalsWithSameTruck(newu.getTunit().getDelivery()) && unitExist == false) {
+					if (u.getDelivery().equals(newu.getTunit().getDelivery()) && unitExist == false) {
 						unitExist = true;
 						//checkArgument(u.isAddedInTruckSchedule() == true, true);
 						checkArgument(newu.getOrderReply() == Reply.WEEK_ACCEPT && newu.getPsReply() == Reply.WEEK_ACCEPT, true);

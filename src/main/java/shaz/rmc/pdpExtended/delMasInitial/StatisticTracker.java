@@ -3,6 +3,7 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial;
 
+import java.util.ArrayList;
 import java.util.Set;
 import static java.util.Collections.unmodifiableSet;
 
@@ -12,9 +13,11 @@ import org.joda.time.Duration;
 
 import rinde.sim.core.Simulator;
 import rinde.sim.core.Simulator.SimulatorEventType;
+import rinde.sim.core.model.Model;
 import rinde.sim.core.model.pdp.Depot;
 import rinde.sim.core.model.pdp.PDPModel;
 import rinde.sim.core.model.pdp.Vehicle;
+import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.event.Event;
 import rinde.sim.event.Listener;
 import shaz.rmc.core.ResultElements;
@@ -35,14 +38,16 @@ public class StatisticTracker implements Listener {
 	private long endTimeSim;
 	private final Simulator sim;
 	private final PDPModel pdpModel;
+	private final RoadModel roadModel; 
 	private final OrderManagerInitial orm; 
 	private ResultElements stats;
 	
-	public StatisticTracker(Simulator pSim, final PDPModel pPdpModel, OrderManagerInitial pOrm) {
+	public StatisticTracker(Simulator pSim, final PDPModel pPdpModel, OrderManagerInitial pOrm, final RoadModel pRoadModel) {
 		sim = pSim;
 		pdpModel = pPdpModel;
 		orm = pOrm;
 		stats = null;
+		roadModel = pRoadModel;
 	}
 
 		@Override
@@ -69,6 +74,7 @@ public class StatisticTracker implements Listener {
 		}
 		public String collectStatistics() {
 			final StringBuilder sb = new StringBuilder();
+			ArrayList<Depot> psSet = new ArrayList<Depot>(roadModel.getObjectsOfType(ProductionSiteInitial.class));
 			Set<Vehicle> truckSet = pdpModel.getVehicles();
 			Set<OrderAgentInitial> orderSet = orm.getOrders();
 			stats = new ResultElements(orderSet, truckSet);

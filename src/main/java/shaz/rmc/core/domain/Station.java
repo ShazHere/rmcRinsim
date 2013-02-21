@@ -62,9 +62,10 @@ public class Station implements Location, Serializable {
 		int sameUnitLoc = unitWithSlotExist(slotNo); 
 		int hour = 0,min = 0;
 		if ( sameUnitLoc >= 0) { //means some other booking at the same slot..
-			if (availabilityList.get(sameUnitLoc).getTruck().equals(truck) ) // same truck made the previous booking
+			if (availabilityList.get(sameUnitLoc).getTruck().getId() == truck.getId() ) // same truck made the previous booking
 			{
-				if (del.equalsWithSameTruck(availabilityList.get(sameUnitLoc).getDelivery())) { //means same truck with same delivery
+				//if (del.equalsWithSameTruck(availabilityList.get(sameUnitLoc).getDelivery())) { //means same truck with same delivery
+				if (del.equals(availabilityList.get(sameUnitLoc).getDelivery())) { //means same truck with same delivery
 					availabilityList.get(sameUnitLoc).setRefreshTime(currTime); //refresh the booking time..
 					System.out.println("Station bookings Refreshed!");
 					return new DateTime(0); //so that PS keeps the reply=WEEK_ACCEPT which could be previously UNDER_PROCESS
@@ -159,7 +160,7 @@ public class Station implements Location, Serializable {
 		private DateTime refreshTime;
 		final private Agent truck;
 		final private Delivery delivery;
-		private TimeSlot timeSlot; //think should it be directly timeslot of delivery or it shud include travel time etc.
+		final private TimeSlot timeSlot; //think should it be directly timeslot of delivery or it shud include travel time etc.
 		private int slotNo; /*This is a special no. which represents, which 5min slot of station this is? The value ranges from 0 to 288-1. (Since 24 hours will have 12*24 5min slots)
 				//which makes in total 288 bookable slots for a station). Each time when a booking is added in schedule array of station, the slot no. should be calculated in the following way:
 				 * let bt represent booking start time,			10:30 to 10:35 is for instance loading time
@@ -197,9 +198,9 @@ public class Station implements Location, Serializable {
 			return timeSlot;
 		}
 
-		public void setTimeSlot(TimeSlot timeSlot) {
-			this.timeSlot = timeSlot;
-		}
+//		public void setTimeSlot(TimeSlot timeSlot) {
+//			this.timeSlot = timeSlot;
+//		}
 
 		public int getSlotNo() {
 			return slotNo;

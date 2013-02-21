@@ -14,21 +14,16 @@ import shaz.rmc.core.Ant;
  */
 public class FeaAnt extends Ant {
 	private final DateTime interestedAt; //for storing the time at which order wants Trucks to propose it.
-	private final Double fixedCapacityAmount; //i.e order is looking for specific amount of capacity
 	
-	public FeaAnt(CommunicationUser sender, DateTime interestedTime, double fixedCapacityAmount) {
+	public FeaAnt(CommunicationUser sender, DateTime interestedTime) {
 		super(sender);
 		this.interestedAt = interestedTime;
-		this.fixedCapacityAmount = fixedCapacityAmount;
 	}
 
 	public DateTime getInterestedAt() {
 		return interestedAt;
 	}
 
-	public Double getFixedCapacityAmount() {
-		return fixedCapacityAmount;
-	}
 
 	@Override
 	public FeaAnt clone(CommunicationUser currentSender)  {

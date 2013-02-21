@@ -35,10 +35,8 @@ public class OrderManagerInitial implements TickListener {
 	Set<OrderAgentInitial> orderSet = new HashSet<OrderAgentInitial>();
 	private DateTime lastTimeOrdersChecked; /** to keep track of Order startTime check, based on which orders should be created */
 	
-	public OrderManagerInitial(Simulator pSim, int randomSeed, PlaneRoadModel pPrm) {
-		if (randomSeed != 0)
-			rng = new MersenneTwister(randomSeed);
-		else rng = new MersenneTwister();
+	public OrderManagerInitial(Simulator pSim, RandomGenerator pRand, PlaneRoadModel pPrm) {
+		rng = pRand;
 		sim = pSim;
 		prm = pPrm;
 		lastTimeOrdersChecked = new DateTime(0);

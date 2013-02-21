@@ -34,7 +34,7 @@ public class RmcSimulation {
 	private static Logger log = Logger.getLogger(RmcSimulation.class);
 	private static Simulator sim;
 	public static void main(String[] args) {
-		int randomSeed = 250;
+		int randomSeed = 250; //if randomSeed == 0, then each generato is a new random Generator without any seed, else same rng should be passed to all
 		final RandomGenerator rng = new MersenneTwister(randomSeed);
 		sim = new Simulator(rng, 200); //tick is one milli second, step = 200ms 
 		/* Discussed with Rinde that truck.getSpeed and roadModel.maxSpeed should always be in same units.  
@@ -47,13 +47,17 @@ public class RmcSimulation {
 		final PlaneRoadModel prm = new PlaneRoadModel(new Point(0, 0), new Point(10, 10), true, 10);//10by10 km plane
 		CommunicationModel communicationModel;
 		if (randomSeed !=0)
-			 communicationModel = new CommunicationModel(new MersenneTwister(randomSeed), true);
-		else
 			 communicationModel = new CommunicationModel(rng, true);
+		else
+			 communicationModel = new CommunicationModel(new MersenneTwister(), true);
 		final PDPModel pdpModel = new PDPModel();
-		OrderManagerInitial omi = new OrderManagerInitial(sim, randomSeed, prm); 
+		OrderManagerInitial omi;
+		if (randomSeed == 0)
+			omi = new OrderManagerInitial(sim, new MersenneTwister(), prm);
+		else 
+			omi = new OrderManagerInitial(sim, rng, prm); 
 		// Statistic Tracker
-		final StatisticTracker stTracker = new StatisticTracker(sim , pdpModel, omi);
+		final StatisticTracker stTracker = new StatisticTracker(sim , pdpModel, omi, prm);
 		sim.getEventAPI().addListener(stTracker, SimulatorEventType.values());
 		sim.register(prm); 
 		sim.register(pdpModel);
@@ -68,8 +72,12 @@ public class RmcSimulation {
 
 		
 		//Adding prodcuction Sites
-		for (int j = 0; j<2 ; j++) 
-			sim.register(new ProductionSiteInitial(randomSeed, GlobalParameters.PROBLEM.getStations().get(j)));
+		for (int j = 0; j<2 ; j++) {
+			if (randomSeed == 0)
+				sim.register(new ProductionSiteInitial(new MersenneTwister(), GlobalParameters.PROBLEM.getStations().get(j)));
+			else
+				sim.register(new ProductionSiteInitial(rng, GlobalParameters.PROBLEM.getStations().get(j)));
+		}
 		
 		//Adding orders
 		omi.addOrders();
@@ -77,8 +85,8 @@ public class RmcSimulation {
 		//Adding Delivery Trucks
 		for (int j = 0; j< GlobalParameters.TOTAL_TRUCKS ; j ++){
 			if (randomSeed == 0)
-				sim.register(new DeliveryTruckInitial(prm.getRandomPosition(new MersenneTwister(randomSeed)), rmSim.getTruck(j), 
-						new MersenneTwister(randomSeed).nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN)));
+				sim.register(new DeliveryTruckInitial(prm.getRandomPosition(new MersenneTwister()), rmSim.getTruck(j), 
+						new MersenneTwister().nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN)));
 			else sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(j), 
 					rng.nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN)));
 		}

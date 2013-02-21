@@ -57,18 +57,15 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	private final Map<OrderAgentInitial, Double> travelDistanceToOrder; 
 	private final Map<OrderAgentInitial, Long > pheromoneUpdateTime;
 	private final Map<OrderAgentInitial, Long > noOfExplorations;
-	private final Map<OrderAgentInitial, Double > fixedCapacityAmount; //delivery has a fixed capacity? this will be case when there a previous delivery (
 	
 	private ArrayList<FeaAnt> feasibilityAnts;
 	private ArrayList<ExpAnt> explorationAnts;
 	private ArrayList<IntAnt> intentionAnts;
 	
-	public ProductionSiteInitial(int pRandomSeed, Station pStation) {
+	public ProductionSiteInitial(RandomGenerator pRnd, Station pStation) {
 		//public ProductionSiteInitial(RandomGenerator pRnd, Station pStation) {
 		station = pStation;	
-		if (pRandomSeed != 0)
-			rnd = new MersenneTwister(pRandomSeed);
-		else rnd = new MersenneTwister();
+		rnd = pRnd;
 		mailbox = new Mailbox();
 		logger = Logger.getLogger(ProductionSiteInitial.class);
 		
@@ -79,7 +76,6 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 		travelDistanceToOrder = new LinkedHashMap<OrderAgentInitial, Double>();
 		pheromoneUpdateTime = new LinkedHashMap<OrderAgentInitial, Long >();
 		noOfExplorations = new LinkedHashMap<OrderAgentInitial, Long >();
-		fixedCapacityAmount = new LinkedHashMap<OrderAgentInitial, Double >();
 	}
 	
 	@Override
@@ -112,7 +108,6 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				travelDistanceToOrder.remove(ord);
 				pheromoneUpdateTime.remove(ord);
 				noOfExplorations.remove(ord);
-				fixedCapacityAmount.remove(ord);
 			}
 			logger.debug(station.getId() +"P pheromone table after evaporation: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
 		}
@@ -133,9 +128,9 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				i.remove();
 				continue;
 			}
-			DateTime stationReplyDate = station.makeBookingAt(iAnt.getCurrentUnit().getTunit().getTimeSlot().getStartTime(), iAnt.getOriginator(), iAnt.getCurrentUnit().getTunit().getDelivery(), currTime);
+			DateTime stationReplyDate = station.makeBookingAt(iAnt.getCurrentUnit().getTimeSlot().getStartTime(), iAnt.getOriginator(), iAnt.getCurrentUnit().getDelivery(), currTime);
 			if (stationReplyDate != null) { //means station is booked or refreshed
-				if (stationReplyDate.equals(new DateTime(0))) { //means booking refrehed
+				if (stationReplyDate.equals(new DateTime(0))) { //means booking refrehe d
 					iAnt.getCurrentUnit().setPsReply(Reply.WEEK_ACCEPT);
 				}
 				else { //the dateTime booked is returned
@@ -145,9 +140,9 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			else {
 				iAnt.getCurrentUnit().setPsReply(Reply.REJECT);
 			}
-			logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " " + iAnt.getCurrentUnit().getPsReply() +" by PS");
+			logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " " + iAnt.getCurrentUnit().getPsReply() +" by PS" + " currTime= " + currTime);
 			IntAnt newAnt = iAnt.clone(this);
-			cApi.send(iAnt.getCurrentUnit().getTunit().getDelivery().getOrder(), newAnt);
+			cApi.send(iAnt.getCurrentUnit().getDelivery().getOrder(), newAnt);
 			i.remove();
 		}
 		logger.debug(station.getId() +"P STATTION  Availability List = " + station.pringAvailabilityList());
@@ -190,7 +185,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((OrderAgentInitial)exp.getSender()).getOrder().getId() +"O expScheduleSize = " + exp.getSchedule().size());
 		
 		for (OrderAgentInitial or : interestedTime.keySet()) { //check all order pheromones..
-			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), fixedCapacityAmount.get(or), currTime) 
+			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), currTime) 
 					&& noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) { //if interested, and order in't explored too much
 				logger.debug(station.getId() +"P exp-" +exp.getOriginator().getId()+ " is interested " + exp.getCurrentInterestedTime() +
 						", orderInterested " + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));
@@ -199,9 +194,9 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				//exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.getPosition(), this); //normally make this as start PS
 				ExpAnt newExp = (ExpAnt)exp.clone(this);
 				cApi.send(or, newExp); //send exp clones to all orders(or) it is interested in
-				logger.debug(station.getId() +"P pheromone table: (curTime="+ currTime +")\n" + this.pheromoneToString());
 			}
 		}	
+		logger.debug(station.getId() +"P pheromone table: (curTime="+ currTime +")\n" + this.pheromoneToString());
 	}
 	private void processFeasibilityAnts(TimeLapse timeLapse) {
 		if (feasibilityAnts.isEmpty())
@@ -211,10 +206,8 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			travelDistanceToOrder.put((OrderAgentInitial)f.getSender(), Point.distance(this.getPosition(), ((OrderAgentInitial)f.getSender()).getPosition()));
 			pheromoneUpdateTime.put((OrderAgentInitial)f.getSender(), timeLapse.getStartTime());
 			noOfExplorations.put((OrderAgentInitial)f.getSender(),0l); //so current info is acquired by none..
-			fixedCapacityAmount.put((OrderAgentInitial)f.getSender(), f.getFixedCapacityAmount());
 		}
 		feasibilityAnts.clear();
-		logger.debug(station.getId() +"P pheromone table: (curTime="+ GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime()) +")\n" + this.pheromoneToString());
 		checkArgument (feasibilityAnts.isEmpty(), true);
 	}
 
@@ -293,9 +286,12 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			sb.append("[time = " + this.interestedTime.get(or));
 			sb.append(", travelDistance = " + this.travelDistanceToOrder.get(or));
 			sb.append(", explorations = " + this.noOfExplorations.get(or));
-			sb.append(", capacity = " + this.fixedCapacityAmount.get(or));
 			sb.append("] \n");
 		}
 		return sb.toString();
+	}
+	@Override
+	public String toString () {
+		return this.station.toString();
 	}
 }

@@ -91,9 +91,7 @@ public class DeliveryTruckInitialBelief {
 		for (TruckScheduleUnit u : oldSch) {
 			foundMatch = false;
 			for (TruckScheduleUnit newUnit: newSch) {
-//				if (((OrderAgentInitial)u.getDelivery().getOrder()).getOrder().getId().equals(((OrderAgentInitial)newUnit.getDelivery().getOrder()).getOrder().getId())  //add timeSlot match as well
-//						&& u.getDelivery().getDeliveryNo() == newUnit.getDelivery().getDeliveryNo()) {
-				if (u.getDelivery().equalsWithSameTruck(newUnit.getDelivery())) {
+				if (u.getDelivery().equals(newUnit.getDelivery())) {
 					foundMatch = true;
 					break;
 				}

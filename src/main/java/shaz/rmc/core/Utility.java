@@ -22,7 +22,9 @@ import java.io.PrintWriter;
 import java.io.FileWriter;
 
 import shaz.rmc.core.domain.Delivery;
+import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
 import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters;
+import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
 
 
 /**
@@ -157,6 +159,8 @@ public class Utility {
 		final Cloner cl = new Cloner();
 		cl.dontCloneInstanceOf(Agent.class);
 		cl.dontCloneInstanceOf(ProductionSite.class);
+		cl.dontCloneInstanceOf(DeliveryTruckInitial.class);
+		cl.dontCloneInstanceOf(OrderAgentInitial.class);
 		cl.registerImmutable(DateTime.class);
 		cl.registerImmutable(Delivery.class);
 		//cl.setDumpClonedClasses(true);

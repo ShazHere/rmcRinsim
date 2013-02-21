@@ -57,9 +57,9 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private CommunicationAPI cApi;
 	
 	private DateTime timeForLastFeaAnt; /** to keep track of feasibility interval */
-	private final Map<Integer, DateTime> refreshTimes; //for keepting track of when to evaporate intentions
-	private final Map<Integer, Boolean> isPhysicallyCreated;
-	private final Map<Integer, Boolean> isConfirmed;
+	private final Map<Delivery, DateTime> refreshTimes; //for keepting track of when to evaporate intentions
+	private final Map<Delivery, Boolean> isPhysicallyCreated;
+	private final Map<Delivery, Boolean> isConfirmed;
 	
 	//REalted to current interest
 	private DateTime interestedTime;  //time sent by FeaAnts, to indicate this is the time at which order is interested
@@ -95,9 +95,10 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		intentionAnts = new ArrayList<IntAnt>();
 		deliveries = new ArrayList<Delivery>();
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
-		refreshTimes = new LinkedHashMap<Integer, DateTime>();
-		isConfirmed =new LinkedHashMap<Integer, Boolean>();
-		isPhysicallyCreated = new LinkedHashMap<Integer, Boolean>();
+		
+		refreshTimes = new LinkedHashMap<Delivery, DateTime>();
+		isConfirmed =new LinkedHashMap<Delivery, Boolean>();
+		isPhysicallyCreated = new LinkedHashMap<Delivery, Boolean>();
 	}
 	@Override
 	public void tick(TimeLapse timeLapse) {
@@ -121,14 +122,13 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			for (Delivery d : deliveries) { //5 min cushion time, 5min for PS fillling time
 				DateTime createTime = d.getDeliveryTime().minus(d.getStationToCYTravelTime()).minusMinutes(cushionMinutes).minusMinutes(GlobalParameters.LOADING_MINUTES); 
 				if (currTime.compareTo(createTime) >= 0) {
-					if (isPhysicallyCreated.get(d.getDeliveryNo()) == false && isConfirmed.get(d.getDeliveryNo()) == true){ //isReservd means isPhysically created..
+					if (isPhysicallyCreated.get(d) == false && isConfirmed.get(d) == true){ //isReservd means isPhysically created..
 						DeliveryInitial pd = new DeliveryInitial(this, d, dNo, d.getLoadingStation().getPosition(), 
 								this.getPosition(), d.getLoadingDuration().getMillis(), d.getUnloadingDuration().getMillis(), (double)d.getDeliveredVolume());
 						sim.register(pd);
 						parcelDeliveries.add(pd);
 						logger.debug(order.getId() + "O Delivery physically created..del NO = " + dNo + "current time = " + currTime + ", Loading time = " + createTime.plusMinutes(cushionMinutes));
-						isPhysicallyCreated.put(d.getDeliveryNo(), true);
-						//d.setReserved(true);
+						isPhysicallyCreated.put(d, true);
 					}
 				}
 				dNo ++;
@@ -194,7 +194,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		if (remainingToBookVolume < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
 			int wastedVolume = (int)(exp.getOriginator().getCapacity() - remainingToBookVolume);
 			delBuilder.setWastedVolume(wastedVolume);
-			delBuilder.setUnloadingDuration(new Duration((long)(remainingToBookVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
+			delBuilder.setUnloadingDuration(new Duration((remainingToBookVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
 		}
 		else {
 			delBuilder.setWastedVolume(0);// no wastage 
@@ -205,33 +205,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		return del;
 		
 	}
-/*//	private Delivery oldDeliveryCreation() {
-//		Delivery del=  new Delivery(this, pDeliveryNo, exp.getOriginator(), (int)(exp.getOriginator().getCapacity()), 
-//				exp.getCurrentUnit().getTimeSlot().getProductionSiteAtStartTime(),selectedPs );
-//		
-//		del.setStationToCYTravelTime(new Duration (travelDur));
-//		travelDur = (long)((Point.distance(selectedPs.getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //CY to returnStation distance
-//		del.setCYToStationTravelTime(new Duration(travelDur));
-//		del.setDeliveryTime(pDeliveryTime);
-//		if (this.deliveries.size() == 0 ) //means at the moment decesions are for first delivery so ST shud b included
-//			{ 
-//				//checkArgument(pDeliveryNo == 0, true);
-//				del.setLagTime(this.delayFromActualInterestedTime.plus(this.delayStartTime));
-//			}
-//		else
-//			del.setLagTime(this.delayFromActualInterestedTime); //no ST added this time
-//		if (remainingToBookVolume < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
-//			int wastedVolume = (int)(exp.getOriginator().getCapacity() - remainingToBookVolume);
-//			del.setWastedVolume(wastedVolume);
-//			del.setUnloadingDuration(new Duration((long)(remainingToBookVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
-//		}
-//		else {
-//			del.setWastedVolume(0);// no wastage 
-//			del.setUnloadingDuration(new Duration((long)(exp.getOriginator().getCapacity()* 60l*60l*1000l / GlobalParameters.DISCHARGE_RATE_PERHOUR) ));
-//		}
-//		del.setLoadingDuration(new Duration(GlobalParameters.LOADING_MINUTES*60l*1000l));
-//		return del;
-//	} */
+
 	private void sendToPs(ExpAnt exp, Delivery del) {
 		ExpAnt newExp = (ExpAnt)exp.clone(this);
 		if (newExp.makeCurrentUnit(del)) {
@@ -246,31 +220,28 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	}
 	private void processIntentionAnts(TimeLapse timeLapse) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-		if ( intentionAnts.isEmpty()) {
-			intentionAnts.clear(); 
+		if ( intentionAnts.isEmpty()) 
 			return;
-		} //aparently it will reach beyond this point depending intention_interval
+		 //aparently it will reach beyond this point depending intention_interval
 		Iterator<IntAnt> i = intentionAnts.iterator();
 		while (i.hasNext()) { //at the moment just select the first one
 			IntAnt iAnt = i.next();
-			if (iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryTime().equals(this.interestedTime) //so iAnt is according to order's current interest
+			if (iAnt.getCurrentUnit().getDelivery().getDeliveryTime().equals(this.interestedTime) //so iAnt is according to order's current interest
 					&& iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo() == this.interestedDeliveryNo && orderReserved == false
 					&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == false) {
 				boolean iAntAccepted = false;
-				if (refreshTimes.containsKey(iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo()) == false ) {//refreshTimes.get(iAnt.getCurrentUnit().getDelivery().getDeliveryNo()).equals(currTime) == false) {
+				if (refreshTimes.containsKey(iAnt.getCurrentUnit().getDelivery()) == false ) {//refreshTimes.get(iAnt.getCurrentUnit().getDelivery().getDeliveryNo()).equals(currTime) == false) {
 					if (iAnt.getCurrentUnit().getPsReply() == Reply.UNDER_PROCESS) { //PS is ok with this delivery
 							checkArgument(iAnt.getCurrentUnit().isAddedInTruckSchedule() == false, true);
-							acceptIntention(iAnt, true, currTime);
-							setOrderInterests(iAnt, true);
+							acceptIntention(iAnt, currTime);
 							iAntAccepted = true;
 					}
-				}
-				else if (refreshTimes.get(iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo()).equals(currTime) == false) {
-					checkArgument(this.deliveries.size() > 0 == true, true);
+				} //else could be case if a previous delivery was reopended..
+				else if (refreshTimes.get(iAnt.getCurrentUnit().getDelivery()).equals(currTime) == false) { //TODO, correct this if-else, since else is
+					checkArgument(this.deliveries.size() > 0 == true, true);			//only to express that if Containskey == true, then check whats the value in refreshTimes
 					if (iAnt.getCurrentUnit().getPsReply() == Reply.UNDER_PROCESS) { //PS is ok with this delivery
 							checkArgument(iAnt.getCurrentUnit().isAddedInTruckSchedule() == false, true);
-							acceptIntention(iAnt, true, currTime);
-							setOrderInterests(iAnt, true);
+							acceptIntention(iAnt, currTime);
 							iAntAccepted = true;
 					}
 				} 
@@ -278,24 +249,22 @@ public class OrderAgentInitial  extends Depot implements Agent {
 					iAnt.getCurrentUnit().setOrderReply(Reply.REJECT);
 			}
 			else { //order isn't interested, yet it could be refreshing of a previous booking
-				Delivery d = deliveryExistWithSameTruck(iAnt.getCurrentUnit().getTunit().getDelivery());
-				if (d != null && refreshTimes.get(d.getDeliveryNo()).compareTo(currTime) < 0 
+				Delivery d = deliveryExists(iAnt.getCurrentUnit().getDelivery());
+				if (d != null && refreshTimes.get(d).compareTo(currTime) < 0 
 						&& iAnt.getCurrentUnit().getPsReply() == Reply.WEEK_ACCEPT  
 						&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == true) { //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
-					//checkArgument(iAnt.getCurrentUnit().getFixedCapacityAmount() == 0, true);
-					//d.setConfirmed(true);
-					isConfirmed.put(d.getDeliveryNo(), true);
-					refreshTimes.put(iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo(), currTime);
+					isConfirmed.put(iAnt.getCurrentUnit().getDelivery(), true);
+					refreshTimes.put(iAnt.getCurrentUnit().getDelivery(), currTime);
 					iAnt.getCurrentUnit().setOrderReply(Reply.WEEK_ACCEPT); //So earlier it could be UnderProcess, but once confirmed, its Weekly accepted
 					logger.debug(order.getId() + "O int-" + iAnt.getOriginator().getId()+" booking refreshed");
 				}
 				else //now its sure order isn't interested!
 					iAnt.getCurrentUnit().setOrderReply(Reply.REJECT);
 			}
-			logger.debug(order.getId() + "O int-" + iAnt.getOriginator().getId()+" reply is " + iAnt.getCurrentUnit().getOrderReply());
+			logger.debug(order.getId() + "O int-" + iAnt.getOriginator().getId()+" reply is " + iAnt.getCurrentUnit().getOrderReply() + " currTime= " + currTime);
 			IntAnt newAnt = iAnt.clone(this);
 			newAnt.setNextCurrentUnit();
-			cApi.send(iAnt.getCurrentUnit().getTunit().getDelivery().getReturnStation(), newAnt);
+			cApi.send(iAnt.getCurrentUnit().getDelivery().getReturnStation(), newAnt);
 			i.remove();
 		}
 	}
@@ -303,25 +272,20 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	/**
 	 * should not be called for refresh deliveries, rather it should be called for the deliveries for which order was really interested.
 	 * @param iAnt the ant under process
-	 * @param isNewDelivery Is it a new delivery to be added in deliveries? Or one of the previous deliver wasnt confirmed by 
-	 * 	truck so the order's interested time became time of one of the old deliveries (that are already added in deliveries) delivery.
-	 *  This doesn't check that if a delivery is only refresh delivery or not.  
 	 * @param currTime
 	 */
-	private void acceptIntention(IntAnt iAnt, boolean isNewDelivery, DateTime currTime) {
+	private void acceptIntention(IntAnt iAnt, DateTime currTime) {
 		iAnt.getCurrentUnit().setOrderReply(Reply.UNDER_PROCESS); // at the momnet its under consideration, once refreshed, it will be week_accept
-		//iAnt.getCurrentUnit().getDelivery().setConfirmed(false); //trucks are not sure to put it in schedule
-		refreshTimes.put(iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo(), currTime);
-		//if (isNewDelivery)
-			deliveries.add(iAnt.getCurrentUnit().getTunit().getDelivery());
-			isPhysicallyCreated.put(iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo(), false);
-			isConfirmed.put(iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo(), false);
+		refreshTimes.put(iAnt.getCurrentUnit().getDelivery(), currTime);
+		deliveries.add(iAnt.getCurrentUnit().getDelivery());
+		isPhysicallyCreated.put(iAnt.getCurrentUnit().getDelivery(), false);
+		isConfirmed.put(iAnt.getCurrentUnit().getDelivery(), false);
+		setOrderInterests(iAnt);
 	}
 	/**
 	 * @param iAnt te ant under process
-	 * @param isNewDelivery same as in acceptIntention
 	 */
-	private void setOrderInterests(IntAnt iAnt, boolean isNewDelivery) {
+	private void setOrderInterests(IntAnt iAnt) {
 		remainingToBookVolume = calculateRemainingVolume();
 		Delivery lastDelivery = deliveries.get(deliveries.size()-1);
 		interestedTime = lastDelivery.getDeliveryTime().plus(lastDelivery.getUnloadingDuration());
@@ -330,15 +294,12 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			orderReserved = true;
 			logger.debug(order.getId() + "O fully BOOKED");
 		}
-		else {
-			orderReserved = false;
-		}
 	}
 	private int calculateRemainingVolume() {
 		int remainingVolume = order.getRequiredTotalVolume();
 		if (!deliveries.isEmpty()){
 			for (Delivery d : deliveries) {
-				remainingVolume -= d.getDeliveredVolume();
+				remainingVolume -= d.getDeliveredVolume()-d.getWastedVolume();
 			}
 		}
 		if (remainingVolume < 0)
@@ -357,20 +318,20 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		 *  adjust the starttime delay and interestedtime delay..
 		 */
 
-	private Delivery deliveryExistWithSameTruck(Delivery newDel) {
-		for (Delivery existingDel: deliveries) {
-			if (existingDel.equalsWithSameTruck(newDel))
-				return existingDel;
-		}
-		return null;
-	}
-	private Delivery deliveryExistWithDiffTruck(Delivery newDel) {
+	private Delivery deliveryExists(Delivery newDel) {
 		for (Delivery existingDel: deliveries) {
 			if (existingDel.equals(newDel))
 				return existingDel;
 		}
 		return null;
 	}
+//	private Delivery deliveryExistWithDiffTruck(Delivery newDel) {
+//		for (Delivery existingDel: deliveries) {
+//			if (existingDel.equals(newDel))
+//				return existingDel;
+//		}
+//		return null;
+//	}
 
 	@Override
 	public void afterTick(TimeLapse timeLapse) {
@@ -380,7 +341,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (currTime.minusMinutes(timeForLastFeaAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN ){
 			if (orderReserved == false && remainingToBookVolume > 0)  {
-				FeaAnt fAnt = new FeaAnt(this, this.interestedTime, 0d ); //the distance is calculated when ant reaches the PS
+				FeaAnt fAnt = new FeaAnt(this, this.interestedTime); //the distance is calculated when ant reaches the PS
 				cApi.broadcast(fAnt);
 				timeForLastFeaAnt = currTime;
 			}
@@ -389,13 +350,14 @@ public class OrderAgentInitial  extends Depot implements Agent {
 				if (d != null){
 					interestedTime = d.getDeliveryTime();
 					interestedDeliveryNo = d.getDeliveryNo();
-					FeaAnt fAnt = new FeaAnt(this, interestedTime, 0d);//d.getDeliveredVolume() ); //the distance is calculated when ant reaches the PS
-					logger.debug(order.getId() + "O Feasibility with fixed Cpapacity sent by order");
+					FeaAnt fAnt = new FeaAnt(this, interestedTime);  //the distance is calculated when ant reaches the PS
 					deliveries.remove(d);
-					refreshTimes.remove(d.getDeliveryNo());
+					refreshTimes.remove(d);
+					isConfirmed.remove(d); //TODO add if isphyc.contains key, then remove
+					isPhysicallyCreated.remove(d);
 					cApi.broadcast(fAnt);
-					timeForLastFeaAnt = currTime;
 				}
+				timeForLastFeaAnt = currTime;
 			}
 		}
 	}
@@ -403,9 +365,10 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private Delivery checkOrderStatus(long currMilli) {
 		long currMilliInterval;
 		for (Delivery d : deliveries){
-			currMilliInterval = GlobalParameters.START_DATETIME.plusMillis((int)currMilli).getMillis() - refreshTimes.get(d.getDeliveryNo()).getMillis();
+			currMilliInterval = GlobalParameters.START_DATETIME.plusMillis((int)currMilli).getMillis() - refreshTimes.get(d).getMillis();
 			//if (d.isConfirmed() == false && (new Duration (currMilliInterval)).getStandardMinutes() >= GlobalParameters.INTENTION_EVAPORATION_MIN) {
-			if (isConfirmed.get(d.getDeliveryNo()) == false && (new Duration (currMilliInterval)).getStandardMinutes() >= GlobalParameters.INTENTION_EVAPORATION_MIN) {
+			if (isConfirmed.get(d) == false 
+					&& (new Duration (currMilliInterval)).getStandardMinutes() > GlobalParameters.INTENTION_EVAPORATION_MIN) {
 				this.orderReserved = false;
 				logger.debug(order.getId() + "O Order Reopened");
 				return d;
@@ -420,7 +383,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	public DeliveryInitial getDeliveryForDomainDelivery(Delivery pdelivery){
 		if (parcelDeliveries.size() > 0) {
 			for (DeliveryInitial rmcDel: parcelDeliveries) {
-				if (rmcDel.getDelivery().equalsWithSameTruck(pdelivery)) {
+				if (rmcDel.getDelivery().equals(pdelivery)) {
 					return rmcDel;
 				}
 			}
@@ -501,7 +464,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	@Override
 	public String toString() {
 		return "OrderAgentInitial [ "
-				+ ", order=" + order.toString() + "\n , deliveries=" + deliveries
+				+ "order=" + order.toString() + "\n , deliveries=" + deliveries
 				+ ", timeForLastFeaAnt=" + timeForLastFeaAnt
 				+ ", refreshTimes=" + refreshTimes
 				+ ", interestedTime=" + interestedTime

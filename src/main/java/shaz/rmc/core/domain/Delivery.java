@@ -19,7 +19,6 @@ final public class Delivery {
 	//final private DateTime loadingTime, unloadingTime; //Start time
 	final private Duration loadingDuration, unloadingDuration;
 	final private Duration stationToCYTravelTime, CYToStationTravelTime;
-	//private Vehicle vehicle;
 	final private  Agent order;
 	final private int deliveredVolume;
 	final private Duration lagTime;// for storing lagTime before this delivery
@@ -27,12 +26,8 @@ final public class Delivery {
 	
 	
 	//added by shaz
-	//private boolean isReserved; // used like isPhysically created? 15/12/2012 [Goes to Agent itself like a hashmap]
 	final private DateTime deliveryTime;  //according to d1 which might be settled
 	final private int wastedVolume; // filed by truck while adding unit
-
-	//private boolean isExplored; //means is sent as reply to an exploration ant of a truck. not used now.. @shaz 15/03/2012
-	//private boolean confirmed; //to record that the truck has confirmed and sent intention ant, that it will pick the delivery at delivery [goti truck itself]
 	private final Agent truck;
 
 	private Delivery(Builder builder) {
@@ -141,29 +136,9 @@ final public class Delivery {
 		return order;
 	}
 	
-//	public Vehicle getVehicle() {
-//		return vehicle;
-//	}
-	
 	public int getDeliveredVolume() {
 		return deliveredVolume;
 	}
-
-//	public DateTime getLoadingTime() {
-//		return loadingTime;
-//	}
-//
-//	public void setLoadingTime(DateTime loadingTime) {
-//		this.loadingTime = loadingTime;
-//	}
-//
-//	public DateTime getUnloadingTime() {
-//		return unloadingTime;
-//	}
-//
-//	public void setUnloadingTime(DateTime unloadingTime) {
-//		this.unloadingTime = unloadingTime;
-//	}
 
 	public ProductionSite getLoadingStation() {
 		return loadingStation;
@@ -206,24 +181,11 @@ final public class Delivery {
 		return sb.toString();
 	}
 	
-//	public boolean isExplored() {
-//		return isExplored;
-//	}
-//	public void setExplored (boolean val) {
-//		this.isExplored = val;
-//	}
-
-	
 	public DateTime getDeliveryTime() {
 		return deliveryTime;
 	}
-//	public void setDeliveryTime(DateTime deliveryTime) {
-//		this.deliveryTime = deliveryTime;
-//	}
-//	
 	//not sure if its required.. 13/12/2011
-	public Duration requiredTimetoDeliver() {
-		
+	public Duration requiredTimetoDeliver() {		
 		return null;
 	}
 
@@ -239,10 +201,6 @@ final public class Delivery {
 		return lagTime;
 	}
 
-//	public void setLagTime(Duration lagTime) {
-//		this.lagTime = lagTime;
-//	}
-
 	public int getDeliveryNo() {
 		return deliveryNo;
 	}
@@ -252,33 +210,33 @@ final public class Delivery {
 	 * @return true if two deliveries have same values of truckId, order, deliverTime, and delivery no.
 	 * false if any of these values doesn't match 
 	 */
-	public boolean equalsWithSameTruck(Delivery del) {
-		if (this.truck.getId() ==del.truck.getId() && this.order.equals(del.order) 
-				&& this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 && this.deliveryNo == del.deliveryNo)
-			return true;
-		return false;
-	}
+//	public boolean equalsWithSameTruck(Delivery del) {
+//		if (this.truck.getId() ==del.truck.getId() && this.order.equals(del.order) 
+//				&& this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 && this.deliveryNo == del.deliveryNo)
+//			return true;
+//		return false;
+//	}
 
-	/** 
-	 * Returns true if two deliveries have same values of order, deliverTime, and delivery no. 
-	 * false otherwise.
-	 */
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null)
-			return false;
-		if (obj == this)
-			return true;
-		Delivery del = (Delivery)obj;
-		if (this.order.equals(del.order) && this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 
-				&& this.deliveryNo == del.deliveryNo)
-			return true;
-		return false;
-	}
-	@Override
-	public int hashCode() {
-	  assert false : "hashCode not designed";
-	  return 0; // any arbitrary constant will do
-	}
+//	/** 
+//	 * Returns true if two deliveries have same values of order, deliverTime, and delivery no. 
+//	 * false otherwise.
+//	 */
+//	@Override
+//	public boolean equals(Object obj) {
+//		if (obj == null)
+//			return false;
+//		if (obj == this)
+//			return true;
+//		Delivery del = (Delivery)obj;
+//		if (this.order.equals(del.order) && this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 
+//				&& this.deliveryNo == del.deliveryNo)
+//			return true;
+//		return false;
+//	}
+//	@Override
+//	public int hashCode() {
+//	  assert false : "hashCode not designed";
+//	  return 0; // any arbitrary constant will do
+//	}
 
 }
