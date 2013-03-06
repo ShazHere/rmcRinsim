@@ -13,11 +13,12 @@ import org.joda.time.Duration;
 
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.TimeSlot;
+import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitialIntention;
 import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters;
 import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
 
 import java.util.Comparator;
-import java.util.logging.Logger;
+import org.apache.log4j.Logger;
 
 import com.sun.org.apache.bcel.internal.generic.*;
 
@@ -28,12 +29,16 @@ public class Station implements Location, Serializable {
 	private final int loadingDurationInMin;
 	private List<StationBookingUnit> availabilityList;
 	
+	private final Logger logger; //for logging
+
 	public Station(final String id, final Duration loadingDuration) {
 		this.id = id;
 		this.loadingDuration = loadingDuration;
 		this.loadingDurationInMin = 5;//considering 5min loading duraion since for all stations its same..
 			//(int)loadingDuration.getMillis()/(1000000*60);
 		availabilityList = new ArrayList<StationBookingUnit>();
+		logger = Logger.getLogger(Station.class);
+
 	}
 	
 	public String getId() {
@@ -67,7 +72,7 @@ public class Station implements Location, Serializable {
 				//if (del.equalsWithSameTruck(availabilityList.get(sameUnitLoc).getDelivery())) { //means same truck with same delivery
 				if (del.equals(availabilityList.get(sameUnitLoc).getDelivery())) { //means same truck with same delivery
 					availabilityList.get(sameUnitLoc).setRefreshTime(currTime); //refresh the booking time..
-					System.out.println("Station bookings Refreshed!");
+					logger.debug("Station bookings Refreshed!");
 					return new DateTime(0); //so that PS keeps the reply=WEEK_ACCEPT which could be previously UNDER_PROCESS
 				}
 			}

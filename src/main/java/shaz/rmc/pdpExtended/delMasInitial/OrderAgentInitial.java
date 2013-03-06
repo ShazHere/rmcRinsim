@@ -149,7 +149,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			ExpAnt exp = i.next(); //i guess once reached to order, it shud just include order in its list, since order was in general ok
 			long psToCyDur = (long)((Point.distance(exp.getSender().getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //hours to milli
 			if (exp.getCurrentInterestedTime().equals(interestedTime.minus(psToCyDur).minusMinutes(GlobalParameters.LOADING_MINUTES)) ) {
-					//&& exp.getCurrentUnit().getFixedCapacityAmount() == 0) {
 				logger.debug(order.getId() + "O expStarTim = " + exp.getCurrentInterestedTime() + " & interestedTim = " + interestedTime + " loadingTime = " + interestedTime.minus(psToCyDur).minusMinutes(GlobalParameters.LOADING_MINUTES));	
 				Delivery del = prepareNewDelivery(interestedDeliveryNo, exp, interestedTime, psToCyDur);
 				sendToPs(exp, del);
@@ -184,13 +183,14 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		travelDur = (long)((Point.distance(selectedPs.getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //CY to returnStation distance
 		delBuilder.setCYToStationTravelTime(new Duration(travelDur));
 		delBuilder.setDeliveryTime(pDeliveryTime);
-		if (this.deliveries.size() == 0 ) //means at the moment decesions are for first delivery so ST shud b included
-			{ 
-				//checkArgument(pDeliveryNo == 0, true);
-				delBuilder.setLagTime(this.delayFromActualInterestedTime.plus(this.delayStartTime));
-			}
-		else
-			delBuilder.setLagTime(this.delayFromActualInterestedTime); //no ST added this time
+//		if (this.deliveries.size() == 0 ) //means at the moment decesions are for first delivery so ST shud b included
+//			{ 
+//				//checkArgument(pDeliveryNo == 0, true);
+//				delBuilder.setLagTime(this.delayFromActualInterestedTime.plus(this.delayStartTime));
+//			}
+//		else
+//			delBuilder.setLagTime(this.delayFromActualInterestedTime); //no ST added this time
+		delBuilder.setLagTime(exp.getLagTime());
 		if (remainingToBookVolume < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
 			int wastedVolume = (int)(exp.getOriginator().getCapacity() - remainingToBookVolume);
 			delBuilder.setWastedVolume(wastedVolume);
@@ -209,10 +209,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private void sendToPs(ExpAnt exp, Delivery del) {
 		ExpAnt newExp = (ExpAnt)exp.clone(this);
 		if (newExp.makeCurrentUnit(del)) {
-		//newExp.getCurrentUnit().setDelivery(del);
-		//newExp.getCurrentUnit().getTimeSlot().setEndtime(del.getDeliveryTime().plus(del.getUnloadingDuration()).plus(del.getCYToStationTravelTime()));
 			logger.debug(order.getId() + "O delivery added in expAnts schedule, orginator = " + newExp.getOriginator().getId());
-		//newExp.addCurrentUnitInSchedule();					
 			cApi.send(del.getReturnStation(), newExp);
 		}
 		else
@@ -325,13 +322,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 		return null;
 	}
-//	private Delivery deliveryExistWithDiffTruck(Delivery newDel) {
-//		for (Delivery existingDel: deliveries) {
-//			if (existingDel.equals(newDel))
-//				return existingDel;
-//		}
-//		return null;
-//	}
 
 	@Override
 	public void afterTick(TimeLapse timeLapse) {
@@ -342,7 +332,10 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		if (currTime.minusMinutes(timeForLastFeaAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN ){
 			if (orderReserved == false && remainingToBookVolume > 0)  {
 				FeaAnt fAnt = new FeaAnt(this, this.interestedTime); //the distance is calculated when ant reaches the PS
-				cApi.broadcast(fAnt);
+				for (ProductionSiteInitial p : sites) {
+					if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
+						cApi.send(p, fAnt);
+				}
 				timeForLastFeaAnt = currTime;
 			}
 			else {
@@ -366,7 +359,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		long currMilliInterval;
 		for (Delivery d : deliveries){
 			currMilliInterval = GlobalParameters.START_DATETIME.plusMillis((int)currMilli).getMillis() - refreshTimes.get(d).getMillis();
-			//if (d.isConfirmed() == false && (new Duration (currMilliInterval)).getStandardMinutes() >= GlobalParameters.INTENTION_EVAPORATION_MIN) {
 			if (isConfirmed.get(d) == false 
 					&& (new Duration (currMilliInterval)).getStandardMinutes() > GlobalParameters.INTENTION_EVAPORATION_MIN) {
 				this.orderReserved = false;
@@ -420,9 +412,9 @@ public class OrderAgentInitial  extends Depot implements Agent {
 					deliveredConcrete += di.getDelivery().getDeliveredVolume();
 				}
 			}
-			return new ResultElementsOrder(deliveries.size(), this.getOrder().getRequiredTotalVolume(), deliveredConcrete);
+			return new ResultElementsOrder(deliveries, this.order.getRequiredTotalVolume(), deliveredConcrete);
 		}
-		return null;
+		return new ResultElementsOrder(null, this.order.getRequiredTotalVolume(), deliveredConcrete);
 	}
 	/* 
 	 * Should serve same as getLocation, returns location in PDP model

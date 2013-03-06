@@ -1,4 +1,0 @@
-# Data file for input file: /Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10/planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml
-# Experiment Date: 2013-01-17T18:21:14.482+01:00
-Result-10-01-2011-basicper0	ObjectiveFunction	TotalTrucksGiven	TotalTrucksUsed	TotalOrdersGiven	TotalOrdersServed	TravelMin	LagTimeInMin	StartTimeDelay	WastedConcrete	TotalConcrete	TotalDeliveries	TotalDeliveriesReadyByOrder	TotalConcreteByOrder	DeliveredConcrete
-Result-10-01-2011-basicper0	21880	6	6	6	6	1080	0	0	28750	90000	9	90750	90750	90000Result-10-01-2011-basicper0	23920	6	6	6	5	1184	0	0	24250	90000	9	85250	85250	90000Result-10-01-2011-basicper0	24020	6	6	6	5	1192	0	0	18250	90000	9	85250	85250	90000Result-10-01-2011-basicper0	17650	6	5	6	6	866	0	0	33250	80000	8	90750	90750	80000Result-10-01-2011-basicper0	21660	6	6	6	6	1069	0	0	28750	90000	9	90750	90750	90000

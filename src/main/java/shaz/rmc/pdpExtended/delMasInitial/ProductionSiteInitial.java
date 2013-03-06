@@ -63,7 +63,6 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	private ArrayList<IntAnt> intentionAnts;
 	
 	public ProductionSiteInitial(RandomGenerator pRnd, Station pStation) {
-		//public ProductionSiteInitial(RandomGenerator pRnd, Station pStation) {
 		station = pStation;	
 		rnd = pRnd;
 		mailbox = new Mailbox();
@@ -172,6 +171,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			i.remove(); // if exp is not further intereste it will automaticaly die..
 		} //end while (i.hasNext())
 		checkArgument (explorationAnts.isEmpty(), true);
+		logger.debug(station.getId() +"P pheromone table: (curTime="+ currTime +")\n" + this.pheromoneToString());
 	}
 	/**
 	 * Should be called when the expAnt is not to be sent to its orginator, rather it needed to be further sent to other orders
@@ -196,7 +196,6 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				cApi.send(or, newExp); //send exp clones to all orders(or) it is interested in
 			}
 		}	
-		logger.debug(station.getId() +"P pheromone table: (curTime="+ currTime +")\n" + this.pheromoneToString());
 	}
 	private void processFeasibilityAnts(TimeLapse timeLapse) {
 		if (feasibilityAnts.isEmpty())

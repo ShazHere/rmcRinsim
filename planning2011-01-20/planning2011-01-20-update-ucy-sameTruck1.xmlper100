@@ -1,4 +1,0 @@
-# Data file for input file: /Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-20/planning2011-01-20-update-ucy-sameTruck1.xml
-# Experiment Date: 2013-01-18T10:48:30.894+01:00
-ObjectiveFunction	TotalTrucksGiven	TotalTrucksUsed	TotalOrdersGiven	TotalOrdersServed	TravelMin	LagTimeInMin	StartTimeDelay	WastedConcrete	TotalConcrete	TotalDeliveries	TotalDeliveriesReadyByOrder	TotalConcreteByOrder	DeliveredConcrete	planning2011-01-20-update-ucy-sameTruck1.xmlper100
-29390	14	14	14	12	1457	0	0	25750	140000	14	273250	273250	210000	planning2011-01-20-update-ucy-sameTruck1.xmlper10030120	14	14	14	13	1486	0	0	40000	140000	14	303250	303250	250000	planning2011-01-20-update-ucy-sameTruck1.xmlper100

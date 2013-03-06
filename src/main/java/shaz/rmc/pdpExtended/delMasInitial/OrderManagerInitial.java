@@ -3,6 +3,7 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -34,19 +35,23 @@ public class OrderManagerInitial implements TickListener {
 	private final PlaneRoadModel prm;
 	Set<OrderAgentInitial> orderSet = new HashSet<OrderAgentInitial>();
 	private DateTime lastTimeOrdersChecked; /** to keep track of Order startTime check, based on which orders should be created */
+	private boolean loadBasicOrders = false;
 	
 	public OrderManagerInitial(Simulator pSim, RandomGenerator pRand, PlaneRoadModel pPrm) {
 		rng = pRand;
 		sim = pSim;
 		prm = pPrm;
 		lastTimeOrdersChecked = new DateTime(0);
+		loadBasicOrders = true; // make it true if we only need the basic 3 orders to be loaded..
 		logger = Logger.getLogger(OrderManagerInitial.class);
 	}
 	@Override
 	public void tick(TimeLapse timeLapse) {
-		//addOrderInTick(timeLapse);
+		if (loadBasicOrders == false)
+			addOrderInTick(timeLapse);
 	}
 	private void addOrderInTick(TimeLapse timeLapse) {
+		ArrayList<String> orderIdList = new ArrayList<String>(); 
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
 		if (currTime.minusMinutes(lastTimeOrdersChecked.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN ){
 			Iterator<Order> i = GlobalParameters.PROBLEM.getOrders().iterator();
@@ -54,7 +59,18 @@ public class OrderManagerInitial implements TickListener {
 				Order ord = i.next();
 				if (currTime.plusHours(2).compareTo(ord.getEarliestStartTime()) >= 0)  { //Xhours earlier the from their start times, orders will be added
 					logger.debug("index of order to be added is = " + GlobalParameters.PROBLEM.getOrders().indexOf(ord));
-					addOrder(ord, timeLapse.getStartTime());
+					if (addOrder(ord, timeLapse.getStartTime()))
+						orderIdList.add(ord.getId());
+				}
+			}
+			for (String id: orderIdList) {
+				Iterator<Order> k = GlobalParameters.PROBLEM.getOrders().iterator();
+				while(k.hasNext()) {
+					Order ord = k.next();
+					if (id.equals(ord.getId())) {
+						GlobalParameters.PROBLEM.getOrders().remove(ord);
+						break;
+					}
 				}
 			}
 			lastTimeOrdersChecked = currTime;
@@ -65,14 +81,17 @@ public class OrderManagerInitial implements TickListener {
 	 * Should be called after registering orderManagerInitial.If the method is not called at all, no orders will be added, except if they are handled in tick() method
 	 */
 	public void addOrders() {
-		addBasicOrders();
-//		int orderToBeAdded = GlobalParameters.INPUT_INSTANCE_TYPE.getPerOfX(GlobalParameters.PROBLEM.getOrders().size());
-//		logger.debug("Orders to be added at Start is=  " + orderToBeAdded);
-//		for (int k = 0; k < orderToBeAdded; k++) {
-//			int index = this.rng.nextInt(GlobalParameters.PROBLEM.getOrders().size());
-//			this.addOrder(GlobalParameters.PROBLEM.getOrders().get(index) , 0);
-//			GlobalParameters.PROBLEM.getOrders().remove(index);
-//		}
+		if (loadBasicOrders)
+			addBasicOrders();
+		else {
+			int orderToBeAdded = GlobalParameters.INPUT_INSTANCE_TYPE.getPerOfX(GlobalParameters.PROBLEM.getOrders().size());
+			logger.debug("Orders to be added at Start is=  " + orderToBeAdded);
+			for (int k = 0; k < orderToBeAdded; k++) {
+				int index = this.rng.nextInt(GlobalParameters.PROBLEM.getOrders().size());
+				this.addOrder(GlobalParameters.PROBLEM.getOrders().get(index) , 0);
+				GlobalParameters.PROBLEM.getOrders().remove(index);
+			}
+		}
 	}
 
 	/**
@@ -90,6 +109,8 @@ public class OrderManagerInitial implements TickListener {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		System.out.println(ord.toString());
 		OrderAgentInitial or = new OrderAgentInitial(sim, prm.getRandomPosition(rng), ord);//<GlobalParameters.PROBLEM.getOrders().size()?i:i-1));
+		if (orderSet.contains(or))
+			return false;
 		if (orderSet.add(or)) {
 			boolean b = sim.register(or);
 			if (b) System.out.println("order added and CurrentTime = " + currTime);

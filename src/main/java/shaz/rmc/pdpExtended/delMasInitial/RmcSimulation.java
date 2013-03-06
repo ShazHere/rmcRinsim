@@ -118,9 +118,9 @@ public class RmcSimulation {
 		sim.start();
 		//if (!sim.isPlaying()) {
 		String writeString = stTracker.collectStatistics(); 
-			log.debug(writeString);
+			log.info(writeString);
 			stTracker.writeFile(writeString);
-			log.debug(stTracker.collectDataString());
+			log.info(stTracker.collectDataString());
 			
 		//}
 	}

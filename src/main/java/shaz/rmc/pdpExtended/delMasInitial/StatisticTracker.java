@@ -78,9 +78,10 @@ public class StatisticTracker implements Listener {
 			Set<Vehicle> truckSet = pdpModel.getVehicles();
 			Set<OrderAgentInitial> orderSet = orm.getOrders();
 			stats = new ResultElements(orderSet, truckSet);
+			sb.append("\n");
 			//order related
 			sb.append("TotalOrdersGiven: ").append(stats.getTotalOrderGiven()).append("\n");
-			sb.append("UndeliveredConcrete: ").append(stats.getUndeliveredConcrete()).append("\n");
+			sb.append("TotalOrdersServed: ").append(stats.getTotalOrderServed()).append("\n");
 			sb.append(stats.getResultOrder().toString());
 			//truck related
 			sb.append("\n").append("TotalTrucksUsed: ").append(stats.getTotalTrucksUsed()).append("\n");

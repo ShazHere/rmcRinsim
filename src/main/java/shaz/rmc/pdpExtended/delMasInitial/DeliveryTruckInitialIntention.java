@@ -69,7 +69,7 @@ public class DeliveryTruckInitialIntention {
 						" delivery No = " + currentDelivery.getDeliveryNo() + "truck state = " + rmcTruck.getPdpModel().getVehicleState(rmcTruck));
 				if (currentDelivery.getLoadingStation().getLocation() == rmcTruck.getRoadModel().getPosition(rmcTruck) 
 						&& rmcTruck.getRoadModel().containsObject(currentParcelDelivery)) {
-					logger.debug(rmcTruck.getId()+ "T: Picking up " + currentParcelDelivery.getOrder().getOrder().getId() +"O and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
+					logger.info(rmcTruck.getId()+ "T: Picking up " + currentParcelDelivery.getOrder().getOrder().getId() +"O and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
 					rmcTruck.getPdpModel().pickup(rmcTruck, currentParcelDelivery, time); //Picking the deliver
 					destination = currentDelivery.getOrder().getPosition(); //get postion of CY i.e unloading location
 				} //cuurent time has started, but truck is not at location of pickup, so drive to it..
@@ -85,7 +85,7 @@ public class DeliveryTruckInitialIntention {
 								&& rmcTruck.getPdpModel().getContentsSize(rmcTruck) == 0 
 								&& rmcTruck.getPdpModel().getVehicleState(rmcTruck) == VehicleState.IDLE) { 
 								//&& deliveredCurrentDelivery == true) {
-							logger.debug(rmcTruck.getId()+ "T: Done Delivery and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
+							logger.info(rmcTruck.getId()+ "T: Done Delivery and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
 							destination = currentDelivery.getReturnStation().getLocation();
 							rmcTruck.getRoadModel().moveTo(rmcTruck, destination, time);
 							

@@ -67,10 +67,12 @@ public class ResultElements {
 		for (OrderAgentInitial o: orderSet) {
 			ro = o.getOrderResult();
 			if (ro != null) {
-				totalOrderServed +=1;
 				allResultOrder.addDeliveredConcrete(ro.getDeliveredConcrete());
 				allResultOrder.addTotalConcreteByOrder(ro.getTotalConcreteByOrder());
 				allResultOrder.addTotalDeliveriesReadyByOrder(ro.getTotalDeliveriesReadyByOrder());
+				allResultOrder.addUndeliveredConcrete(ro.getUndeliveredConcrete());
+				if (ro.getUndeliveredConcrete() == 0)
+					totalOrderServed +=1;
 			}
 		}	
 		this.resultOrder = allResultOrder;
@@ -107,7 +109,7 @@ public class ResultElements {
 	  *	From ResultOrder 
 	  */
 	public int getTotalDeliveriesReadyByOrder() {
-		return resultOrder.getTotalConcreteByOrder();
+		return resultOrder.getTotalDeliveriesReadyByOrder();
 	}	
 	public int getTotalConcreteByOrder() {
 		return resultOrder.getTotalConcreteByOrder();
@@ -116,7 +118,7 @@ public class ResultElements {
 		return resultOrder.getDeliveredConcrete();
 	}
 	public int getUndeliveredConcrete() {
-		return this.getDeliveredConcrete() - (this.getTotalConcrete() - this.getWastedConcrete());
+		return resultOrder.getUndeliveredConcrete();//this.getDeliveredConcrete() - (this.getTotalConcrete() - this.getWastedConcrete());
 	}
 	
 	/*
@@ -177,7 +179,8 @@ public class ResultElements {
 		//order details
 		colNames.append("TotalDeliveriesReadyByOrder").append(seperator);
 		colNames.append("TotalConcreteByOrder").append(seperator);
-		colNames.append("DeliveredConcrete");
+		colNames.append("DeliveredConcrete").append(seperator);
+		colNames.append("UnDeliveredConcrete");
 		
 		return colNames.toString();
 	}
@@ -208,7 +211,8 @@ public class ResultElements {
 		//order details
 		resultDetails.append(getTotalDeliveriesReadyByOrder()).append(seperator);
 		resultDetails.append(getTotalConcreteByOrder()).append(seperator);
-		resultDetails.append(getDeliveredConcrete());
+		resultDetails.append(getDeliveredConcrete()).append(seperator);
+		resultDetails.append(getUndeliveredConcrete());
 		
 		return resultDetails.toString();
 	}

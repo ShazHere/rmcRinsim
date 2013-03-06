@@ -39,7 +39,7 @@ public class ExpAnt extends Ant {
 	//private TimeSlot currentSlot;
 	private TruckScheduleUnit currentUnit;
 	private DateTime currentInterestedTime;
-	
+	private Duration lagTime;
 
 	private final DeliveryTruckInitial originator; //the actual truck agent which initialized the ExpAnt 
 	private int scheduleUnitsAdded; //to keep track that exp ant itself added how many units.
@@ -67,6 +67,7 @@ public class ExpAnt extends Ant {
 		truckTotalTimeRange = new TimeSlot(new DateTime(creationTime), originator.getTotalTimeRange().getEndTime());
 		currentUnit = null; // It should not contain any unit if currently expAnt isn't interested in any order.
 		currentInterestedTime = null;
+		lagTime = null;
 	}
 	/**
 	 * used by clone(sender) method..for hop by hop movement
@@ -106,7 +107,6 @@ public class ExpAnt extends Ant {
 
 	/**
 	 * Apart from returning true if interested, the method also creates a new currentUnit
-	 * TODO Later disintegrate the currrenUnit creation to some other method for proper design
 	 * @param interestedTime
 	 * @param travelDistance
 	 * @param currTime
@@ -124,9 +124,20 @@ public class ExpAnt extends Ant {
 					&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
 				if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
 					currentInterestedTime = actualInterestedTime;
+					this.lagTime = new Duration(0);
 						return true;
 				}
 			}
+//			else {//estimate with lag time
+//				if (currentSlot.getStartTime().compareTo(actualInterestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES))< 0 //making rough estimation that will order enoughÊ interesting to be visited
+//						&& currentSlot.getEndTime().compareTo(interestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES).plusHours(1).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
+//					if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
+//						currentInterestedTime = actualInterestedTime;
+//						this.lagTime = new Duration (actualInterestedTime, currentSlot.getStartTime() ); 
+//							return true;
+//					}
+//				}
+//			}
 		return false;
 	}
 //TODO make it return defensive copy
@@ -134,7 +145,9 @@ public class ExpAnt extends Ant {
 		return Utility.getCloner().deepClone(this.currentUnit);
 	}
 	
-	
+	public Duration getLagTime(){
+		return lagTime;
+	}
 	public DateTime getCurrentInterestedTime() {
 		return currentInterestedTime;
 	}
@@ -159,6 +172,7 @@ public class ExpAnt extends Ant {
 		exp.currentInterestedTime = this.currentInterestedTime;
 		exp.scheduleComplete = this.scheduleComplete;
 		exp.scheduleUnitsAdded = this.scheduleUnitsAdded;
+		exp.lagTime = this.lagTime;
 		return exp;
 	}
  
