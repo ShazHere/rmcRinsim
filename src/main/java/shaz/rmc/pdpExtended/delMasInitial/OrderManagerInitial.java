@@ -42,7 +42,7 @@ public class OrderManagerInitial implements TickListener {
 		sim = pSim;
 		prm = pPrm;
 		lastTimeOrdersChecked = new DateTime(0);
-		loadBasicOrders = true; // make it true if we only need the basic 3 orders to be loaded..
+		loadBasicOrders = false; // make it true if we only need the basic 3 orders to be loaded..
 		logger = Logger.getLogger(OrderManagerInitial.class);
 	}
 	@Override

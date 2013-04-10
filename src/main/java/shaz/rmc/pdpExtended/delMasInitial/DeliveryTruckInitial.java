@@ -97,19 +97,42 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 	private void processExplorationAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		if 	(b.explorationAnts.size()> 0) {
-			bestAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
-					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
-			for (ExpAnt eAnt: b.explorationAnts) { //find eAnt with smallest score, i.e least cost
-				if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){				
-					if (eAnt.getSchedule().size() > bestAnt.getSchedule().size()) { //select the with highest units..but there shud be further selection if there is a tie
-							bestAnt = eAnt;
-						}
-				}
-			}
-			printBestAnt(startTime);
-			b.explorationAnts.clear(); 
-		}	
+		if (b.explorationAnts.isEmpty())
+			return;
+	
+		//first remove invalid schedules, and get whats the maxScore size
+		int maxSizeFound = 0;
+		Iterator<ExpAnt> i = b.explorationAnts.iterator();
+		while (i.hasNext()) { 
+			ExpAnt eAnt = i.next();
+			if (b.scheduleStillValid(b.schedule,  eAnt.getSchedule()) == false)
+				i.remove();
+			else if (eAnt.getSchedule().size() > maxSizeFound)
+				maxSizeFound = eAnt.getSchedule().size();
+		}
+		if (b.explorationAnts.isEmpty())
+			return;
+		//prune the one with lesser schedule size
+		Iterator<ExpAnt> j = b.explorationAnts.iterator();
+		while (j.hasNext()) { //at the moment just select the first one
+			ExpAnt eAnt = j.next();
+			if (eAnt.getSchedule().size() < maxSizeFound)
+				j.remove();
+		}
+		checkArgument(b.explorationAnts.isEmpty() == false, true);
+		//select 1st schedule as best
+		bestAnt = b.explorationAnts.get(0);
+//			bestAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
+//					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
+		for (ExpAnt eAnt: b.explorationAnts) { //find eAnt with smallest score, i.e least cost
+			//if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){				
+				if (eAnt.getScheduleScore()< bestAnt.getScheduleScore()) {
+						bestAnt = eAnt;
+					}
+			//}
+		}
+		printBestAnt(startTime);
+		b.explorationAnts.clear(); 
 	}
 	private void processIntentionAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);

@@ -277,12 +277,12 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		deliveries.add(iAnt.getCurrentUnit().getDelivery());
 		isPhysicallyCreated.put(iAnt.getCurrentUnit().getDelivery(), false);
 		isConfirmed.put(iAnt.getCurrentUnit().getDelivery(), false);
-		setOrderInterests(iAnt);
+		setOrderInterests();
 	}
 	/**
 	 * @param iAnt te ant under process
 	 */
-	private void setOrderInterests(IntAnt iAnt) {
+	private void setOrderInterests() {
 		remainingToBookVolume = calculateRemainingVolume();
 		Delivery lastDelivery = deliveries.get(deliveries.size()-1);
 		interestedTime = lastDelivery.getDeliveryTime().plus(lastDelivery.getUnloadingDuration());
@@ -330,7 +330,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private void sendFeasibilityInfo(long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (currTime.minusMinutes(timeForLastFeaAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN ){
-			if (orderReserved == false && remainingToBookVolume > 0)  {
+			if (orderReserved == false) { // && remainingToBookVolume > 0)  {
 				FeaAnt fAnt = new FeaAnt(this, this.interestedTime); //the distance is calculated when ant reaches the PS
 				for (ProductionSiteInitial p : sites) {
 					if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )

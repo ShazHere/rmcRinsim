@@ -161,7 +161,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				i.remove();
 				continue;
 			}
-			else if (exp.getSchedule().size() > 0) { //send an exp back any way
+			else if (exp.getNewScheduleSize() > 0) { //send an exp back any way
 					ExpAnt newExp = (ExpAnt)exp.clone(this);
 					logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back with schedule size = " + newExp.getSchedule().size());
 					cApi.send(newExp.getOriginator(), newExp);

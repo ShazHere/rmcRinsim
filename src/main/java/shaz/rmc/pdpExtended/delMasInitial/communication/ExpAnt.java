@@ -104,6 +104,9 @@ public class ExpAnt extends Ant {
 	public DateTime getCreationTime() {
 		return creationTime;
 	}
+	public int getNewScheduleSize() {
+		return scheduleUnitsAdded;
+	}
 
 	/**
 	 * Apart from returning true if interested, the method also creates a new currentUnit
@@ -122,11 +125,11 @@ public class ExpAnt extends Ant {
 		DateTime actualInterestedTime = interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES);
 			if (currentSlot.getStartTime().compareTo(actualInterestedTime)< 0 //making rough estimation that will order enoughÊ interesting to be visited
 					&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
-				if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
+				//if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
 					currentInterestedTime = actualInterestedTime;
 					this.lagTime = new Duration(0);
 						return true;
-				}
+				//}
 			}
 //			else {//estimate with lag time
 //				if (currentSlot.getStartTime().compareTo(actualInterestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES))< 0 //making rough estimation that will order enoughÊ interesting to be visited
@@ -243,5 +246,9 @@ public class ExpAnt extends Ant {
 			return true;
 		else
 			return false;
+	}
+	@Override
+	public String toString() {
+		return this.schedule.toString();
 	}
 }
