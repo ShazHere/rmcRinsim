@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.IOException;
 
 import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomData;
+import org.apache.commons.math3.random.RandomDataImpl;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.log4j.Logger;
 import org.eclipse.swt.graphics.RGB;
@@ -83,12 +85,17 @@ public class RmcSimulation {
 		omi.addOrders();
 		
 		//Adding Delivery Trucks
+		RandomGenerator randomPCSelector;
+		if (randomSeed == 0 )
+			randomPCSelector =   new MersenneTwister();
+		else
+			randomPCSelector =   new MersenneTwister(randomSeed+2);
 		for (int j = 0; j< GlobalParameters.TOTAL_TRUCKS ; j ++){
 			if (randomSeed == 0)
-				sim.register(new DeliveryTruckInitial(prm.getRandomPosition(new MersenneTwister()), rmSim.getTruck(j), 
-						new MersenneTwister().nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN)));
-			else sim.register(new DeliveryTruckInitial(prm.getRandomPosition(rng), rmSim.getTruck(j), 
-					rng.nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN)));
+				sim.register(new DeliveryTruckInitial(rmSim.getTruck(j), 
+						new MersenneTwister().nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN), randomPCSelector));
+			else sim.register(new DeliveryTruckInitial(rmSim.getTruck(j), 
+					rng.nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN), randomPCSelector));
 		}
 		
 		sim.register(new TickListener() {

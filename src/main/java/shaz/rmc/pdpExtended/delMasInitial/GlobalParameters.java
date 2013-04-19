@@ -30,8 +30,8 @@ public class GlobalParameters {
 	//public static final int INTENTION_EVAPORATION_RATE = 10; //means 20 ticks
 	//public static final int EXPLORATION_EVAPORATION_RATE = 20; //means  no. of tics
 	public static final int DEPHASE_INTERVAL_MIN = 3; //means ants shud be de-phased randomly between 0 to X min
-	public static final int FEASIBILITY_INTERVAL_MIN = 8; //means send feeasibilty ants to near by after every X minutes.
-	public static final int FEASIBILITY_EVAPORATION_INTERVAL_MIN = FEASIBILITY_INTERVAL_MIN + 5;
+	public static final int FEASIBILITY_INTERVAL_MIN = 6; //earlier 8 means send feeasibilty ants to near by after every X minutes.
+	public static final int FEASIBILITY_EVAPORATION_INTERVAL_MIN = FEASIBILITY_INTERVAL_MIN + 3; //earlier + 5
 	public static final int EXPLORATION_INTERVAL_MIN = 2; //means no. of mintues //earlier 2
 	public static final int INTENTION_INTERVAL_MIN = 5; //means no. of mintues earlier = 5
 	public static final int INTENTION_EVAPORATION_MIN = INTENTION_INTERVAL_MIN +3; //earlier 3
@@ -43,28 +43,32 @@ public class GlobalParameters {
 	public static final int TRUCKS_PLAN_IN_ADVANCE_HOURS = 6; //specifies how much time in advance the truck can plan. but if deliveries are so many, the truck
 	//accepts the deliveyr time of even after TRUCKS_PLAN_IN_ADVANCE_HOURS. 
 	public static final int MINUTES_TO_PERISH_CONCRETE = 80; //in minutes..
-	public static final int MAX_LAG_TIME_MINUTES = 20; //used in OR section, proposed by JOris
-	public static final int MINUTES_TO_CHANGE_ST4ORDER = 5; // When shold start time of the order be delayed..
-	public static final int MINUTES_TO_DELAY_ST = 10; //means ST should be delayed with MINUTES_TO_DELAY_ST if MINUTES_TO_CHANGE_ST4ORDER time has been elapsed
+	public static final int MAX_LAG_TIME_MINUTES = 30; //used when LAG_TIME_ENABLE = true
+	public static final boolean LAG_TIME_ENABLE = true;
+	public static final int MINUTES_TO_CHANGE_ST4ORDER = 30; // When shold start time of the order be delayed..
+	public static final int MINUTES_TO_DELAY_ST = 30; //means ST should be delayed with MINUTES_TO_DELAY_ST if MINUTES_TO_CHANGE_ST4ORDER time has been elapsed
 							//after each change of ST. 
+	public static final boolean ST_DELAY_ENABLE = false; 
 	public static final int DISCHARGE_RATE_PERHOUR = 10000; //Constant for all orders
 	public static final int LOADING_MINUTES = 5;
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
-	public static final long AVAILABLE_SLOT_SIZE_HOURS = 2;
+	public static final long AVAILABLE_SLOT_SIZE_HOURS = 3;
+	
+	public static final boolean EXP_RANKING_WITH_SCORE_ENABLE = false;
 	
 	//CHECK NOTES ABOUT INPUT FILES!!
 	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-bigger2.xml";  //with expanded order start times
-	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //compaq deliveries
-	//public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-expanded.xml";
-	public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-1Delivery.xml";
+	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //compaq deliveries, the normal basic set
+	public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-expanded.xml";
+	//public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-1Delivery.xml";
 	//public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 27
 //	public static final String INPUT_FILE = "planning2011-01-14-update-ucy.xml";
 	//public static final String INPUT_FILE = "planning2011-02-15-update-ucy.xml";
 	//public static final String INPUT_FILE = "planning2011-01-11/planning2011-01-11-update-ucy-shaz-requiredRateFixed.xml";
 	//public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 28
-	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10/"; //planning2011-01-20/";
+	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10/"; //planning2011-01-20/";
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-bigger2/"; 
-	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-1Delivery/"; 
+	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-1Delivery/"; 
 	//public static final String RESULT_FOLDER
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-20/";
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-02-15/";
@@ -75,7 +79,7 @@ public class GlobalParameters {
 	/**
 	 * Simulation Start time, w.r.t real time clock
 	 */
-	public static final DateTime START_DATETIME = new DateTime(2011, 1, 10, 8, 0, 0 ,0, GregorianChronology.getInstance()); //07AM on 10Jan, 2011
+	public static final DateTime START_DATETIME = new DateTime(2011, 1, 10, 7, 0, 0 ,0, GregorianChronology.getInstance()); //07AM on 10Jan, 2011
 	/**
 	 * Simulation End time, w.r.t real time clock
 	 */
@@ -84,7 +88,7 @@ public class GlobalParameters {
 	
 	public static RandomData RANDOM_DATA_GEN = new RandomDataImpl();  // for generating random sequence having good values..
 	
-	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per50;
+	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per100;
 	
 	
 	//RINSIM PARAMETERS

@@ -9,6 +9,7 @@ import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
 import com.rits.cloning.Cloner;
+import static com.google.common.base.Preconditions.checkArgument;
 
 import rinde.sim.core.model.communication.CommunicationUser;
 import shaz.rmc.core.Agent;
@@ -122,25 +123,28 @@ public class ExpAnt extends Ant {
 		if (availableSlots.size() == 0)
 			return false;
 		TimeSlot currentSlot = availableSlots.get(0);
-		DateTime actualInterestedTime = interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES);
-			if (currentSlot.getStartTime().compareTo(actualInterestedTime)< 0 //making rough estimation that will order enoughÊ interesting to be visited
-					&& currentSlot.getEndTime().compareTo(interestedTime.plusHours(1).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
+		DateTime actualInterestedTime = interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES); //means time at which truck should start its slot for current delivery
+			if (currentSlot.getStartTime().compareTo(actualInterestedTime)<= 0 //making rough estimation that will order enoughÊ interesting to be visited, one hour added since we donot not know how much could be travel distance from selected PS. PS is selected latter
+					&& currentSlot.getEndTime().compareTo(interestedTime.plusMinutes(70).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
 				//if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
 					currentInterestedTime = actualInterestedTime;
 					this.lagTime = new Duration(0);
 						return true;
 				//}
 			}
-//			else {//estimate with lag time
-//				if (currentSlot.getStartTime().compareTo(actualInterestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES))< 0 //making rough estimation that will order enoughÊ interesting to be visited
-//						&& currentSlot.getEndTime().compareTo(interestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES).plusHours(1).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
-//					if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
-//						currentInterestedTime = actualInterestedTime;
-//						this.lagTime = new Duration (actualInterestedTime, currentSlot.getStartTime() ); 
-//							return true;
-//					}
-//				}
-//			}
+			else if (GlobalParameters.LAG_TIME_ENABLE) {//estimate with lag time
+				if (currentSlot.getStartTime().compareTo(actualInterestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES))< 0 //making rough estimation that will order enoughÊ interesting to be visited
+						&& currentSlot.getEndTime().compareTo(interestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES).plusMinutes(70).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
+//					Duration possibleLagtime = new Duration(actualInterestedTime, currentSlot.getStartTime() );
+//					if (currentSlot.getStartTime().compareTo(actualInterestedTime.plus(possibleLagtime)) <= 0) {// this condition is added since, once entered in from outer if, there were chances hat 
+						//(new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
+					checkArgument( ((new Duration(currentSlot.getStartTime(), currentSlot.getEndTime())).getStandardMinutes() >= (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()), true);						
+						this.lagTime = new Duration (actualInterestedTime, currentSlot.getStartTime() );
+						currentInterestedTime = actualInterestedTime.plus(this.lagTime);
+							return true;
+					//}
+				}
+			}
 		return false;
 	}
 //TODO make it return defensive copy
@@ -250,5 +254,18 @@ public class ExpAnt extends Ant {
 	@Override
 	public String toString() {
 		return this.schedule.toString();
+	}
+	
+	/**
+	 * @return commulative lag time of the schedule units of ant's schedule
+	 */
+	public Duration getScheduleLagTime() {
+		Duration lagTime = new Duration (0);
+		if (this.schedule.isEmpty())
+			return lagTime;
+		for(TruckScheduleUnit u: schedule) {
+			lagTime = lagTime.plus( u.getDelivery().getLagTime());
+		}
+		return lagTime;
 	}
 }

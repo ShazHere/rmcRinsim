@@ -188,7 +188,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), currTime) 
 					&& noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) { //if interested, and order in't explored too much
 				logger.debug(station.getId() +"P exp-" +exp.getOriginator().getId()+ " is interested " + exp.getCurrentInterestedTime() +
-						", orderInterested " + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));
+						", O" + or.getOrder().getId()+ " InterestedAt=" + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));
 				checkArgument(noOfExplorations.containsKey(or), true); 
 				noOfExplorations.put(or, noOfExplorations.get(or)+1);
 				//exp.getCurrentUnit().getTimeSlot().setLocationAtStartTime(this.getPosition(), this); //normally make this as start PS

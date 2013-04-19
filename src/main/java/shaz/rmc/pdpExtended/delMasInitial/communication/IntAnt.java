@@ -9,6 +9,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.util.ArrayList;
 
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 
 import com.rits.cloning.Cloner;
 
@@ -169,5 +170,21 @@ public class IntAnt extends Ant {
 
 	public DateTime getCreationTime() {
 		return creationTime;
+	}
+	/**
+	 * @return commulative lag time of the schedule units of ant's schedule
+	 */
+	public Duration getScheduleLagTime() {
+		Duration lagTime = new Duration (0);
+		if (this.communicateAbleSchedule.isEmpty())
+			return lagTime;
+		for(communicateAbleUnit u: communicateAbleSchedule) {
+			lagTime = lagTime.plus( u.getDelivery().getLagTime());
+		}
+		return lagTime;
+	}
+	@Override
+	public String toString() {
+		return this.communicateAbleSchedule.toString();
 	}
 }

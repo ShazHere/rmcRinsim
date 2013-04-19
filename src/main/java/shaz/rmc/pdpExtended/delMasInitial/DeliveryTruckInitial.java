@@ -6,14 +6,18 @@ package shaz.rmc.pdpExtended.delMasInitial;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 
 import org.apache.commons.math3.random.RandomData;
 import org.apache.commons.math3.random.RandomDataImpl;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 
 import com.rits.cloning.Cloner;
 
@@ -48,7 +52,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private CommunicationAPI cApi;
 	
 	private static Logger logger = Logger.getLogger(DeliveryTruckInitial.class);
-	private final RandomData randomPCSelector;
+	private final RandomGenerator randomPCSelector;
 	
 	private DateTime timeForLastExpAnt; //time at which last Exp was sent by truck
 	private DateTime timeForLastIntAnt; //time at which last Int was sent by truck	
@@ -65,11 +69,11 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private final DeliveryTruckInitialIntention i;
 	private ExpAnt bestAnt;
 	
-	public DeliveryTruckInitial(Point randomPosition, Vehicle pTruck, int pDePhaseByMin) {
+	public DeliveryTruckInitial( Vehicle pTruck, int pDePhaseByMin, RandomGenerator pRandomPCSelector) {
 		setCapacity(pTruck.getNormalVolume());
 		dePhaseByMin = pDePhaseByMin;
 		//System.out.println("Dephase no. is " + dePhaseByMin);
-		randomPCSelector = new RandomDataImpl(); //this won't generate the exact random no. required by us..:(.
+		randomPCSelector = pRandomPCSelector; //this won't generate the exact random no. required by us..:(.
 		mailbox = new Mailbox();
 		b = new DeliveryTruckInitialBelief(this, new ArrayList<TruckScheduleUnit>());
 		
@@ -81,7 +85,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		bestAnt = null;
 		truck = pTruck;
 		id = ++totalDeliveryTruck;
-		logger.info(this.getId()+"T capacity is = " + pTruck.getNormalVolume());
 	}
 	@Override
 	protected void tickImpl(TimeLapse timeLapse) {
@@ -114,22 +117,40 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			return;
 		//prune the one with lesser schedule size
 		Iterator<ExpAnt> j = b.explorationAnts.iterator();
-		while (j.hasNext()) { //at the moment just select the first one
+		while (j.hasNext()) { 
 			ExpAnt eAnt = j.next();
 			if (eAnt.getSchedule().size() < maxSizeFound)
 				j.remove();
 		}
 		checkArgument(b.explorationAnts.isEmpty() == false, true);
-		//select 1st schedule as best
-		bestAnt = b.explorationAnts.get(0);
-//			bestAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
-//					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
-		for (ExpAnt eAnt: b.explorationAnts) { //find eAnt with smallest score, i.e least cost
-			//if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){				
-				if (eAnt.getScheduleScore()< bestAnt.getScheduleScore()) {
-						bestAnt = eAnt;
-					}
-			//}
+		
+		//handle the selection based on schedule score
+		if (GlobalParameters.EXP_RANKING_WITH_SCORE_ENABLE) {
+			//select 1st schedule as best
+			bestAnt = b.explorationAnts.get(0);
+			for (ExpAnt eAnt: b.explorationAnts) { //find eAnt with smallest score, i.e least cost
+				//if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){				
+					if (eAnt.getScheduleScore()< bestAnt.getScheduleScore()) {
+							bestAnt = eAnt;
+						}
+				//}
+			}
+		}
+		else {
+			bestAnt = b.explorationAnts.get(randomPCSelector.nextInt(b.explorationAnts.size()));
+			Collections.sort(b.explorationAnts, new Comparator<ExpAnt>(){
+		        public int compare( ExpAnt a, ExpAnt b ){
+		            return (int)(b.getScheduleLagTime().minus(a.getScheduleLagTime()).getStandardSeconds());
+		        }
+			});
+			bestAnt = b.explorationAnts.get(0);
+//			for (ExpAnt eAnt: b.explorationAnts) { //
+//				if (eAnt.getScheduleLagTime().isLongerThan(new Duration(0)) ) {
+//					bestAnt = eAnt;
+//					break;
+//				}
+//			}
+			
 		}
 		printBestAnt(startTime);
 		b.explorationAnts.clear(); 
@@ -225,27 +246,28 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 	private void printBestAnt(long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		logger.debug(this.getId()+"T Best schedule changed with total Units = " + bestAnt.getSchedule().size() + "and Score = " + bestAnt.getScheduleScore() +" & total ants="+ b.explorationAnts.size() + "currTime= " + currTime);
+		logger.debug(this.getId()+"T Best schedule changed: total Units= " + bestAnt.getSchedule().size() +" , lagTime= "+ bestAnt.getScheduleLagTime()+ " and Score= " + bestAnt.getScheduleScore() +" & total ants="+ b.explorationAnts.size() + "currTime= " + currTime);
 		for (TruckScheduleUnit unit: bestAnt.getSchedule()) {
 			logger.debug(unit.getSummary());
 		}
 	}
 	/**
 	 * to check if the current truck unit overlaps with any unit already existing in the truck's schedule
-	 * @return
+	 * @param un The schedule that need to be checked with existing schedule of truck
+	 * @return true if there is overlap with schedule, false if there is no overlap.
 	 */ //TODO add test cases to test  TODO a lot of cases are yet not checked
 	private boolean isOverlapped(TruckScheduleUnit un) {
 		for (TruckScheduleUnit u : b.schedule) {
 			if (un.getTimeSlot().getStartTime().compareTo(u.getTimeSlot().getStartTime()) >= 0) {
 				if (un.getTimeSlot().getStartTime().compareTo(u.getTimeSlot().getEndTime()) <= 0)
-					return true; //if overlap with any unit, then return false
+					return true; //if overlap with any unit, then return true
 			}
 			else { //means startTime is less
 				if (un.getTimeSlot().getEndTime().compareTo(u.getTimeSlot().getStartTime()) >= 0)
-					return true;
+					return true; //overlap exists so return true
 			}
 		}
-		return false;
+		return false; //found no overlap with any unit so return false
 	}
 	/**
 	 * The schedule unit already exists in trucks schedule?
@@ -278,11 +300,12 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		pdpModel = pPdpModel;	
 		// setting startLocation 
 		sites = new ArrayList<ProductionSiteInitial>(roadModel.getObjectsOfType(ProductionSiteInitial.class));
-		int rand = randomPCSelector.nextInt(0, sites.size()-1);
+		int rand = randomPCSelector.nextInt(sites.size());
 		//in the begining truck is at start location
 		b.getAvailableSlots().get(0).setLocationAtStartTime(sites.get(rand).getLocation(), sites.get(rand)); //setting start location
 		b.setStartLocation( sites.get(rand).getLocation());
 		roadModel.addObjectAt(this, b.getStartLocation());
+		logger.info(this.getId()+"T capacity is = " + this.truck.getNormalVolume() + " & startLocation = " + sites.get(rand).getStation().getId());
 	}
 	public shaz.rmc.core.domain.Vehicle getTruck() {
 		return truck;

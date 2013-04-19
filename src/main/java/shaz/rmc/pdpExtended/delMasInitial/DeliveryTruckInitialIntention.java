@@ -16,6 +16,7 @@ import rinde.sim.core.model.pdp.PDPModel.VehicleState;
 import rinde.sim.core.model.road.MoveProgress;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.domain.Delivery;
+import shaz.rmc.core.domain.Station;
 
 
 /**
@@ -77,7 +78,7 @@ public class DeliveryTruckInitialIntention {
 					if (rmcTruck.getRoadModel().getPosition(rmcTruck) == destination) {
 						if (rmcTruck.getPdpModel().containerContains(rmcTruck, currentParcelDelivery) 
 								&& rmcTruck.getPdpModel().getVehicleState(rmcTruck) != VehicleState.DELIVERING) {
-							logger.debug(rmcTruck.getId()+ "T: Started Delivery and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
+							logger.debug(rmcTruck.getId()+ "T: Started Deliverying and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
 							rmcTruck.getPdpModel().deliver(rmcTruck, currentParcelDelivery, time);
 							//deliveredCurrentDelivery = true;
 						}
@@ -85,11 +86,12 @@ public class DeliveryTruckInitialIntention {
 								&& rmcTruck.getPdpModel().getContentsSize(rmcTruck) == 0 
 								&& rmcTruck.getPdpModel().getVehicleState(rmcTruck) == VehicleState.IDLE) { 
 								//&& deliveredCurrentDelivery == true) {
-							logger.info(rmcTruck.getId()+ "T: Done Delivery and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
+							logger.info(rmcTruck.getId()+ "T: Done Deliverying and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
 							destination = currentDelivery.getReturnStation().getLocation();
 							rmcTruck.getRoadModel().moveTo(rmcTruck, destination, time);
-							
 						}
+						// wait for delivering whole concrete
+
 					}
 					else if (rmcTruck.getPdpModel().getVehicleState(rmcTruck) == VehicleState.IDLE)
 						rmcTruck.getRoadModel().moveTo(rmcTruck, destination, time);
@@ -100,8 +102,15 @@ public class DeliveryTruckInitialIntention {
 		}
 		else if (currentUnitNo < b.schedule.size()-1) 
 			if (currentTime >= b.schedule.get(currentUnitNo+1).getTimeSlot().getStartTime().getMillis()) {
+				rmcTruck.getRoadModel().moveTo(rmcTruck, destination, time); //just as a precaution, if last step is remaining..
+				checkArgument(rmcTruck.getRoadModel().getPosition(rmcTruck) == destination);
 				currentUnitNo++;
+				//destination = null;
 			}
+//			else if (rmcTruck.getRoadModel().getPosition(rmcTruck) != destination) {
+//				checkArgument(b.schedule.get(currentUnitNo).getDelivery().getReturnStation() == b.schedule.get(currentUnitNo+1).getDelivery().getLoadingStation(), true);
+//				rmcTruck.getRoadModel().moveTo(rmcTruck, destination, time);
+//			}
 		else ;//keep on waiting till the schedule starts
 	}
 }
