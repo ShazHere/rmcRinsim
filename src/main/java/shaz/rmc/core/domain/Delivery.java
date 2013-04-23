@@ -171,11 +171,13 @@ final public class Delivery {
 		sb.append("Delivery[");
 		sb.append("\n  order=").append(order.getId());
 		//sb.append("\n  truck=").append(truck.getId());
-		sb.append("\n  loading time=").append(deliveryTime.minus(loadingDuration).minus(stationToCYTravelTime));
+		sb.append("\n  loading time1=").append(deliveryTime.minus(loadingDuration).minus(stationToCYTravelTime));
+		sb.append("\n  from Station=" + loadingStation);
 		sb.append("\n  departs at station=").append(deliveryTime.minus(stationToCYTravelTime));
 		sb.append("\n  unloading time=").append(deliveryTime);
-		sb.append("\n leaves CY at =").append(deliveryTime.plus(unloadingDuration));
-		sb.append("\n reaches at Station=").append(deliveryTime.plus(unloadingDuration).plus(CYToStationTravelTime));
+		sb.append("\n  leaves CY at =").append(deliveryTime.plus(unloadingDuration));
+		sb.append("\n  reaches at Station=").append(deliveryTime.plus(unloadingDuration).plus(CYToStationTravelTime));
+		sb.append("\n  at Station=" + returnStation);
 		sb.append("]");
 		
 		return sb.toString();

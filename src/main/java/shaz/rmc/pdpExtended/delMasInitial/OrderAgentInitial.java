@@ -32,6 +32,7 @@ import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
 import shaz.rmc.core.ResultElementsOrder;
 import shaz.rmc.core.ResultElementsTruck;
+import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.core.domain.Order;
@@ -150,7 +151,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		while (i.hasNext()) { 
 			ExpAnt exp = i.next(); //i guess once reached to order, it shud just include order in its list, since order was in general ok
 			long psToCyDur = (long)((Point.distance(exp.getSender().getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //hours to milli
-			if (exp.getCurrentInterestedTime().minus(exp.getLagTime()).equals(interestedTime.minus(psToCyDur).minusMinutes(GlobalParameters.LOADING_MINUTES)) ) {
+			if (exp.getCurrentInterestedTime().minus(exp.getCurrentLagTime()).equals(interestedTime.minus(psToCyDur).minusMinutes(GlobalParameters.LOADING_MINUTES)) ) {
 				logger.debug(order.getId() + "O expStarTim = " + exp.getCurrentInterestedTime() + " & interestedTim = " + interestedTime + " loadingTime = " + interestedTime.minus(psToCyDur).minusMinutes(GlobalParameters.LOADING_MINUTES));	
 				Delivery del = prepareNewDelivery(interestedDeliveryNo, exp, interestedTime, psToCyDur);
 				sendToPs(exp, del);
@@ -162,9 +163,31 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	}
 	private Delivery prepareNewDelivery(int pDeliveryNo, ExpAnt exp, DateTime pDeliveryTime, long travelDur) {
 		
-		ProductionSiteInitial selectedPs;
-		if (exp.nextAfterCurrentUnit()!= null) {//next slot in schedule exists, select the start PS of next slot
-			selectedPs = (ProductionSiteInitial)exp.nextAfterCurrentUnit().getTimeSlot().getProductionSiteAtStartTime();
+		Delivery.Builder delBuilder = new Delivery.Builder();
+		delBuilder.setOrder(this);
+		delBuilder.setDeliveryNo(pDeliveryNo);
+		delBuilder.setTruck(exp.getOriginator());
+		delBuilder.setDeliveredVolume((int)(exp.getOriginator().getCapacity())); //Shouldn't it be accoriding to remainig volume..?
+	
+		Duration unLoadingDuration; //SET LOADIing and unloading durations
+		if (remainingToBookVolume < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
+			int wastedVolume = (int)(exp.getOriginator().getCapacity() - remainingToBookVolume);
+			delBuilder.setWastedVolume(wastedVolume);
+			unLoadingDuration = new Duration((remainingToBookVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR));
+			//delBuilder.setUnloadingDuration(new Duration((remainingToBookVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
+		}
+		else {
+			delBuilder.setWastedVolume(0);// no wastage 
+			unLoadingDuration = new Duration((long)(exp.getOriginator().getCapacity()* 60l*60l*1000l / GlobalParameters.DISCHARGE_RATE_PERHOUR) );
+			//delBuilder.setUnloadingDuration(new Duration((long)(exp.getOriginator().getCapacity()* 60l*60l*1000l / GlobalParameters.DISCHARGE_RATE_PERHOUR) ));
+		}
+		delBuilder.setUnloadingDuration(unLoadingDuration);
+		delBuilder.setLoadingDuration(new Duration(GlobalParameters.LOADING_MINUTES*60l*1000l));
+		
+		ProductionSiteInitial selectedPs; //For selecting the return PS
+		if (exp.nextAfterCurrentUnit( pDeliveryTime.plus(exp.getCurrentLagTime()).plus(unLoadingDuration).plusMinutes(10))!= null) {//next slot in schedule exists, select the start PS of next slot
+			TruckScheduleUnit tu = exp.nextAfterCurrentUnit( pDeliveryTime.plus(exp.getCurrentLagTime()).plus(unLoadingDuration).plusMinutes(10)); //assuming travel time should be atleast 10min
+			selectedPs = (ProductionSiteInitial)tu.getTimeSlot().getProductionSiteAtStartTime(); 
 		}
 		else {//next slot in schedule doesn't exist, so select randomly
 			if (sites.size()>1) 				//select the next pC to visit at random..
@@ -172,19 +195,11 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			else
 				selectedPs = sites.get(0);
 		} 
-		Delivery.Builder delBuilder = new Delivery.Builder();
-		delBuilder.setOrder(this);
-		delBuilder.setDeliveryNo(pDeliveryNo);
-		delBuilder.setTruck(exp.getOriginator());
-		delBuilder.setDeliveredVolume((int)(exp.getOriginator().getCapacity()));
-		//delBuilder.setLoadingStation(exp.getCurrentUnit().getTimeSlot().getProductionSiteAtStartTime());
-		delBuilder.setLoadingStation((ProductionSite)exp.getSender());
-		delBuilder.setReturnStation(selectedPs);
 		
 		delBuilder.setStationToCYTravelTime(new Duration (travelDur));
 		travelDur = (long)((Point.distance(selectedPs.getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //CY to returnStation distance
 		delBuilder.setCYToStationTravelTime(new Duration(travelDur));
-		delBuilder.setDeliveryTime(pDeliveryTime.plus(exp.getLagTime()));
+		delBuilder.setDeliveryTime(pDeliveryTime.plus(exp.getCurrentLagTime()));
 //			if (this.deliveries.size() == 0 ) //means at the moment decesions are for first delivery so ST shud b included
 //				{ 
 //					//checkArgument(pDeliveryNo == 0, true);
@@ -193,17 +208,10 @@ public class OrderAgentInitial  extends Depot implements Agent {
 //			else
 //				delBuilder.setLagTime(this.delayFromActualInterestedTime); //no ST added this time
 //	
-		delBuilder.setLagTime(exp.getLagTime());
-		if (remainingToBookVolume < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
-			int wastedVolume = (int)(exp.getOriginator().getCapacity() - remainingToBookVolume);
-			delBuilder.setWastedVolume(wastedVolume);
-			delBuilder.setUnloadingDuration(new Duration((remainingToBookVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
-		}
-		else {
-			delBuilder.setWastedVolume(0);// no wastage 
-			delBuilder.setUnloadingDuration(new Duration((long)(exp.getOriginator().getCapacity()* 60l*60l*1000l / GlobalParameters.DISCHARGE_RATE_PERHOUR) ));
-		}
-		delBuilder.setLoadingDuration(new Duration(GlobalParameters.LOADING_MINUTES*60l*1000l));
+		delBuilder.setLagTime(exp.getCurrentLagTime());
+		
+		delBuilder.setLoadingStation((ProductionSite)exp.getSender());
+		delBuilder.setReturnStation(selectedPs);
 		Delivery del = delBuilder.build();
 		return del;
 		
@@ -223,7 +231,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		if ( intentionAnts.isEmpty()) 
 			return;
 		 //aparently it will reach beyond this point depending intention_interval
-		if (GlobalParameters.LAG_TIME_ENABLE)
+		if (GlobalParameters.LAG_TIME_ENABLE) //this is just to test lag time, so sort with lagtime in decending order. This should not be default behaviour with lag time!
 			this.sortIntentionArts();
 		Iterator<IntAnt> i = intentionAnts.iterator();
 		while (i.hasNext()) { //at the moment just select the first one
@@ -258,14 +266,17 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			else { //order isn't interested, yet it could be refreshing of a previous booking
 				Delivery d = deliveryExists(iAnt.getCurrentUnit().getDelivery());
 				if (d != null && refreshTimes.get(d).compareTo(currTime) < 0 
-						&& iAnt.getCurrentUnit().getPsReply() == Reply.WEEK_ACCEPT  
+						&& iAnt.getCurrentUnit().getPsReply() == Reply.WEEK_ACCEPT  //make it check argument
 						&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == true) { //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
 					if (isConfirmed.get(iAnt.getCurrentUnit().getDelivery()) == false && this.state == ORDER_STATE.WAITING) {
 						isConfirmed.put(iAnt.getCurrentUnit().getDelivery(), true);
 						this.state = ORDER_STATE.IN_PROCESS;
+						setOrderInterests();
 					} //else we shouldn't touch order state
 					refreshTimes.put(iAnt.getCurrentUnit().getDelivery(), currTime);
 					iAnt.getCurrentUnit().setOrderReply(Reply.WEEK_ACCEPT); //So earlier it could be UnderProcess, but once confirmed, its Weekly accepted
+//					if (this.state == ORDER_STATE.BOOKED)
+//						iAnt.getCurrentUnit().setOrderReply(Reply.ACCEPT); //order fully booked, so now reply full accept
 					logger.debug(order.getId() + "O int-" + iAnt.getOriginator().getId()+" booking refreshed");
 				}
 				else //now its sure order isn't interested!
@@ -318,7 +329,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}			
 		if (remainingToBookVolume <= 0) {
 			this.state = ORDER_STATE.BOOKED;
-			logger.debug(order.getId() + "O fully BOOKED");
+			logger.info(order.getId() + "O fully BOOKED");
 		}
 	}
 	private int calculateRemainingVolume() {
@@ -351,6 +362,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 		return null;
 	}
+	
 
 	@Override
 	public void afterTick(TimeLapse timeLapse) {
@@ -362,7 +374,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (currTime.minusMinutes(timeForLastFeaAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN ){
 			if (this.state == ORDER_STATE.IN_PROCESS) { // && remainingToBookVolume > 0)  {
-				setOrderInterests();
+				//setOrderInterests();
 				FeaAnt fAnt = new FeaAnt(this, this.interestedTime); //the distance is calculated when ant reaches the PS
 				for (ProductionSiteInitial p : sites) {
 					if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
@@ -395,7 +407,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			if (isConfirmed.get(d) == false 
 					&& (new Duration (currMilliInterval)).getStandardMinutes() > GlobalParameters.INTENTION_EVAPORATION_MIN) {
 				this.state = ORDER_STATE.IN_PROCESS;
-				logger.debug(order.getId() + "O Order Re-set");
+				logger.info(order.getId() + "O Order Re-set");
 				return d;
 			}
 		}

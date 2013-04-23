@@ -245,7 +245,7 @@ public class Station implements Location, Serializable {
 
 	@Override
 	public String toString() {
-		return getClass().getSimpleName() + "[id="+id+",loadingDuration="+loadingDuration+"]";
+		return "id="+id;
 	}
 	public String pringAvailabilityList() {
 		StringBuilder sb = new StringBuilder();

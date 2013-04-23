@@ -12,7 +12,9 @@ import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
 
 /**
  * @author Shaza
- *
+ * Though I made it Immutable class, but due to some problem TruckScheduleUnit wasn't proving to be immutable to be used 
+ * as a key for the <key,value> pair in a Map, in a TruckAgent.
+ * 
  */
 public class TruckScheduleUnit {
 	private final Delivery delivery; //TODO The type should not be RmcDlivery, rather, it shud b some common type like prodcution site. BUt abi kaam chuloa mamla hay..:(
@@ -46,7 +48,7 @@ public class TruckScheduleUnit {
 			sb.append("\n  order=").append(((OrderAgentInitial)delivery.getOrder()).getOrder().getId());
 		sb.append("\n  truck=").append(truck.getId());
 		sb.append("\n Unit start time=").append(timeSlot.getStartTime());
-		sb.append("\n  loading time=").append(delivery.getDeliveryTime().minus(delivery.getLoadingDuration()).minus(delivery.getStationToCYTravelTime()));
+		sb.append("\n  loading time=").append(delivery.getDeliveryTime().minus(delivery.getLoadingDuration()).minus(delivery.getStationToCYTravelTime())).append(", from Station=" + delivery.getLoadingStation());
 		//sb.append("\n  departs from station = ").append(((ProductionSite)delivery.getLoadingStation()).getStation().getId() + 
 			//	" at time "+ delivery.getDeliveryTime().minus(delivery.getStationToCYTravelTime()));
 		if (delivery != null)
@@ -54,7 +56,7 @@ public class TruckScheduleUnit {
 		sb.append("\n leaves CY at =").append(delivery.getDeliveryTime().plus(delivery.getUnloadingDuration()));
 		//sb.append("\n reaches at Station = ").append(((RmcProductionSite)delivery.getReturnStation()).getStation().getId() + 
 			//	" at time "+delivery.getDeliveryTime().plus(delivery.getUnloadingDuration()).plus(delivery.getCYToStationTravelTime()));
-		sb.append("\n Unit end time=").append(timeSlot.getEndTime());
+		sb.append("\n Unit end time=").append(timeSlot.getEndTime()).append(" at station= " + delivery.getReturnStation());
 
 		sb.append("]");
 		

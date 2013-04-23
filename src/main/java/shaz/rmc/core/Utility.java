@@ -43,8 +43,8 @@ public class Utility {
 	public static ArrayList<TimeSlot> getAvailableSlots(ArrayList<TruckScheduleUnit> pSchedule , ArrayList<TimeSlot> availableSlots, final TimeSlot truckTotalTimeRange) {
 		if (pSchedule.isEmpty()) {
 			checkArgument(availableSlots.size() == 1 , true);
-			availableSlots.get(0).setStartTime(new DateTime(truckTotalTimeRange.getStartTime()));
-			return availableSlots;
+			availableSlots.get(0).setStartTime(new DateTime(truckTotalTimeRange.getStartTime())); //start time fixed according to currrent time
+			return availableSlots;											//start location is already fixed according to startLocation of truck in method initRoadPDP()
 		}
 		else
 		{
@@ -66,6 +66,8 @@ public class Utility {
 					if (d.compareTo(new Duration(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l*60l*1000l)) >= 0) {  //more than 2 hour slot
 						av.setStartTime(initialTime);
 						av.setEndtime(pSchedule.get(i).getTimeSlot().getStartTime()); //chk start time or end time are inclusive or not
+						if (i!=0) //if previous slot exists, then truck should start from the return station of previous slot
+							av.setLocationAtStartTime(pSchedule.get(i-1).getDelivery().getReturnStation().getLocation(), pSchedule.get(i-1).getDelivery().getReturnStation());
 						availableSlots.add(av);
 						av = new TimeSlot();
 //						if (i > 0) 
@@ -74,13 +76,16 @@ public class Utility {
 						//initialTime = u.getTimeSlot().getEndTime();
 					}
 				}
-				initialTime = pSchedule.get(i).getTimeSlot().getEndTime().plusMinutes(1);
+				initialTime = pSchedule.get(i).getTimeSlot().getEndTime().plusMinutes(1); // so there should be differenc of one minute between slots
 			}
-			//after last unit
+			//after last unit, to check if after the last unit of schedule, there could be available time?
 			//initialTime = pSchedule.get(pSchedule.size()-1).getTimeSlot().getEndTime();
 			if (initialTime.compareTo(truckTotalTimeRange.getEndTime()) < 0) {
 				Duration d = new Duration (initialTime, truckTotalTimeRange.getEndTime());
 				if (d.compareTo(new Duration(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l*60l*1000l)) >= 0) {
+					if (!pSchedule.isEmpty()) { //if previous slot exists, then truck should start from the return station of previous slot
+						av.setLocationAtStartTime(pSchedule.get(pSchedule.size()-1).getDelivery().getReturnStation().getLocation(), pSchedule.get(pSchedule.size()-1).getDelivery().getReturnStation());
+					}
 					av.setStartTime(initialTime);
 					av.setEndtime(truckTotalTimeRange.getEndTime()); //chk start time or end time are inclusive or not
 					availableSlots.add(av);

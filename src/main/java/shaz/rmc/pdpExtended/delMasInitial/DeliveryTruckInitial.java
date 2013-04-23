@@ -9,7 +9,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 
 import org.apache.commons.math3.random.RandomData;
@@ -60,6 +62,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private RoadModel roadModel;
 	private PDPModel pdpModel;
 	List<ProductionSiteInitial> sites;
+	private final Map<Delivery, Reply> unitStatus;
 	
 	private static int totalDeliveryTruck = 0;
 	private final int id;
@@ -75,6 +78,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		//System.out.println("Dephase no. is " + dePhaseByMin);
 		randomPCSelector = pRandomPCSelector; //this won't generate the exact random no. required by us..:(.
 		mailbox = new Mailbox();
+		unitStatus = new LinkedHashMap<Delivery, Reply>();
 		b = new DeliveryTruckInitialBelief(this, new ArrayList<TruckScheduleUnit>());
 		
 		i = new DeliveryTruckInitialIntention(this, b);
@@ -138,18 +142,14 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		}
 		else {
 			bestAnt = b.explorationAnts.get(randomPCSelector.nextInt(b.explorationAnts.size()));
-			Collections.sort(b.explorationAnts, new Comparator<ExpAnt>(){
-		        public int compare( ExpAnt a, ExpAnt b ){
-		            return (int)(b.getScheduleLagTime().minus(a.getScheduleLagTime()).getStandardSeconds());
-		        }
-			});
+			if (GlobalParameters.LAG_TIME_ENABLE) { //actually this isn't required, but here its only when we require to test lagTime
+				Collections.sort(b.explorationAnts, new Comparator<ExpAnt>(){ //sort w.r.t descending scheduleLagTime
+			        public int compare( ExpAnt a, ExpAnt b ){
+			            return (int)(b.getScheduleLagTime().minus(a.getScheduleLagTime()).getStandardSeconds());
+			        }
+				});
+			}
 			bestAnt = b.explorationAnts.get(0);
-//			for (ExpAnt eAnt: b.explorationAnts) { //
-//				if (eAnt.getScheduleLagTime().isLongerThan(new Duration(0)) ) {
-//					bestAnt = eAnt;
-//					break;
-//				}
-//			}
 			
 		}
 		printBestAnt(startTime);
@@ -175,7 +175,12 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 							TruckScheduleUnit tu = cl.deepClone(u.getTunit());
 							checkArgument(this.alreadyExist(tu) == false, true);
 							b.schedule.add(tu);
-							logger.info(this.getId()+"T Schedule unit added in Trucks schedule: " + u.getTunit().getSummary());
+							unitStatus.put(tu.getDelivery(), u.getOrderReply());
+							logger.info(this.getId()+"T Schedule unit added in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().getSummary());
+						}
+						else//the unit already exists in the truck's schedule, check its status
+						{
+							unitStatus.put(u.getTunit().getDelivery(), u.getOrderReply()); //update status, either it could be WEEK_ACCEPT, or STRONG_ACCEPT
 						}
 					}
 					scheduleDone = true;
@@ -194,9 +199,9 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		if (currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN ) {
 			ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
 					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
-			if (b.getAvailableSlots().size()>0) {
-				checkArgument(b.getAvailableSlots().get(0).getProductionSiteAtStartTime() != null, true);
-				cApi.send(b.getAvailableSlots().get(0).getProductionSiteAtStartTime(), eAnt); 				
+			if (b.availableSlots.size()>0) {
+				checkArgument(b.availableSlots.get(0).getProductionSiteAtStartTime() != null, true);
+				cApi.send(b.availableSlots.get(0).getProductionSiteAtStartTime(), eAnt); 				
 			}
 			timeForLastExpAnt = currTime;
 		}		
@@ -302,7 +307,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		sites = new ArrayList<ProductionSiteInitial>(roadModel.getObjectsOfType(ProductionSiteInitial.class));
 		int rand = randomPCSelector.nextInt(sites.size());
 		//in the begining truck is at start location
-		b.getAvailableSlots().get(0).setLocationAtStartTime(sites.get(rand).getLocation(), sites.get(rand)); //setting start location
+		b.availableSlots.get(0).setLocationAtStartTime(sites.get(rand).getLocation(), sites.get(rand)); //setting start location
 		b.setStartLocation( sites.get(rand).getLocation());
 		roadModel.addObjectAt(this, b.getStartLocation());
 		logger.info(this.getId()+"T capacity is = " + this.truck.getNormalVolume() + " & startLocation = " + sites.get(rand).getStation().getId());

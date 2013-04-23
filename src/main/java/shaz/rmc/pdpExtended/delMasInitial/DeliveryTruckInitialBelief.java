@@ -46,9 +46,9 @@ public class DeliveryTruckInitialBelief {
 		availableSlots = new ArrayList<TimeSlot>();
 		availableSlots.add(new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME));
 	}
-	public ArrayList<TimeSlot> getAvailableSlots() {
-		return availableSlots;
-	}
+//	public ArrayList<TimeSlot> getAvailableSlots() {
+//		return availableSlots;
+//	}
 	
 
 	public int getWastedConcrete() {

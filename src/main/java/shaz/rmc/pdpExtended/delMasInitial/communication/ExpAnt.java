@@ -40,7 +40,7 @@ public class ExpAnt extends Ant {
 	//private TimeSlot currentSlot;
 	private TruckScheduleUnit currentUnit;
 	private DateTime currentInterestedTime;
-	private Duration lagTime;
+	private Duration currentLagTime;
 
 	private final DeliveryTruckInitial originator; //the actual truck agent which initialized the ExpAnt 
 	private int scheduleUnitsAdded; //to keep track that exp ant itself added how many units.
@@ -68,7 +68,7 @@ public class ExpAnt extends Ant {
 		truckTotalTimeRange = new TimeSlot(new DateTime(creationTime), originator.getTotalTimeRange().getEndTime());
 		currentUnit = null; // It should not contain any unit if currently expAnt isn't interested in any order.
 		currentInterestedTime = null;
-		lagTime = null;
+		currentLagTime = null;
 	}
 	/**
 	 * used by clone(sender) method..for hop by hop movement
@@ -128,7 +128,7 @@ public class ExpAnt extends Ant {
 					&& currentSlot.getEndTime().compareTo(interestedTime.plusMinutes(70).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
 				//if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
 					currentInterestedTime = actualInterestedTime;
-					this.lagTime = new Duration(0);
+					this.currentLagTime = new Duration(0);
 						return true;
 				//}
 			}
@@ -139,8 +139,8 @@ public class ExpAnt extends Ant {
 //					if (currentSlot.getStartTime().compareTo(actualInterestedTime.plus(possibleLagtime)) <= 0) {// this condition is added since, once entered in from outer if, there were chances hat 
 						//(new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
 					checkArgument( ((new Duration(currentSlot.getStartTime(), currentSlot.getEndTime())).getStandardMinutes() >= (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()), true);						
-						this.lagTime = new Duration (actualInterestedTime, currentSlot.getStartTime() );
-						currentInterestedTime = actualInterestedTime.plus(this.lagTime);
+						this.currentLagTime = new Duration (actualInterestedTime, currentSlot.getStartTime() );
+						currentInterestedTime = actualInterestedTime.plus(this.currentLagTime);
 							return true;
 					//}
 				}
@@ -152,8 +152,8 @@ public class ExpAnt extends Ant {
 		return Utility.getCloner().deepClone(this.currentUnit);
 	}
 	
-	public Duration getLagTime(){
-		return lagTime;
+	public Duration getCurrentLagTime(){
+		return currentLagTime;
 	}
 	public DateTime getCurrentInterestedTime() {
 		return currentInterestedTime;
@@ -179,7 +179,7 @@ public class ExpAnt extends Ant {
 		exp.currentInterestedTime = this.currentInterestedTime;
 		exp.scheduleComplete = this.scheduleComplete;
 		exp.scheduleUnitsAdded = this.scheduleUnitsAdded;
-		exp.lagTime = this.lagTime;
+		exp.currentLagTime = this.currentLagTime;
 		return exp;
 	}
  
@@ -188,7 +188,7 @@ public class ExpAnt extends Ant {
 	 */
 	public int getScheduleScore() {
 		/*
-		 * score concerns: lagTime (20), travelDistance(20), ST Delay (10), wasted Concrete (10), preferred station (1)
+		 * score concerns: currentLagTime (20), travelDistance(20), ST Delay (10), wasted Concrete (10), preferred station (1)
 		 * ????what about adding the factor of most filled schedule, or schedule with maximum allocations
 		 *  
 		 */
@@ -220,12 +220,18 @@ public class ExpAnt extends Ant {
 	public ArrayList<TimeSlot> getAvailableSlots() {
 		return availableSlots;
 	}
-	public TruckScheduleUnit nextAfterCurrentUnit() {
-		if (currentUnit == null)
+
+	/**
+	 * @param unitExistsAfterXTime The schedule has to be checked after this time
+	 * @return Unit that exists after unitExistsAfterXTime
+	 */
+	public TruckScheduleUnit nextAfterCurrentUnit(DateTime unitExistsAfterXTime) {
+
+		if (this.schedule.isEmpty())
 			return null;
-		for (TruckScheduleUnit u : this.schedule){
-			if (u.getTimeSlot().getStartTime().compareTo(currentUnit.getTimeSlot().getStartTime()) > 0){
-				return u;
+		for (TruckScheduleUnit u : this.schedule){ //compared with availableSlot.got(0), since normally if an exploration ant is interested in some schedule, it will be
+			if (u.getTimeSlot().getStartTime().compareTo(unitExistsAfterXTime) > 0){ //Since there will be no overlaps, 
+				return u;  //its assumed that current startTime of next unit should be greater than this parameter
 			}
 		}
 		return null;
