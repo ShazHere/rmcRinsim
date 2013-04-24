@@ -14,14 +14,11 @@ import org.joda.time.Duration;
 import com.rits.cloning.Cloner;
 
 import rinde.sim.core.model.communication.CommunicationUser;
-import shaz.rmc.core.Agent;
 import shaz.rmc.core.Ant;
-import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.communicateAbleUnit;
-import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
 
 /**
@@ -147,7 +144,8 @@ public class IntAnt extends Ant {
 					if (u.getDelivery().equals(newu.getTunit().getDelivery()) && unitExist == false) {
 						unitExist = true;
 						//checkArgument(u.isAddedInTruckSchedule() == true, true);
-						checkArgument(newu.getOrderReply() == Reply.WEEK_ACCEPT && newu.getPsReply() == Reply.WEEK_ACCEPT, true);
+						checkArgument((newu.getOrderReply() == Reply.ACCEPT &&newu.getPsReply() == Reply.WEEK_ACCEPT) 
+								|| (newu.getOrderReply() == Reply.WEEK_ACCEPT && newu.getPsReply() == Reply.WEEK_ACCEPT), true);
 						break;
 					}
 				}

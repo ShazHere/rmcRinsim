@@ -36,7 +36,7 @@ public class GlobalParameters {
 	public static final int INTENTION_INTERVAL_MIN = 5; //means no. of mintues earlier = 5
 	public static final int INTENTION_EVAPORATION_MIN = INTENTION_INTERVAL_MIN +3; //earlier 3
 	public static final int EXPLORATION_SCHEDULE_SIZE = 2; //earlier 3 (5/02/2014)
-	public static final int TOTAL_TRUCKS = 12; //almost 29 trucks are there in the instances
+	public static final int TOTAL_TRUCKS = 8; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = false; //will all the vehicles have same capacity
 	public static final double TRUCK_SPEED = 4;
 	//public static final int FIXED_VEHICLE_CAPACITY =10000;
@@ -44,7 +44,7 @@ public class GlobalParameters {
 	//accepts the deliveyr time of even after TRUCKS_PLAN_IN_ADVANCE_HOURS. 
 	public static final int MINUTES_TO_PERISH_CONCRETE = 80; //in minutes..
 	public static final int MAX_LAG_TIME_MINUTES = 30; //used when LAG_TIME_ENABLE = true
-	public static final boolean LAG_TIME_ENABLE = true;
+	public static final boolean LAG_TIME_ENABLE = false;
 	public static final int MINUTES_TO_CHANGE_ST4ORDER = 30; // When shold start time of the order be delayed..
 	public static final int MINUTES_TO_DELAY_ST = 30; //means ST should be delayed with MINUTES_TO_DELAY_ST if MINUTES_TO_CHANGE_ST4ORDER time has been elapsed
 							//after each change of ST. 
@@ -53,12 +53,13 @@ public class GlobalParameters {
 	public static final int LOADING_MINUTES = 5;
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
 	public static final long AVAILABLE_SLOT_SIZE_HOURS = 3;
+	public static final boolean ENABLE_TRUCK_BREAKDOWN = true;
 	
 	public static final boolean EXP_RANKING_WITH_SCORE_ENABLE = false;
 	
 	//CHECK NOTES ABOUT INPUT FILES!!
-	public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-bigger2.xml";  //with expanded order start times
-	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //compaq deliveries, the normal basic set
+	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-bigger2.xml";  //with expanded order start times
+	public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //compaq deliveries, the normal basic set
 	//public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-expanded.xml";
 	//public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-1Delivery.xml";
 	//public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 27
@@ -66,8 +67,8 @@ public class GlobalParameters {
 	//public static final String INPUT_FILE = "planning2011-02-15-update-ucy.xml";
 	//public static final String INPUT_FILE = "planning2011-01-11/planning2011-01-11-update-ucy-shaz-requiredRateFixed.xml";
 	//public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 28
-	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10/"; //planning2011-01-20/";
-	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-bigger2/"; 
+	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10/"; //planning2011-01-20/";
+	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-bigger2/"; 
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-1Delivery/"; 
 	//public static final String RESULT_FOLDER
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-20/";

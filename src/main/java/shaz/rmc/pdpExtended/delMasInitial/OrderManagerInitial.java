@@ -49,7 +49,9 @@ public class OrderManagerInitial implements TickListener {
 	public void tick(TimeLapse timeLapse) {
 		if (loadBasicOrders == false)
 			addOrderInTick(timeLapse);
+		
 	}
+	
 	private void addOrderInTick(TimeLapse timeLapse) {
 		ArrayList<String> orderIdList = new ArrayList<String>(); 
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());

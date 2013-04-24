@@ -42,6 +42,7 @@ import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.core.domain.Vehicle;
+import shaz.rmc.pdpExtended.delMasInitial.communication.BreakAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 
@@ -71,6 +72,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private final DeliveryTruckInitialBelief b;
 	private final DeliveryTruckInitialIntention i;
 	private ExpAnt bestAnt;
+	private boolean truckBroke;;
 	
 	public DeliveryTruckInitial( Vehicle pTruck, int pDePhaseByMin, RandomGenerator pRandomPCSelector) {
 		setCapacity(pTruck.getNormalVolume());
@@ -89,6 +91,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		bestAnt = null;
 		truck = pTruck;
 		id = ++totalDeliveryTruck;
+		truckBroke = false;  //for tracking if truck is broken or not
 	}
 	@Override
 	protected void tickImpl(TimeLapse timeLapse) {
@@ -101,6 +104,30 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			assert ((ProductionSiteInitial)(b.schedule.get(b.schedule.size()-1).getTimeSlot().getProductionSiteAtStartTime())).getStation() != null : truck.getId()+"T: The return location of Truck shouldn't be null";
 			i.followSchedule(timeLapse);
 		}
+		sendBreakDownEvent(timeLapse.getStartTime());
+	}
+	/**
+	 * Used to send the break Down evet
+	 * @param currTime Time at which breakDown event message would be sent.
+	 */
+	private void sendBreakDownEvent(long startTime) {
+		if (this.id != 1 )//|| this.id != 2)
+			return;
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false || this.truckBroke == true)
+			return;
+		if (currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(2)) < 0) //if X hours are not passed, then simply return
+			return;
+		//means X hours are passed
+		for (TruckScheduleUnit tu : b.schedule) {
+			if (this.unitStatus.get(tu.getDelivery()) == Reply.ACCEPT) {//means JI team is formed
+				BreakAnt bAnt = new BreakAnt(this, currTime, tu.getDelivery());
+				logger.info(this.getId()+"T Sending BREAKDOWN signal to " + ((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId() + "O for delivery No " + tu.getDelivery().getDeliveryNo());
+				cApi.send(tu.getDelivery().getOrder(), bAnt);
+				truckBroke = true;
+			}
+		}
+		
 	}
 	private void processExplorationAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);

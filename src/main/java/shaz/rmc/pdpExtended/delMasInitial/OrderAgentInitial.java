@@ -37,6 +37,7 @@ import shaz.rmc.core.Utility;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.core.domain.Order;
 import shaz.rmc.core.domain.Station.StationBookingUnit;
+import shaz.rmc.pdpExtended.delMasInitial.communication.BreakAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.FeaAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
@@ -56,6 +57,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private final Logger logger; //for logging
 	private ArrayList<ExpAnt> explorationAnts;
 	private ArrayList<IntAnt> intentionAnts;
+	private ArrayList<BreakAnt> breakAnts;
 	private final Mailbox mailbox;
 	private CommunicationAPI cApi;
 	
@@ -96,6 +98,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		
 		explorationAnts = new ArrayList<ExpAnt>();
 		intentionAnts = new ArrayList<IntAnt>();
+		breakAnts = new ArrayList<BreakAnt>();
 		deliveries = new ArrayList<Delivery>();
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
 		
@@ -249,15 +252,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 							iAntAccepted = true;
 							this.state = ORDER_STATE.WAITING;
 					}
-				} //else could be case if a previous delivery was reopended..
-//				else if (refreshTimes.get(iAnt.getCurrentUnit().getDelivery()).equals(currTime) == false) { //TODO, correct this if-else, since else is
-//					checkArgument(this.deliveries.size() > 0 == true, true);			//only to express that if Containskey == true, then check whats the value in refreshTimes
-//					if (iAnt.getCurrentUnit().getPsReply() == Reply.UNDER_PROCESS) { //PS is ok with this delivery
-//							checkArgument(iAnt.getCurrentUnit().isAddedInTruckSchedule() == false, true);
-//							acceptIntention(iAnt, currTime);
-//							iAntAccepted = true;
-//					}
-//				} 
+				} 
 				if (!iAntAccepted) {
 					iAnt.getCurrentUnit().setOrderReply(Reply.REJECT);
 					checkArgument(this.state == ORDER_STATE.IN_PROCESS);  //this could be wrong..haven't thought too much..
@@ -275,8 +270,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 					} //else we shouldn't touch order state
 					refreshTimes.put(iAnt.getCurrentUnit().getDelivery(), currTime);
 					iAnt.getCurrentUnit().setOrderReply(Reply.WEEK_ACCEPT); //So earlier it could be UnderProcess, but once confirmed, its Weekly accepted
-//					if (this.state == ORDER_STATE.BOOKED)
-//						iAnt.getCurrentUnit().setOrderReply(Reply.ACCEPT); //order fully booked, so now reply full accept
+					if (this.state == ORDER_STATE.BOOKED)
+						iAnt.getCurrentUnit().setOrderReply(Reply.ACCEPT); //order fully booked, so now reply full accept
 					logger.debug(order.getId() + "O int-" + iAnt.getOriginator().getId()+" booking refreshed");
 				}
 				else //now its sure order isn't interested!
@@ -343,6 +338,11 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			remainingVolume = 0;
 		return remainingVolume;
 	}
+	
+	private void processBreakAnts() {
+		
+	}
+	
 	/*
 		 * chk for which delivery truck is intending
 		 *  if for first deliver, then make it week.Accept
@@ -375,30 +375,32 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		if (currTime.minusMinutes(timeForLastFeaAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN ){
 			if (this.state == ORDER_STATE.IN_PROCESS) { // && remainingToBookVolume > 0)  {
 				//setOrderInterests();
-				FeaAnt fAnt = new FeaAnt(this, this.interestedTime); //the distance is calculated when ant reaches the PS
-				for (ProductionSiteInitial p : sites) {
-					if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
-						cApi.send(p, fAnt);
-				}
+				this.sendFAntToPS();
 				timeForLastFeaAnt = currTime;
 			}
-			else {
+			else { //means ORDER.STATE is WAITING
 				Delivery d = checkOrderStatus(startTime);
 				if (d != null){
 					interestedTime = d.getDeliveryTime();
 					interestedDeliveryNo = d.getDeliveryNo();
-					FeaAnt fAnt = new FeaAnt(this, interestedTime);  //the distance is calculated when ant reaches the PS
 					deliveries.remove(d);
 					refreshTimes.remove(d);
-					isConfirmed.remove(d); //TODO add if isphyc.contains key, then remove
+					isConfirmed.remove(d); 
 					isPhysicallyCreated.remove(d);
-					cApi.broadcast(fAnt);
+					this.sendFAntToPS();
 				}
 				timeForLastFeaAnt = currTime;
 			}
 		}
 	}
 	
+	/**
+	 * Called when order is WAITING	for the confirmation from the Truck Agent. If the WAIT gets too long, the interestedTime, 
+	 * and interested DeliveryNo need to be reconsidered. So this method checks all the deliveries, if any of t hem isn't refreshed,
+	 * then it will Re-set order.
+	 * @param currMilli current time
+	 * @return The delivery which caused the Re-set of order
+	 */
 	private Delivery checkOrderStatus(long currMilli) {
 		checkArgument(this.state == ORDER_STATE.WAITING, true);
 		long currMilliInterval;
@@ -413,6 +415,16 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 		return null;
 	} 
+	/**
+	 * Send feasiblility info to only those PS, that comes within range according to concrete Perish limit
+	 */
+	private void sendFAntToPS() {
+		FeaAnt fAnt = new FeaAnt(this, this.interestedTime); //the distance is calculated when ant reaches the PS
+		for (ProductionSiteInitial p : sites) {
+			if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
+				cApi.send(p, fAnt);
+		}
+	}
 	/**
 	 * @param pdelivery the domaim.delivery object which stores general information of the deliveries that have been intended by other trucks
 	 * @return parcelDelivery, i.e actual physicial delivery
@@ -443,7 +455,11 @@ public class OrderAgentInitial  extends Depot implements Agent {
 				}
 				else if (m.getClass() == IntAnt.class) {
 					this.intentionAnts.add((IntAnt)m);
-				}		//can get f-ants from other orders but ignore
+				}		
+				else if (m.getClass() == BreakAnt.class) {
+					logger.info(order.getId() + "O BREAKDOWN signal received");
+					this.breakAnts.add((BreakAnt)m);
+				}
 			}
 		}
 	}
@@ -514,7 +530,9 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private enum ORDER_STATE {
 		IN_PROCESS, // The normal and general state
 		WAITING, // order is waiting for a delivery's confirmation from TruckAgent
-		BOOKED //whole concrete of order is booked.
+		BOOKED, //whole concrete of order is booked.
+		TEAM_HELP, //order was fully booked, but then one of the team members broke, so rest of the team has to
+					// fullfill the order as they committed 
 	}
 	
 }

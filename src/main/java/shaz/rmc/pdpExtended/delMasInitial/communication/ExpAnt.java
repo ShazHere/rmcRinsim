@@ -12,9 +12,7 @@ import com.rits.cloning.Cloner;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import rinde.sim.core.model.communication.CommunicationUser;
-import shaz.rmc.core.Agent;
 import shaz.rmc.core.Ant;
-import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
