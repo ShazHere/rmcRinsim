@@ -10,6 +10,7 @@ import org.joda.time.Duration;
 import rinde.sim.core.graph.Point;
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckScheduleUnit;
+import shaz.rmc.pdpExtended.delMasInitial.communication.CommitmentAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 
@@ -25,6 +26,7 @@ public class DeliveryTruckInitialBelief {
 	//only start and endTime will be used
 	protected final ArrayList<ExpAnt> explorationAnts;
 	protected final ArrayList<IntAnt> intentionAnts;
+	protected final ArrayList<CommitmentAnt> commitmentAnts;
 	
 	//for Objective function
 	Duration totalTravelTime; //keeps record of the time vehicle kept on traveling
@@ -42,6 +44,7 @@ public class DeliveryTruckInitialBelief {
 		this.schedule = pSch;
 		explorationAnts = new ArrayList<ExpAnt>();
 		intentionAnts = new ArrayList<IntAnt>();
+		commitmentAnts = new ArrayList<CommitmentAnt>();
 		totalTimeRange = new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME);
 		availableSlots = new ArrayList<TimeSlot>();
 		availableSlots.add(new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME));

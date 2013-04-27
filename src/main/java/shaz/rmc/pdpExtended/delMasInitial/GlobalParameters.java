@@ -53,9 +53,9 @@ public class GlobalParameters {
 	public static final int LOADING_MINUTES = 5;
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
 	public static final long AVAILABLE_SLOT_SIZE_HOURS = 3;
-	public static final boolean ENABLE_TRUCK_BREAKDOWN = true;
+	public static final boolean ENABLE_TRUCK_BREAKDOWN = false;
 	
-	public static final boolean EXP_RANKING_WITH_SCORE_ENABLE = false;
+	public static final boolean EXP_RANKING_WITH_SCORE_ENABLE = true; //should exploration ants be ranked accoridng their score by Truck agent
 	
 	//CHECK NOTES ABOUT INPUT FILES!!
 	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-bigger2.xml";  //with expanded order start times
@@ -80,7 +80,7 @@ public class GlobalParameters {
 	/**
 	 * Simulation Start time, w.r.t real time clock
 	 */
-	public static final DateTime START_DATETIME = new DateTime(2011, 1, 10, 8, 0, 0 ,0, GregorianChronology.getInstance()); //07AM on 10Jan, 2011
+	public static final DateTime START_DATETIME = new DateTime(2011, 1, 10, 7, 0, 0 ,0, GregorianChronology.getInstance()); //07AM on 10Jan, 2011
 	/**
 	 * Simulation End time, w.r.t real time clock
 	 */
@@ -89,7 +89,7 @@ public class GlobalParameters {
 	
 	public static RandomData RANDOM_DATA_GEN = new RandomDataImpl();  // for generating random sequence having good values..
 	
-	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per50;
+	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per0;
 	
 	
 	//RINSIM PARAMETERS

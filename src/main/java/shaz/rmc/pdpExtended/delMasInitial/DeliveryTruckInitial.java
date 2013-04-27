@@ -43,6 +43,7 @@ import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.core.domain.Vehicle;
 import shaz.rmc.pdpExtended.delMasInitial.communication.BreakAnt;
+import shaz.rmc.pdpExtended.delMasInitial.communication.CommitmentAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 
@@ -72,7 +73,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private final DeliveryTruckInitialBelief b;
 	private final DeliveryTruckInitialIntention i;
 	private ExpAnt bestAnt;
-	private boolean truckBroke;;
+	private boolean truckBroke;
 	
 	public DeliveryTruckInitial( Vehicle pTruck, int pDePhaseByMin, RandomGenerator pRandomPCSelector) {
 		setCapacity(pTruck.getNormalVolume());
@@ -105,26 +106,34 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			i.followSchedule(timeLapse);
 		}
 		sendBreakDownEvent(timeLapse.getStartTime());
+		processCommitmentAnts(timeLapse.getStartTime());
 	}
 	/**
 	 * Used to send the break Down evet
 	 * @param currTime Time at which breakDown event message would be sent.
-	 */
+	 */ //already tested..
 	private void sendBreakDownEvent(long startTime) {
-		if (this.id != 1 )//|| this.id != 2)
-			return;
+		
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		if (currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4)) < 0) //if X hours are not passed, then simply return
+			return;
 		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false || this.truckBroke == true)
 			return;
-		if (currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(2)) < 0) //if X hours are not passed, then simply return
+		//if (this.id >2 )//!= 1 && this.id != 2)
+		if (b.schedule.isEmpty())
 			return;
 		//means X hours are passed
 		for (TruckScheduleUnit tu : b.schedule) {
-			if (this.unitStatus.get(tu.getDelivery()) == Reply.ACCEPT) {//means JI team is formed
-				BreakAnt bAnt = new BreakAnt(this, currTime, tu.getDelivery());
-				logger.info(this.getId()+"T Sending BREAKDOWN signal to " + ((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId() + "O for delivery No " + tu.getDelivery().getDeliveryNo());
-				cApi.send(tu.getDelivery().getOrder(), bAnt);
-				truckBroke = true;
+			if ((((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId().equals("4")
+					&& tu.getDelivery().getDeliveryNo() == 2) //if 40O del2 or
+					|| (((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId().equals("30")//or 30O del3
+							&& tu.getDelivery().getDeliveryNo() == 3 )) {
+				if (this.unitStatus.get(tu.getDelivery()) == Reply.ACCEPT) { //means JI team is formed
+					BreakAnt bAnt = new BreakAnt(this, currTime, tu.getDelivery());
+					logger.info(this.getId()+"T Sending BREAKDOWN signal to " + ((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId() + "O for delivery No " + tu.getDelivery().getDeliveryNo());
+					cApi.send(tu.getDelivery().getOrder(), bAnt);
+					truckBroke = true;
+				}
 			}
 		}
 		
@@ -313,6 +322,39 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		}
 		return false;
 	}
+	private void processCommitmentAnts(long startTime) {
+		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		if (b.commitmentAnts.isEmpty())
+			return;
+		Iterator<CommitmentAnt> i = b.commitmentAnts.iterator();
+		//checkArgument(b.commitmentAnts.size() == 0, true); // at the moment truck shud receive only one commitment ant
+		
+		while (i.hasNext()) { 
+			CommitmentAnt cAnt = i.next();
+			Utility.getAvailableSlots(b.schedule, b.availableSlots, //recent available slots 
+					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime()));
+			Delivery d = cAnt.getFailedDelivery();
+			DateTime actualTime = d.getDeliveryTime().minusMinutes(GlobalParameters.LOADING_MINUTES);
+			for (TimeSlot t :b.availableSlots) {
+				//if (cAnt.getPossibleSites().contains(t.getProductionSiteAtStartTime())) {//means delivery could be feasible w.r.t PS
+				if (cAnt.getFailedDelivery().getLoadingStation().equals(t.getProductionSiteAtStartTime())) {//means delivery could be feasible w.r.t PS
+					Duration StToCy = new Duration ((long)(Point.distance(t.getProductionSiteAtStartTime().getPosition(), cAnt.getOriginator().getPosition())));
+					if (t.getStartTime().compareTo(actualTime.minus(StToCy))<0  //30 min since not sure which ps the truck will return
+							&& t.getEndTime().compareTo(d.getDeliveryTime().plus(StToCy).plus(d.getUnloadingDuration()).plusMinutes(10)) >0) {
+						//means time slot is oK and loading PS is also ok;
+						cAnt.setTruckReply(Reply.UNDER_PROCESS);
+						break;
+					}
+				}
+			}
+			if (cAnt.getTruckReply() == Reply.NO_REPLY)
+				cAnt.setTruckReply(Reply.REJECT);
+			logger.info(this.getId() + "T com-" + cAnt.getOriginator().getOrder().getId()+" reply is " + cAnt.getTruckReply() + " currTime= " + currTime);
+			CommitmentAnt newAnt = cAnt.clone(this);
+			cApi.send(cAnt.getOriginator(), newAnt);
+			i.remove();
+		}
+	}
 	private void checkMsgs(long currentTime) {
 		Queue<Message> messages = mailbox.getMessages();
 		if (messages.size() > 0) {
@@ -322,6 +364,9 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 				}
 				else if (m.getClass() == IntAnt.class) {
 					b.intentionAnts.add((IntAnt)m);
+				}
+				else if (m.getClass() == CommitmentAnt.class) {
+					b.commitmentAnts.add((CommitmentAnt)m);
 				}
 			}
 		}
@@ -422,6 +467,12 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		}
 		else 
 			return null;
+	}
+	
+	private enum TRUCK_STATE {
+		IN_PROCESS, // The normal and general state
+		
+		TEAM_NEED, //Truck is in a transition state w.r.t team. shouldn't send exp or int ants, neither process them. 
 	}
 
 }

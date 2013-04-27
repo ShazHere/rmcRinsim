@@ -194,17 +194,24 @@ public class ExpAnt extends Ant {
 		int lagTimeInMin = 0;
 		int startTimeDelay = 0; //already included in lag time
 		int wastedConcrete = 0;
+		int deliveryNoEffect = 0;
 		if (!schedule.isEmpty()) {
 			for(TruckScheduleUnit u: schedule) {
 				travelMin += u.getDelivery().getStationToCYTravelTime().getStandardMinutes();
 				travelMin += u.getDelivery().getCYToStationTravelTime().getStandardMinutes();
 				lagTimeInMin += u.getDelivery().getLagTime().getStandardMinutes();
 				wastedConcrete += u.getDelivery().getWastedVolume();
+				if (u.getDelivery().getDeliveryNo() == 0)
+					deliveryNoEffect += 1;
 			}
 			//TODO: add weights as well..
 			int score = (Weights.TRAVEL_TIME * travelMin) + (Weights.LAGTIME*lagTimeInMin) + 
-					(Weights.STARTTIME_DELAY*startTimeDelay) + (Weights.CONCRETE_WASTAGE*wastedConcrete); 
-			return score/schedule.size(); //this is an attempt to normalize score with respect to size of schedule
+					(Weights.STARTTIME_DELAY*startTimeDelay) + (Weights.CONCRETE_WASTAGE*wastedConcrete) + 
+					(20 * deliveryNoEffect); 
+			
+			//add here attraction for the schedule with greater than delivery no. 0
+			//return score/schedule.size(); //this is an attempt to normalize score with respect to size of schedule
+			return score;
 		}
 		else 
 			return 999999999;

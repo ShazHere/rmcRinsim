@@ -32,12 +32,14 @@ import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
 import shaz.rmc.core.ResultElementsOrder;
 import shaz.rmc.core.ResultElementsTruck;
+import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.core.domain.Order;
 import shaz.rmc.core.domain.Station.StationBookingUnit;
 import shaz.rmc.pdpExtended.delMasInitial.communication.BreakAnt;
+import shaz.rmc.pdpExtended.delMasInitial.communication.CommitmentAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.FeaAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
@@ -58,6 +60,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private ArrayList<ExpAnt> explorationAnts;
 	private ArrayList<IntAnt> intentionAnts;
 	private ArrayList<BreakAnt> breakAnts;
+	private ArrayList<CommitmentAnt> commitmentAnts;
 	private final Mailbox mailbox;
 	private CommunicationAPI cApi;
 	
@@ -74,7 +77,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private int remainingToBookVolume;
 	
 	private ArrayList<DeliveryInitial> parcelDeliveries; //physical deliveries, to be created just before delivery (5min b4 actual delivery needed to b picked up)
-	ArrayList<ProductionSiteInitial> sites; 
+	ArrayList<ProductionSiteInitial> sites; //all sites information
+	ArrayList<ProductionSiteInitial> possibleSites; //sites from which this order could receive delivery according to PERISH time
 	
 	//private boolean orderReserved; //to track that all the intention ants are said ACCEPT to correstponding deliveriesm, means order is fully confirmed and no dleivery is remaining
 	private ORDER_STATE state;
@@ -99,6 +103,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		explorationAnts = new ArrayList<ExpAnt>();
 		intentionAnts = new ArrayList<IntAnt>();
 		breakAnts = new ArrayList<BreakAnt>();
+		commitmentAnts = new ArrayList<CommitmentAnt>();
 		deliveries = new ArrayList<Delivery>();
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
 		
@@ -113,6 +118,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		processIntentionAnts(timeLapse);
 		generateParcelDeliveries(timeLapse.getStartTime());
 		sendFeasibilityInfo(timeLapse.getStartTime());
+		processBreakAnts(timeLapse);
 	}
 
 	/**
@@ -339,9 +345,48 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		return remainingVolume;
 	}
 	
-	private void processBreakAnts() {
-		
+	private void processBreakAnts(TimeLapse timeLapse) {
+		if (breakAnts.isEmpty())
+			return;
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+		//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
+		//make state = TEAM_NEEDED
+		//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
+		Iterator<BreakAnt> i = breakAnts.iterator();
+		while (i.hasNext()) { 
+			BreakAnt bAnt = i.next();
+			checkArgument (refreshTimes.containsKey(bAnt.getFailedDelivery()) == true, true); 	
+			for (Delivery d: deliveries) {
+				if (d.getTruck().getId() != bAnt.getOriginator().getId()) { //donot send to the broken truck
+					CommitmentAnt cAnt = new CommitmentAnt(this, currTime, bAnt.getFailedDelivery(), this.possibleSites);
+					cApi.send(d.getTruck(), cAnt);
+				}
+			}
+		}
+		breakAnts.clear();
 	}
+	private void processCommitmentAnts(TimeLapse timeLapse) {
+		if (commitmentAnts.isEmpty())
+			return;
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+		//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
+		//make state = TEAM_NEEDED
+		//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
+		Iterator<CommitmentAnt> i = commitmentAnts.iterator();
+		while (i.hasNext()) { 
+			CommitmentAnt cAnt = i.next();
+			checkArgument (refreshTimes.containsKey(cAnt.getFailedDelivery()) == true, true); 	
+//			if (cAnt.getTruckReply() == Reply.UNDER_PROCESS) {// means truck can make the delivery
+//				ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
+//						new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
+//				if (b.availableSlots.size()>0) {
+//					checkArgument(b.availableSlots.get(0).getProductionSiteAtStartTime() != null, true);
+//					cApi.send(b.availableSlots.get(0).getProductionSiteAtStartTime(), eAnt); 				
+//				}
+//			}
+		}
+		breakAnts.clear();
+	} 
 	
 	/*
 		 * chk for which delivery truck is intending
@@ -420,8 +465,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	 */
 	private void sendFAntToPS() {
 		FeaAnt fAnt = new FeaAnt(this, this.interestedTime); //the distance is calculated when ant reaches the PS
-		for (ProductionSiteInitial p : sites) {
-			if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
+		for (ProductionSiteInitial p : possibleSites) {
+			//if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
 				cApi.send(p, fAnt);
 		}
 	}
@@ -445,6 +490,11 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		this.roadModel = pRoadModel;
 		this.pdpModel = pPdpModel;
 		sites = new ArrayList<ProductionSiteInitial>(roadModel.getObjectsOfType(ProductionSiteInitial.class));
+		possibleSites = new ArrayList<ProductionSiteInitial>();
+		for (ProductionSiteInitial p : sites) {
+			if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
+				possibleSites.add(p);
+		}
 	}
 	private void checkMsgs(long currentTime) {
 		Queue<Message> messages = mailbox.getMessages();
@@ -459,6 +509,10 @@ public class OrderAgentInitial  extends Depot implements Agent {
 				else if (m.getClass() == BreakAnt.class) {
 					logger.info(order.getId() + "O BREAKDOWN signal received");
 					this.breakAnts.add((BreakAnt)m);
+				}
+				else if (m.getClass() == CommitmentAnt.class) {
+					logger.info(order.getId() + "O COMMITMENT reply received");
+					this.commitmentAnts.add((CommitmentAnt)m);
 				}
 			}
 		}
@@ -531,7 +585,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		IN_PROCESS, // The normal and general state
 		WAITING, // order is waiting for a delivery's confirmation from TruckAgent
 		BOOKED, //whole concrete of order is booked.
-		TEAM_HELP, //order was fully booked, but then one of the team members broke, so rest of the team has to
+		TEAM_NEED, //order was fully booked, but then one of the team members broke, so rest of the team has to
 					// fullfill the order as they committed 
 	}
 	

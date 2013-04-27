@@ -62,6 +62,8 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	private ArrayList<ExpAnt> explorationAnts;
 	private ArrayList<IntAnt> intentionAnts;
 	
+	private static int totalProductionSites = 0;
+	private final int id;
 	public ProductionSiteInitial(RandomGenerator pRnd, Station pStation) {
 		station = pStation;	
 		rnd = pRnd;
@@ -75,6 +77,8 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 		travelDistanceToOrder = new LinkedHashMap<OrderAgentInitial, Double>();
 		pheromoneUpdateTime = new LinkedHashMap<OrderAgentInitial, Long >();
 		noOfExplorations = new LinkedHashMap<OrderAgentInitial, Long >();
+		
+		id = ++totalProductionSites;
 	}
 	
 	@Override
@@ -259,7 +263,20 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
 		this.roadModel = pRoadModel;
 		this.pdpModel = pPdpModel;
-		Location = roadModel.getRandomPosition(rnd);
+		//Location = roadModel.getRandomPosition(rnd);
+		switch(this.id) {
+		case 1:
+			Location = new Point(3.5, 2.7);
+			break;
+		case 2:
+			Location = new Point(5, 9);
+			break;
+		case 3:
+			Location = new Point(8, 4.5);
+			break;
+		default:
+			Location = roadModel.getRandomPosition(rnd);	
+		}
 		//TODO: check distance between two PS should be greater than some value, so that they are enough spread across.
 		//roadModel.getObjectsOfType(ProductionSiteInitial.class);
 		roadModel.addObjectAt(this,Location); 
