@@ -36,7 +36,7 @@ public class GlobalParameters {
 	public static final int INTENTION_INTERVAL_MIN = 5; //means no. of mintues earlier = 5
 	public static final int INTENTION_EVAPORATION_MIN = INTENTION_INTERVAL_MIN +3; //earlier 3
 	public static final int EXPLORATION_SCHEDULE_SIZE = 2; //earlier 3 (5/02/2014)
-	public static final int TOTAL_TRUCKS = 8; //almost 29 trucks are there in the instances
+	public static final int TOTAL_TRUCKS =8; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = false; //will all the vehicles have same capacity
 	public static final double TRUCK_SPEED = 4;
 	//public static final int FIXED_VEHICLE_CAPACITY =10000;

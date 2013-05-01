@@ -20,6 +20,7 @@ import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
+import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters.Weights;
 
 /**
  * @author Shaza
@@ -180,6 +181,14 @@ public class IntAnt extends Ant {
 			lagTime = lagTime.plus( u.getDelivery().getLagTime());
 		}
 		return lagTime;
+	}
+	public int getCurrentUnitScore () {
+		long travelTimeMin = this.getCurrentUnit().getDelivery().getCYToStationTravelTime().getStandardMinutes() + 
+				this.getCurrentUnit().getDelivery().getCYToStationTravelTime().getStandardMinutes();
+		long score = (Weights.TRAVEL_TIME * travelTimeMin) + (Weights.LAGTIME*getCurrentUnit().getDelivery().getLagTime().getStandardMinutes()) + 
+				(Weights.CONCRETE_WASTAGE*getCurrentUnit().getDelivery().getWastedVolume());
+		return (int)score;
+			
 	}
 	@Override
 	public String toString() {

@@ -240,8 +240,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		if ( intentionAnts.isEmpty()) 
 			return;
 		 //aparently it will reach beyond this point depending intention_interval
-		if (GlobalParameters.LAG_TIME_ENABLE) //this is just to test lag time, so sort with lagtime in decending order. This should not be default behaviour with lag time!
-			this.sortIntentionArts();
+		 //this is just to test lag time, so sort with lagtime in decending order. This should not be default behaviour with lag time!
+			//this.sortIntentionArts();
 		Iterator<IntAnt> i = intentionAnts.iterator();
 		while (i.hasNext()) { //at the moment just select the first one
 			IntAnt iAnt = i.next();
@@ -293,9 +293,17 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	//a temproary sorting mechanism to sort intention ants, so that we can execute lag time..TEsted as well
 	private void sortIntentionArts() {
 		//this.intentionAnts
+		if (GlobalParameters.LAG_TIME_ENABLE) {
+//			Collections.sort(this.intentionAnts, new Comparator<IntAnt>(){
+//		        public int compare( IntAnt a, IntAnt b ){//sort descending order based in lag time
+//		            return (int)(b.getScheduleLagTime().minus(a.getScheduleLagTime()).getStandardSeconds());
+//		        }
+//			});
+//			return;
+		}
 		Collections.sort(this.intentionAnts, new Comparator<IntAnt>(){
-	        public int compare( IntAnt a, IntAnt b ){
-	            return (int)(b.getScheduleLagTime().minus(a.getScheduleLagTime()).getStandardSeconds());
+	        public int compare( IntAnt a, IntAnt b ){ //sort in ascending order based on schedule score
+	            return a.getCurrentUnitScore() - b.getCurrentUnitScore();
 	        }
 		});
 		
