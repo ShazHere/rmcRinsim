@@ -73,7 +73,8 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private final DeliveryTruckInitialBelief b;
 	private final DeliveryTruckInitialIntention i;
 	private ExpAnt bestAnt;
-	private boolean truckBroke;
+	private TRUCK_STATE state;
+	//private boolean truckBroke;
 	
 	public DeliveryTruckInitial( Vehicle pTruck, int pDePhaseByMin, RandomGenerator pRandomPCSelector) {
 		setCapacity(pTruck.getNormalVolume());
@@ -92,11 +93,14 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		bestAnt = null;
 		truck = pTruck;
 		id = ++totalDeliveryTruck;
-		truckBroke = false;  //for tracking if truck is broken or not
+		state = TRUCK_STATE.IN_PROCESS;
+		//truckBroke = false;  //for tracking if truck is broken or not
 	}
 	@Override
 	protected void tickImpl(TimeLapse timeLapse) {
 		checkMsgs(timeLapse.getStartTime());		
+		if (this.state == TRUCK_STATE.BROKEN)
+			return;
 		processIntentionAnts(timeLapse.getStartTime());
 		sendExpAnts(timeLapse.getStartTime());
 		sendIntAnts(timeLapse.getStartTime());
@@ -105,8 +109,10 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			assert ((ProductionSiteInitial)(b.schedule.get(b.schedule.size()-1).getTimeSlot().getProductionSiteAtStartTime())).getStation() != null : truck.getId()+"T: The return location of Truck shouldn't be null";
 			i.followSchedule(timeLapse);
 		}
-		sendBreakDownEvent(timeLapse.getStartTime());
-		processCommitmentAnts(timeLapse.getStartTime());
+		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN)
+			sendBreakDownEvent(timeLapse.getStartTime());
+		if (GlobalParameters.ENABLE_JI)
+			processCommitmentAnts(timeLapse.getStartTime());
 	}
 	/**
 	 * Used to send the break Down evet
@@ -115,24 +121,33 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private void sendBreakDownEvent(long startTime) {
 		
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		if (currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4)) < 0) //if X hours are not passed, then simply return
+		if (currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4)) != 0 )
+			//(currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4)) < 0 )
+			//	&& currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4).plusMinutes(1)) < 0)) //if X hours are not passed, then simply return
 			return;
-		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false || this.truckBroke == true)
+		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false || this.state == TRUCK_STATE.BROKEN)
 			return;
 		//if (this.id >2 )//!= 1 && this.id != 2)
 		if (b.schedule.isEmpty())
 			return;
 		//means X hours are passed
-		for (TruckScheduleUnit tu : b.schedule) {
+		
+		//for (TruckScheduleUnit tu : b.schedule) {
+		Iterator<TruckScheduleUnit> j = b.schedule.iterator();
+		while (j.hasNext()) {
+			TruckScheduleUnit tu = j.next();
 			if ((((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId().equals("4")
-					&& tu.getDelivery().getDeliveryNo() == 2) //if 40O del2 or
+					&& tu.getDelivery().getDeliveryNo() == 10) //if 40O del2 or
 					|| (((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId().equals("30")//or 30O del3
-							&& tu.getDelivery().getDeliveryNo() == 3 )) {
+							&& tu.getDelivery().getDeliveryNo() == 5 )) {
 				if (this.unitStatus.get(tu.getDelivery()) == Reply.ACCEPT) { //means JI team is formed
 					BreakAnt bAnt = new BreakAnt(this, currTime, tu.getDelivery());
 					logger.info(this.getId()+"T Sending BREAKDOWN signal to " + ((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId() + "O for delivery No " + tu.getDelivery().getDeliveryNo());
 					cApi.send(tu.getDelivery().getOrder(), bAnt);
-					truckBroke = true;
+					this.state = TRUCK_STATE.BROKEN;
+					this.unitStatus.remove(tu);
+					b.schedule.remove(tu);
+					break;
 				}
 			}
 		}
@@ -324,7 +339,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 	private void processCommitmentAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		if (b.commitmentAnts.isEmpty())
+		if (b.commitmentAnts.isEmpty() )
 			return;
 		Iterator<CommitmentAnt> i = b.commitmentAnts.iterator();
 		//checkArgument(b.commitmentAnts.size() == 0, true); // at the moment truck shud receive only one commitment ant
@@ -471,7 +486,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	
 	private enum TRUCK_STATE {
 		IN_PROCESS, // The normal and general state
-		
+		BROKEN,
 		TEAM_NEED, //Truck is in a transition state w.r.t team. shouldn't send exp or int ants, neither process them. 
 	}
 

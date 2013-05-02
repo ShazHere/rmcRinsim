@@ -100,7 +100,8 @@ public class Utility {
 	public static boolean wrtieInFile(String fileName, boolean isAppend, String text, ResultElements resultElement) {
 		// PrintWriter out; //not using it any more because it swallows any exceptions and  
 		boolean addComment = false;
-		fileName = fileName + GlobalParameters.INPUT_INSTANCE_TYPE.toString();
+		//fileName =  fileName + GlobalParameters.INPUT_INSTANCE_TYPE.toString();
+		fileName = GlobalParameters.RESULT_FOLDER + fileName + "-" +GlobalParameters.ENABLE_TRUCK_BREAKDOWN + "-" +GlobalParameters.ENABLE_JI;
 		String columnSeperator = "\t"; 
 		String commentText = "# Data file for input file: " + GlobalParameters.DATA_FOLDER + GlobalParameters.INPUT_FILE + "\n" +
 							"# Experiment Date: " + new DateTime(System.currentTimeMillis()) + "\n";

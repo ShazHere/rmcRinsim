@@ -54,12 +54,14 @@ public class GlobalParameters {
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
 	public static final long AVAILABLE_SLOT_SIZE_HOURS = 3;
 	public static final boolean ENABLE_TRUCK_BREAKDOWN = true;
+	public static final boolean ENABLE_JI = false;
 	
 	public static final boolean EXP_RANKING_WITH_SCORE_ENABLE = true; //should exploration ants be ranked accoridng their score by Truck agent
 	
 	//CHECK NOTES ABOUT INPUT FILES!!
 	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-bigger2.xml";  //with expanded order start times
-	public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //compaq deliveries, the normal basic set
+	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //compaq deliveries, the normal basic set
+	public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-6Delivery.xml";
 	//public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-expanded.xml";
 	//public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-1Delivery.xml";
 	//public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 27
@@ -70,7 +72,7 @@ public class GlobalParameters {
 	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10/"; //planning2011-01-20/";
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-bigger2/"; 
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-1Delivery/"; 
-	//public static final String RESULT_FOLDER
+	public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/JIExpMay2013/";
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-20/";
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-02-15/";
 	public static final String LOG_LOCATION = "hh";  //not used 

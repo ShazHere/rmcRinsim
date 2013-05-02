@@ -118,8 +118,12 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		processIntentionAnts(timeLapse);
 		generateParcelDeliveries(timeLapse.getStartTime());
 		sendFeasibilityInfo(timeLapse.getStartTime());
-		processBreakAnts(timeLapse);
+		if (GlobalParameters.ENABLE_JI)
+			processBreakAnts(timeLapse);
+		else //means JI isn't enabled so DelMAS should handle it independently
+			processBreakAntDelMAS(timeLapse);
 	}
+
 
 	/**
 	 * Generates actual parcels corresponding to the deliveries, to be picked up physically by trucks. 
@@ -370,8 +374,52 @@ public class OrderAgentInitial  extends Depot implements Agent {
 					cApi.send(d.getTruck(), cAnt);
 				}
 			}
+			Iterator<Delivery> j = deliveries.iterator();
+			while (j.hasNext()) {
+				Delivery d = j.next();
+				if (bAnt.getFailedDelivery().equals(d)) {
+					//this.state = ORDER_STATE.IN_PROCESS;
+					this.refreshTimes.remove(d);
+					this.isConfirmed.remove(d);
+					this.isPhysicallyCreated.remove(d);
+					j.remove(); //delivery is removed
+					break;
+				}
+			}
 		}
 		breakAnts.clear();
+	}
+	
+	/**handle the breakdown events when JI is not enabled 
+	 * @param timeLapse
+	 */
+	private void processBreakAntDelMAS(TimeLapse timeLapse) {
+		if (breakAnts.isEmpty())
+			return;
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+		//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
+		//make state = TEAM_NEEDED
+		//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
+		Iterator<BreakAnt> i = breakAnts.iterator();
+		while (i.hasNext()) { 
+			BreakAnt bAnt = i.next();
+			checkArgument (refreshTimes.containsKey(bAnt.getFailedDelivery()) == true, true); 
+			checkArgument (this.state == ORDER_STATE.BOOKED, true);
+			Iterator<Delivery> j = deliveries.iterator();
+			while (j.hasNext()) {
+				Delivery d = j.next();
+				if (bAnt.getFailedDelivery().equals(d)) {
+					this.state = ORDER_STATE.IN_PROCESS;
+					this.refreshTimes.remove(d);
+					this.isConfirmed.remove(d);
+					this.isPhysicallyCreated.remove(d);
+					j.remove(); //delivery is removed
+					break;
+				}
+			}
+			setOrderInterests();
+			i.remove();
+		}
 	}
 	private void processCommitmentAnts(TimeLapse timeLapse) {
 		if (commitmentAnts.isEmpty())
