@@ -118,6 +118,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		processIntentionAnts(timeLapse);
 		generateParcelDeliveries(timeLapse.getStartTime());
 		sendFeasibilityInfo(timeLapse.getStartTime());
+		
 		if (GlobalParameters.ENABLE_JI)
 			processBreakAnts(timeLapse);
 		else //means JI isn't enabled so DelMAS should handle it independently
@@ -574,7 +575,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 	}
 	
-	public ResultElementsOrder getOrderResult() { 
+	public ResultElementsOrder getOrderResult(ArrayList<Integer> truckCapacities) { //truck capacities
 		int deliveredConcrete = 0;
 		if (deliveries.size() > 0) {
 			for (Delivery d : deliveries) { //there might b some error in this calculation.
@@ -583,9 +584,52 @@ public class OrderAgentInitial  extends Depot implements Agent {
 					deliveredConcrete += di.getDelivery().getDeliveredVolume();
 				}
 			}
-			return new ResultElementsOrder(deliveries, this.order.getRequiredTotalVolume(), deliveredConcrete);
+			return new ResultElementsOrder(deliveries, this.order.getRequiredTotalVolume(), 
+					deliveredConcrete, this.recordHourlyConcrete(), this.order.getEarliestStartTime(), getExpectedWastedConcrete(truckCapacities), getActualWastedConcrete());
 		}
-		return new ResultElementsOrder(null, this.order.getRequiredTotalVolume(), deliveredConcrete);
+		//else if no deliveries..means order wasn't delivered.
+		return new ResultElementsOrder(null, this.order.getRequiredTotalVolume(), deliveredConcrete, null, this.order.getEarliestStartTime(), 
+				getExpectedWastedConcrete(truckCapacities), getActualWastedConcrete());
+	}
+	/**
+	 * @return array of 24 elements, where each integer specifies amount of concrete delivered in the index-1th hour
+	 */
+	private int[] recordHourlyConcrete() {
+		int hoursConcrete[] = new int[24];
+		if (deliveries.size() < 0)
+			return null;
+		int index = 0;
+		for (DeliveryInitial di : this.parcelDeliveries) {
+			index = di.getDelivery().getDeliveryTime().minusMinutes(1).getHourOfDay();
+			hoursConcrete[index] = di.getDelivery().getDeliveredVolume();
+		}
+		return hoursConcrete;
+	}
+	/**
+	 * @return actual wasted concrete = sum of wasted concrete by all deliveries
+	 */
+	private int getActualWastedConcrete() {
+		int wastedConcrete = 0;
+		if (deliveries.size() < 0)
+			return 0;
+		int index = 0;
+		for (DeliveryInitial di : this.parcelDeliveries) {
+			wastedConcrete += di.getDelivery().getWastedVolume();
+		}
+		return wastedConcrete;
+	}
+	/**
+	 * @return the concrete that is expected to be wasted anyway, even if smallest size truck is used
+	 *  for last delivery.  
+	 */
+	private int getExpectedWastedConcrete(ArrayList<Integer> truckCapacities) {
+		Collections.sort(truckCapacities, new Comparator<Integer>(){
+	        public int compare( Integer a, Integer b ){ //sort in ascending order based on schedule score
+	            return a - b;
+	        }
+		});
+		return truckCapacities.get(0) - this.order.getRequiredTotalVolume()%truckCapacities.get(0);
+		
 	}
 	/* 
 	 * Should serve same as getLocation, returns location in PDP model
@@ -607,6 +651,12 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	public double getReliability() {
 		return 1;
 	}
+	
+//	private void checkStartTimeDelayRequirement() {
+//		if (this.remainingToBookVolume > 0 && this.refreshTimes.get(deliveries.get(deliveries.size()-1)).plusHours(1) < currentTime)
+//			this.delayStartTime = new Duration(3600000); //delay one hour
+//			
+//	}
 
 	@Override
 	public void receive(Message message) {

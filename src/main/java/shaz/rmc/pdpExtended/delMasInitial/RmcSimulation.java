@@ -74,7 +74,7 @@ public class RmcSimulation {
 
 		
 		//Adding prodcuction Sites
-		for (int j = 0; j<3 ; j++) {
+		for (int j = 0; j<1 ; j++) {
 			if (randomSeed == 0)
 				sim.register(new ProductionSiteInitial(new MersenneTwister(), GlobalParameters.PROBLEM.getStations().get(j)));
 			else
@@ -126,7 +126,7 @@ public class RmcSimulation {
 		//if (!sim.isPlaying()) {
 		String writeString = stTracker.collectStatistics(); 
 			log.info(writeString);
-			stTracker.writeFile(writeString);
+			stTracker.writeFile();
 			log.info(stTracker.collectDataString());
 			
 		//}

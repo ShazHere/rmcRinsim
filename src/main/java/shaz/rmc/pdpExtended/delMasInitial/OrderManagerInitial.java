@@ -17,6 +17,7 @@ import org.joda.time.DateTime;
 import rinde.sim.core.TickListener;
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.Simulator;
+import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.road.PlaneRoadModel;
 import shaz.rmc.core.domain.Order;
 
@@ -80,7 +81,8 @@ public class OrderManagerInitial implements TickListener {
 	}
 	
 	/**
-	 * Should be called after registering orderManagerInitial.If the method is not called at all, no orders will be added, except if they are handled in tick() method
+	 * Should be called after registering orderManagerInitial.If the method is not called at all, 
+	 * no orders will be added, except if they are handled in tick() method
 	 */
 	public void addOrders() {
 		if (loadBasicOrders)
@@ -111,6 +113,7 @@ public class OrderManagerInitial implements TickListener {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		System.out.println(ord.toString());
 		OrderAgentInitial or = new OrderAgentInitial(sim, prm.getRandomPosition(rng), ord);//<GlobalParameters.PROBLEM.getOrders().size()?i:i-1));
+		//OrderAgentInitial or = new OrderAgentInitial(sim, new Point(3.5, 2.7), ord);//<GlobalParameters.PROBLEM.getOrders().size()?i:i-1)); for canonical form
 		if (orderSet.contains(or))
 			return false;
 		if (orderSet.add(or)) {

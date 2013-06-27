@@ -23,8 +23,8 @@ public class Order implements Serializable {
     
    
 
-	private final boolean maximumVolumeAllowed;
-    private final boolean pickup;
+	//private final boolean maximumVolumeAllowed;
+   // private final boolean pickup;
     
     private final String preferredStationCode;
     
@@ -48,8 +48,8 @@ public class Order implements Serializable {
         this.pumpLineLengthRequired = pumpLineLengthRequired;
         this.requiredTotalVolume = requiredTotalVolume;
         this.requiredDischargePerHour = requiredDischargePerHour;
-        this.maximumVolumeAllowed = maximumVolumeAllowed;
-        this.pickup = pickup;
+        //this.maximumVolumeAllowed = maximumVolumeAllowed;
+       // this.pickup = pickup;
         this.prohibitedVehicleTypes = new HashSet<VehicleType>(0);
         this.preferredStationCode = preferredStationCode;
         this.waitingMinutes = waitingMinutes;
@@ -72,13 +72,13 @@ public class Order implements Serializable {
         return requiredTotalVolume;
     }
     
-    public boolean isMaximumVolumeAllowed() {
-        return maximumVolumeAllowed;
-    }
-    
-    public boolean isPickup() {
-        return pickup;
-    }
+//    public boolean isMaximumVolumeAllowed() {
+//        return maximumVolumeAllowed;
+//    }
+//    
+//    public boolean isPickup() {
+//        return pickup;
+//    }
     
     public int getRequiredDischargePerHour() {
         return requiredDischargePerHour;

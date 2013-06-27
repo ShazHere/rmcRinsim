@@ -14,15 +14,15 @@ public class Vehicle implements Serializable {
     private Integer pumpLineLength;
     
     
-    private DateTime currentAvailability;
-    private int currentStationIndex; 
-    private Station currentStation;
+    //private DateTime currentAvailability;
+    //private int currentStationIndex; 
+    //private Station currentStation;
     
-    private int routeIndex;
+    //private int routeIndex;
     
-	private ArrayList<DateTime[]> availabilityList;
+	//private ArrayList<DateTime[]> availabilityList;
 	
-	private ArrayList<String[]> stationIdList;
+	//private ArrayList<String[]> stationIdList;
     
     public Vehicle(
     		final String id, 
@@ -36,8 +36,8 @@ public class Vehicle implements Serializable {
         this.maximalVolume = maximalVolume;
         this.dischargeRate = dischargeRate;
         
-		availabilityList = new ArrayList<DateTime[]>();
-		stationIdList = new ArrayList<String[]>();
+		//availabilityList = new ArrayList<DateTime[]>();
+		//stationIdList = new ArrayList<String[]>();
     }
     
     public Vehicle(
@@ -80,45 +80,45 @@ public class Vehicle implements Serializable {
     	return pumpLineLength != null;
     }
     
-    public DateTime getCurrentAvailability() {
-		return currentAvailability;
-	}
+//    public DateTime getCurrentAvailability() {
+//		return currentAvailability;
+//	}
+//
+//	public void setCurrentAvailability(DateTime currentAvailability) {
+//		this.currentAvailability = currentAvailability;
+//	}
 
-	public void setCurrentAvailability(DateTime currentAvailability) {
-		this.currentAvailability = currentAvailability;
-	}
+//	public Station getCurrentStation() {
+//		return currentStation;
+//	}
+//
+//	public void setCurrentStation(Station currentStation) {
+//		this.currentStation = currentStation;
+//	}
+//
+//	public int getCurrentStationIndex() {
+//		return currentStationIndex;
+//	}
+//
+//	public void setCurrentStationIndex(int currentStationIndex) {
+//		this.currentStationIndex = currentStationIndex;
+//	}
+//	
+//	public int getRouteIndex() {
+//		return routeIndex;
+//	}
+//
+//	public void setRouteIndex(int routeIndex) {
+//		this.routeIndex = routeIndex;
+//	}
 
-	public Station getCurrentStation() {
-		return currentStation;
-	}
-
-	public void setCurrentStation(Station currentStation) {
-		this.currentStation = currentStation;
-	}
-
-	public int getCurrentStationIndex() {
-		return currentStationIndex;
-	}
-
-	public void setCurrentStationIndex(int currentStationIndex) {
-		this.currentStationIndex = currentStationIndex;
-	}
-	
-	public int getRouteIndex() {
-		return routeIndex;
-	}
-
-	public void setRouteIndex(int routeIndex) {
-		this.routeIndex = routeIndex;
-	}
-
-	public ArrayList<DateTime[]> getAvailabilityList() {
-		return availabilityList;
-	}
-	
-	public ArrayList<String[]> getStationIdList() {
-		return stationIdList;
-	}
+//	public ArrayList<DateTime[]> getAvailabilityList() {
+//		return availabilityList;
+//	}
+//	
+//	public ArrayList<String[]> getStationIdList() {
+//		return stationIdList;
+//	}
 
 	@Override
     public String toString() {

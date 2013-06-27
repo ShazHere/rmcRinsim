@@ -91,7 +91,13 @@ public class StatisticTracker implements Listener {
 			sb.append("ObjectiveFunctionValue: ").append(stats.getTotalValue()).append("\n");
 			return sb.toString();
 		}
-		public void writeFile(String writeString) {
-			Utility.wrtieInFile(GlobalParameters.INPUT_FILE, true, writeString, stats);
+		public String hourlyStatistic () {
+			final StringBuilder sb = new StringBuilder();
+			Set<OrderAgentInitial> orderSet = orm.getOrders();
+			
+			return sb.toString();
+		}
+		public void writeFile() {
+			Utility.wrtieInFile(true, stats);
 		}
 }

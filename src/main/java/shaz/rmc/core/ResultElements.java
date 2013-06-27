@@ -3,6 +3,9 @@
  */
 package shaz.rmc.core;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
+import java.util.ArrayList;
 import java.util.Set;
 
 import rinde.sim.core.model.pdp.Vehicle;
@@ -43,6 +46,8 @@ public class ResultElements {
 	public ResultElements(Set<OrderAgentInitial> orderSet,
 			Set<Vehicle> truckSet) {
 		super();
+		ArrayList<Integer> truckCapacities = new ArrayList<Integer>(); // to record total types of truck capacities to be sent to order
+		// for estimating expected wasted concrete
 		totalTrucksUsed = 0;
 		totalTrucksGiven = truckSet.size();
 		ResultElementsTruck re;
@@ -58,6 +63,13 @@ public class ResultElements {
 				allResult.addTotalDeliveries(re.getTotalDeliveries());
 				allResult.addTotalConcrete(re.getTotalConcrete());
 			}
+			boolean addIt = true;
+			for (Integer capacity: truckCapacities) {
+				if (capacity == ((DeliveryTruckInitial)v).getCapacity())
+					addIt = false;
+			}
+			if (addIt)
+				truckCapacities.add((int)((DeliveryTruckInitial)v).getCapacity());
 		}
 		
 		totalOrderGiven = orderSet.size();
@@ -65,12 +77,13 @@ public class ResultElements {
 		ResultElementsOrder ro;
 		ResultElementsOrder allResultOrder = new ResultElementsOrder();
 		for (OrderAgentInitial o: orderSet) {
-			ro = o.getOrderResult();
+			ro = o.getOrderResult(truckCapacities);
 			if (ro != null) {
 				allResultOrder.addDeliveredConcrete(ro.getDeliveredConcrete());
 				allResultOrder.addTotalConcreteByOrder(ro.getTotalConcreteByOrder());
 				allResultOrder.addTotalDeliveriesReadyByOrder(ro.getTotalDeliveriesReadyByOrder());
 				allResultOrder.addUndeliveredConcrete(ro.getUndeliveredConcrete());
+				allResultOrder.addHoursConcreteInList(ro.getHoursConcrteList(),ro.getStartHour(), ro.getTotalConcreteByOrder(), ro.getExpectedWastedConcrete(), ro.getActualWastedConcrete());
 				if (ro.getUndeliveredConcrete() == 0)
 					totalOrderServed +=1;
 			}
@@ -120,6 +133,7 @@ public class ResultElements {
 	public int getUndeliveredConcrete() {
 		return resultOrder.getUndeliveredConcrete();//this.getDeliveredConcrete() - (this.getTotalConcrete() - this.getWastedConcrete());
 	}
+	
 	
 	/*
 	 * From ResultTruck
@@ -185,6 +199,40 @@ public class ResultElements {
 		return colNames.toString();
 	}
 	/**
+	 * @param columnSeperator seperator between columns
+	 * @return String that represents all the column names related to per hour concrete generation in Order. 
+	 *
+	 */
+	public String getColumnNamesHoursConcrete(String columnSeperator) {
+		return resultOrder.getColumnNamesHoursConcrete(columnSeperator);
+	}
+	/**
+	 * @param seperator between columns
+	 * @return String that represents a table with 25 rows (1st header row, then 24 hours).
+	 * The detailsa are related to per hour concrete generation in all the Orders of resultOrder. 
+	 */
+	public String getResultDetailsHourConcrteInColumnForm (String seperator) {
+		return resultOrder.getResultDetailsHourConcrteInColumnForm(seperator);
+	}
+	/**
+	 * @param columnSeperator seperator between columns
+	 * @return String that represents all the column names related to waseted concrete generation in Order. 
+	 *
+	 */
+	public String getColumnNamesWastedConcrete(String columnSeperator) {
+		return resultOrder.getColumnNamesWastedConcrete(columnSeperator);
+	}
+	/**
+	 * @param seperator between columns
+	 * @return String that represents data in column format for wasted concrete in Order.
+	 * The details are related to per hour concrete generation in all the Orders of resultOrder. 
+	 * Actual String should be according to no. of orders in ResultElementOrder
+	 * The data should be in format format should be: "totalConcrete1 sperator ExpectedWasted1 seperator ActualWasted1...."
+	 */
+	public String getResultDetailsWastedConcrteInColumnForm (String seperator) {
+		return resultOrder.getResultDetailsWastedConcrteInColumnForm(seperator);
+	}
+	/**
 	 * 
 	 * @param seperator between columns, should be corresponding to seperator given to getColumnNames
 	 * @return string that represents all the column names related to problem.
@@ -216,4 +264,5 @@ public class ResultElements {
 		
 		return resultDetails.toString();
 	}
+	
 }

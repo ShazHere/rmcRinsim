@@ -96,28 +96,57 @@ public class Utility {
 			}
 			return availableSlots;
 		}
-	}
-	public static boolean wrtieInFile(String fileName, boolean isAppend, String text, ResultElements resultElement) {
+	} 
+	public static boolean wrtieInFile( boolean isAppend, ResultElements resultElement) {
 		// PrintWriter out; //not using it any more because it swallows any exceptions and  
-		boolean addComment = false;
+		
 		//fileName =  fileName + GlobalParameters.INPUT_INSTANCE_TYPE.toString();
-		fileName = GlobalParameters.RESULT_FOLDER + fileName + "-" +GlobalParameters.ENABLE_TRUCK_BREAKDOWN + "-" +GlobalParameters.ENABLE_JI;
+		String fileName = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + ".txt"; //+ "-" +GlobalParameters.ENABLE_TRUCK_BREAKDOWN + "-" +GlobalParameters.ENABLE_JI;
+		String fileNameHourConcrete = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + "-HoursConcrete" + ".txt";
+		String fileNameWastedConcrete = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + "-WastedConcrete" + ".txt";
 		String columnSeperator = "\t"; 
 		String commentText = "# Data file for input file: " + GlobalParameters.DATA_FOLDER + GlobalParameters.INPUT_FILE + "\n" +
 							"# Experiment Date: " + new DateTime(System.currentTimeMillis()) + "\n";
+	
+			boolean addComment = checkAlreadyExist(fileName);
+			
+			String columnName = resultElement.getColumnNames(columnSeperator)+ columnSeperator + GlobalParameters.INPUT_INSTANCE_TYPE.toString() +"\n";
+			String writeText = resultElement.getResultDetailsInColumnForm(columnSeperator)+ columnSeperator + GlobalParameters.INPUT_INSTANCE_TYPE.toString() +"\r";			
+			writeTextToFile (isAppend, addComment, commentText, fileName, columnName, writeText );
+			
+			//for hours concrete file
+			columnName = resultElement.getColumnNamesHoursConcrete(columnSeperator) + "\n";
+			writeText = resultElement.getResultDetailsHourConcrteInColumnForm(columnSeperator);
+			writeTextToFile (isAppend, addComment, commentText, fileNameHourConcrete, columnName, writeText );
+			
+			//for wastedConcrete file
+			columnName = resultElement.getColumnNamesWastedConcrete(columnSeperator) + "\n";
+			writeText = resultElement.getResultDetailsWastedConcrteInColumnForm(columnSeperator);
+			writeTextToFile (isAppend, addComment, commentText, fileNameWastedConcrete, columnName, writeText );
+
+	
+		return false;
+	} 
+	
+	private static boolean checkAlreadyExist(String fileName) {
+		boolean addComment = false;
 		try {
 			
-			try {
 			//first check if file already contains anything
-			String line;
 			FileReader fileReader = 
                 new FileReader(fileName);
+			
+//			FileReader fileReaderHourConcrete = 
+//	                new FileReader(fileNameHourConcrete);
 
             // Always wrap FileReader in BufferedReader.
             BufferedReader bufferedReader = 
                 new BufferedReader(fileReader);
-            
-            if (fileReader == null || bufferedReader == null) {
+//            BufferedReader bufferedReaderhourConcrete = 
+//                    new BufferedReader(fileReaderHourConcrete);
+			String line;
+
+            if (fileReader == null || bufferedReader == null) { //probably  it should be enough for boht files..
             	addComment = true;
 	              System.out.println("File or buffere reader Null!..Comment should be added!!");
             }
@@ -134,33 +163,35 @@ public class Utility {
 				   addComment = true;
 	                System.out.println("Caught exception..Comment should be added!!");
 			}
-			 
-			//prepare for WRITING in file
-			FileWriter fileWriter =
-	                new FileWriter(fileName,isAppend);
+		return addComment;
+	} 
 
-	            // Always wrap FileWriter in BufferedWriter.
-	            BufferedWriter bufferedWriter =
-	                new BufferedWriter(fileWriter);
+	private static void writeTextToFile(boolean isAppend, boolean addComment, String commentText, String fileName, String columnNames, String writeText) {
+		try {
+			
+		FileWriter fileWriter =
+                new FileWriter(fileName,isAppend);
 
-	            // Note that write() does not automatically
-	            // append a newline character.
-	            if (addComment) {
-	            	
-	            	bufferedWriter.write(commentText);
-	            	bufferedWriter.write( resultElement.getColumnNames(columnSeperator)+ columnSeperator + GlobalParameters.INPUT_INSTANCE_TYPE.toString() +"\n");
-	            }
-	            bufferedWriter.write(resultElement.getResultDetailsInColumnForm(columnSeperator)+ columnSeperator + GlobalParameters.INPUT_INSTANCE_TYPE.toString() +"\r");
-	            //bufferedWriter.write("\n");
-	            
-	            // Always close files.
-	            bufferedWriter.close();
-			//System.out.printf("Testing String");
+            // Always wrap FileWriter in BufferedWriter.
+            BufferedWriter bufferedWriter =
+                new BufferedWriter(fileWriter);
+
+            // Note that write() does not automatically
+            // append a newline character.
+            if (addComment) {
+            	
+            	bufferedWriter.write(commentText);
+            	bufferedWriter.write( columnNames);
+            	
+            }
+            bufferedWriter.write(writeText);
+        
+            bufferedWriter.close();
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		return false;
-	} 
+	}
 	public static Cloner getCloner() {
 		final Cloner cl = new Cloner();
 		cl.dontCloneInstanceOf(Agent.class);

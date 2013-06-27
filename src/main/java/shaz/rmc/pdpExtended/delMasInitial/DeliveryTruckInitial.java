@@ -125,11 +125,11 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			//(currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4)) < 0 )
 			//	&& currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4).plusMinutes(1)) < 0)) //if X hours are not passed, then simply return
 			return;
-		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false || this.state == TRUCK_STATE.BROKEN)
+		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false || this.state == TRUCK_STATE.BROKEN 
+				||b.schedule.isEmpty())
 			return;
 		//if (this.id >2 )//!= 1 && this.id != 2)
-		if (b.schedule.isEmpty())
-			return;
+		
 		//means X hours are passed
 		
 		//for (TruckScheduleUnit tu : b.schedule) {

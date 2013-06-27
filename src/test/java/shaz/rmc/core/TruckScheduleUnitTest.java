@@ -52,29 +52,6 @@ public class TruckScheduleUnitTest {
 		assertNull(unit.getDelivery());
 		}
 
-	/**
-	 * Test method for {@link shaz.rmc.core.TruckScheduleUnit#setDelivery(shaz.rmc.core.domain.Delivery)}.
-	 */
-	@Test
-	public void testSetDelivery() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link shaz.rmc.core.TruckScheduleUnit#getTimeSlot()}.
-	 */
-	@Test
-	public void testGetTimeSlot() {
-		fail("Not yet implemented");
-	}
-
-	/**
-	 * Test method for {@link shaz.rmc.core.TruckScheduleUnit#setTimeSlot(shaz.rmc.core.TimeSlot)}.
-	 */
-	@Test
-	public void testSetTimeSlot() {
-		fail("Not yet implemented");
-	}
 
 	
 }

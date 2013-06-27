@@ -132,7 +132,7 @@ public class DeliveryTruckInitialIntention {
 				//rmcTruck.getRoadModel().moveTo(rmcTruck, destination, time); //just as a precaution, if last step is remaining..
 				//checkArgument(rmcTruck.getRoadModel().getPosition(rmcTruck) == destination);
 				checkArgument(b.schedule.get(currentUnitNo).getDelivery().getReturnStation() == b.schedule.get(currentUnitNo+1).getDelivery().getLoadingStation(), true);
-				checkArgument(rmcTruck.getRoadModel().getPosition(rmcTruck) == b.schedule.get(currentUnitNo+1).getDelivery().getLoadingStation().getLocation(), true);
+				checkArgument(rmcTruck.getRoadModel().getPosition(rmcTruck).equals(b.schedule.get(currentUnitNo+1).getDelivery().getLoadingStation().getLocation()), true);
 				currentUnitNo++;
 				deliveredCurrentDelivery = false;
 				//destination = null;

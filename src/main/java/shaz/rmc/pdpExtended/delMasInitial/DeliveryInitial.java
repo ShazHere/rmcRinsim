@@ -24,7 +24,7 @@ public class DeliveryInitial extends Parcel {  //parcel has to be given start lo
 	protected RoadModel roadModel;
 	protected PDPModel pdpModel;
 	//protected Point startPosition;
-	final protected int deliveryNo;
+	private final int deliveryNo;
 	final private Delivery delivery;
 	private final OrderAgentInitial order;
 	
