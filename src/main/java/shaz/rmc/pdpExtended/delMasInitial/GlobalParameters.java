@@ -21,8 +21,10 @@ import shaz.rmc.core.domain.Problem;
  * @date 14/09/2011
  * 
  */
-public class GlobalParameters {
+public final class GlobalParameters {
 
+	private GlobalParameters(){} //Just to make sure its objects are never initiated
+	
 	//public static boolean ENABLE_GUI = true;
 	
 	//public static final int SIMULATION_SPEED = 200; //specifies what should be execution speed of simulator.
@@ -47,8 +49,7 @@ public class GlobalParameters {
 	public static final boolean LAG_TIME_ENABLE = true;
 	public static final int MINUTES_TO_CHANGE_ST4ORDER = 30; // When shold start time of the order be delayed..
 	public static final int MINUTES_TO_DELAY_ST = 30; //means ST should be delayed with MINUTES_TO_DELAY_ST if MINUTES_TO_CHANGE_ST4ORDER time has been elapsed
-							//after each change of ST. 
-	public static final boolean ST_DELAY_ENABLE = false; 
+							//after each change of ST. I should make it in such a way that if this is 0, then actually there is no ST_DELAY
 	public static final int DISCHARGE_RATE_PERHOUR = 10000; //Constant for all orders
 	public static final int LOADING_MINUTES = 5;
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
@@ -75,7 +76,7 @@ public class GlobalParameters {
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-bigger2/"; 
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-1Delivery/"; 
 	//public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/JIExpMay2013/";
-	public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/24June2013/";
+	public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/1July2013/";
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-20/";
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-02-15/";
 	public static final String LOG_LOCATION = "hh";  //not used 
@@ -100,7 +101,7 @@ public class GlobalParameters {
 	//RINSIM PARAMETERS
 	public static final int TOTAL_PRODUCTION_SITES = 2;
 	public class Weights {
-		public static final int LAGTIME =  20;
+		//public static final int LAGTIME =  20;
 		public static final int TRAVEL_TIME = 20;
 		public static final int CONCRETE_WASTAGE = 10;
 		public static final int STARTTIME_DELAY = 10;

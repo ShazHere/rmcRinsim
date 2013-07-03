@@ -185,7 +185,7 @@ public class IntAnt extends Ant {
 	public int getCurrentUnitScore () {
 		long travelTimeMin = this.getCurrentUnit().getDelivery().getCYToStationTravelTime().getStandardMinutes() + 
 				this.getCurrentUnit().getDelivery().getCYToStationTravelTime().getStandardMinutes();
-		long score = (Weights.TRAVEL_TIME * travelTimeMin) + (Weights.LAGTIME*getCurrentUnit().getDelivery().getLagTime().getStandardMinutes()) + 
+		long score = (Weights.TRAVEL_TIME * travelTimeMin) + //(Weights.LAGTIME*getCurrentUnit().getDelivery().getLagTime().getStandardMinutes()) + 
 				(Weights.CONCRETE_WASTAGE*getCurrentUnit().getDelivery().getWastedVolume());
 		return (int)score;
 			

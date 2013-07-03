@@ -160,7 +160,7 @@ public class ResultElements {
 	 * @return cost of objective function
 	 */
 	public int getTotalValue() {
-		totalValue = (Weights.TRAVEL_TIME * resultTruck.getTravelMin()) + (Weights.LAGTIME*resultTruck.getLagTimeInMin()) + 
+		totalValue = (Weights.TRAVEL_TIME * resultTruck.getTravelMin()) + //(Weights.LAGTIME*resultTruck.getLagTimeInMin()) + 
 				(Weights.STARTTIME_DELAY*resultTruck.getStartTimeDelay()) + (Weights.CONCRETE_WASTAGE*(resultTruck.getWastedConcrete()/1000)); 
 		return totalValue;
 	}

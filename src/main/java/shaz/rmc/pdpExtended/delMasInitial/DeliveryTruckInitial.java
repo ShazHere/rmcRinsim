@@ -193,14 +193,14 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		}
 		else {
 			bestAnt = b.explorationAnts.get(randomPCSelector.nextInt(b.explorationAnts.size()));
-			if (GlobalParameters.LAG_TIME_ENABLE) { //actually this isn't required, but here its only when we require to test lagTime
-				Collections.sort(b.explorationAnts, new Comparator<ExpAnt>(){ //sort w.r.t descending scheduleLagTime
-			        public int compare( ExpAnt a, ExpAnt b ){
-			            return (int)(b.getScheduleLagTime().minus(a.getScheduleLagTime()).getStandardSeconds());
-			        }
-				});
-			}
-			bestAnt = b.explorationAnts.get(0);
+//			if (GlobalParameters.LAG_TIME_ENABLE) { //actually this isn't required, but here its only when we require to test lagTime
+//				Collections.sort(b.explorationAnts, new Comparator<ExpAnt>(){ //sort w.r.t descending scheduleLagTime
+//			        public int compare( ExpAnt a, ExpAnt b ){
+//			            return (int)(b.getScheduleLagTime().minus(a.getScheduleLagTime()).getStandardSeconds());
+//			        }
+//				});
+//			}
+//			bestAnt = b.explorationAnts.get(0);
 			
 		}
 		printBestAnt(startTime);

@@ -191,7 +191,6 @@ public class ExpAnt extends Ant {
 		 *  
 		 */
 		int travelMin = 0;
-		int lagTimeInMin = 0;
 		int startTimeDelay = 0; //already included in lag time
 		int wastedConcrete = 0;
 		int deliveryNoEffect = 0;
@@ -199,13 +198,13 @@ public class ExpAnt extends Ant {
 			for(TruckScheduleUnit u: schedule) {
 				travelMin += u.getDelivery().getStationToCYTravelTime().getStandardMinutes();
 				travelMin += u.getDelivery().getCYToStationTravelTime().getStandardMinutes();
-				lagTimeInMin += u.getDelivery().getLagTime().getStandardMinutes();
+				//lagTimeInMin += u.getDelivery().getLagTime().getStandardMinutes();
 				wastedConcrete += u.getDelivery().getWastedVolume();
 				if (u.getDelivery().getDeliveryNo() == 0)
 					deliveryNoEffect += 1;
 			}
 			//TODO: add weights as well..
-			int score = (Weights.TRAVEL_TIME * travelMin) + (Weights.LAGTIME*lagTimeInMin) + 
+			int score = (Weights.TRAVEL_TIME * travelMin) + //(Weights.LAGTIME*lagTimeInMin) + 
 					(Weights.STARTTIME_DELAY*startTimeDelay) + (Weights.CONCRETE_WASTAGE*wastedConcrete) + 
 					(30 * deliveryNoEffect); 
 			

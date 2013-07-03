@@ -98,6 +98,6 @@ public class StatisticTracker implements Listener {
 			return sb.toString();
 		}
 		public void writeFile() {
-			Utility.wrtieInFile(true, stats);
+			Utility.wrtieInFile(false, stats);
 		}
 }
