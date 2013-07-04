@@ -77,8 +77,9 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private int remainingToBookVolume;
 	
 	private ArrayList<DeliveryInitial> parcelDeliveries; //physical deliveries, to be created just before delivery (5min b4 actual delivery needed to b picked up)
-	ArrayList<ProductionSiteInitial> sites; //all sites information
-	ArrayList<ProductionSiteInitial> possibleSites; //sites from which this order could receive delivery according to PERISH time
+	private ArrayList<ProductionSiteInitial> sites; //all sites information
+	
+	private ArrayList<ProductionSiteInitial> possibleSites; //sites from which this order could receive delivery according to PERISH time
 	
 	//private boolean orderReserved; //to track that all the intention ants are said ACCEPT to correstponding deliveriesm, means order is fully confirmed and no dleivery is remaining
 	private OrderAgentState state;
@@ -114,7 +115,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	@Override
 	public void tick(TimeLapse timeLapse) {
 		checkMsgs(timeLapse.getStartTime());
-		processExplorationAnts(timeLapse.getStartTime());
+		//processExplorationAnts(timeLapse.getStartTime());
+		state.processExplorationAnts(timeLapse.getStartTime(), this.explorationAnts, this);
 		processIntentionAnts(timeLapse);
 		generateParcelDeliveries(timeLapse.getStartTime());
 		sendFeasibilityInfo(timeLapse.getStartTime());
@@ -153,12 +155,12 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 	}
 
-	private boolean processExplorationAnts(long startTime) {
+	private void processExplorationAnts(long startTime) {
 		if (explorationAnts.isEmpty()) //if no exploration has been sent by trucks, then return
-			return false;
+			return;
 		else if(getOrderState() == OrderAgentState.BOOKED || getOrderState() == OrderAgentState.WAITING) { //If order is fully booked, but still proposals of truck are there
 			explorationAnts.clear();
-			return false;
+			return;
 		}
 		Iterator<ExpAnt> i = explorationAnts.iterator();
 		logger.debug(order.getId() + "O Checking exp ants total are= " + explorationAnts.size() );
@@ -173,7 +175,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			i.remove(); //exp should die
 		} //end while (i.hasNext())
 		checkArgument (explorationAnts.isEmpty(), true);
-		return true;
 	}
 	private Delivery prepareNewDelivery(int pDeliveryNo, ExpAnt exp, DateTime pDeliveryTime, long travelDur) {
 		
@@ -360,38 +361,38 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		return remainingVolume;
 	}
 	
-	private void processBreakAnts(TimeLapse timeLapse) {
-		if (breakAnts.isEmpty())
-			return;
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-		//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
-		//make state = TEAM_NEEDED
-		//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
-		Iterator<BreakAnt> i = breakAnts.iterator();
-		while (i.hasNext()) { 
-			BreakAnt bAnt = i.next();
-			checkArgument (refreshTimes.containsKey(bAnt.getFailedDelivery()) == true, true); 	
-			for (Delivery d: deliveries) {
-				if (d.getTruck().getId() != bAnt.getOriginator().getId()) { //donot send to the broken truck
-					CommitmentAnt cAnt = new CommitmentAnt(this, currTime, bAnt.getFailedDelivery(), this.possibleSites);
-					cApi.send(d.getTruck(), cAnt);
-				}
-			}
-			Iterator<Delivery> j = deliveries.iterator();
-			while (j.hasNext()) {
-				Delivery d = j.next();
-				if (bAnt.getFailedDelivery().equals(d)) {
-					//this.state = ORDER_STATE.IN_PROCESS;
-					this.refreshTimes.remove(d);
-					this.isConfirmed.remove(d);
-					this.isPhysicallyCreated.remove(d);
-					j.remove(); //delivery is removed
-					break;
-				}
-			}
-		}
-		breakAnts.clear();
-	}
+//	private void processBreakAnts(TimeLapse timeLapse) {
+//		if (breakAnts.isEmpty())
+//			return;
+//		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+//		//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
+//		//make state = TEAM_NEEDED
+//		//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
+//		Iterator<BreakAnt> i = breakAnts.iterator();
+//		while (i.hasNext()) { 
+//			BreakAnt bAnt = i.next();
+//			checkArgument (refreshTimes.containsKey(bAnt.getFailedDelivery()) == true, true); 	
+//			for (Delivery d: deliveries) {
+//				if (d.getTruck().getId() != bAnt.getOriginator().getId()) { //donot send to the broken truck
+//					CommitmentAnt cAnt = new CommitmentAnt(this, currTime, bAnt.getFailedDelivery(), this.possibleSites);
+//					cApi.send(d.getTruck(), cAnt);
+//				}
+//			}
+//			Iterator<Delivery> j = deliveries.iterator();
+//			while (j.hasNext()) {
+//				Delivery d = j.next();
+//				if (bAnt.getFailedDelivery().equals(d)) {
+//					//this.state = ORDER_STATE.IN_PROCESS;
+//					this.refreshTimes.remove(d);
+//					this.isConfirmed.remove(d);
+//					this.isPhysicallyCreated.remove(d);
+//					j.remove(); //delivery is removed
+//					break;
+//				}
+//			}
+//		}
+//		breakAnts.clear();
+//	}
 	
 //	/**handle the breakdown events when JI is not enabled 
 //	 * @param timeLapse
@@ -665,9 +666,23 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	public void receive(Message message) {
 		mailbox.receive(message);
 	}
-
+	public ArrayList<ProductionSiteInitial> getSites() {
+		return sites;
+	}
 	public Order getOrder() {
 		return order;
+	}
+	public CommunicationAPI getcApi() {
+		return cApi;
+	}
+	public DateTime getInterestedTime() {
+		return interestedTime;
+	}
+	public int getInterestedDeliveryNo() {
+		return interestedDeliveryNo;
+	}
+	public int getRemainingToBookVolume() {
+		return remainingToBookVolume;
 	}
 	private int getOrderState() {
 		return this.state.getStateCode();
