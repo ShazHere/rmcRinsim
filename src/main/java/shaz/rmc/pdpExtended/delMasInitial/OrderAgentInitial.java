@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -64,7 +65,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private final Mailbox mailbox;
 	private CommunicationAPI cApi;
 	
-	private DateTime timeForLastFeaAnt; /** to keep track of feasibility interval */
 	private final Map<Delivery, DateTime> refreshTimes; //for keepting track of when to evaporate intentions
 	private final Map<Delivery, Boolean> isPhysicallyCreated;
 	private final Map<Delivery, Boolean> isConfirmed;
@@ -93,7 +93,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		
 		setOrderState(OrderAgentState.IN_PROCESS);
 		mailbox = new Mailbox();
-		timeForLastFeaAnt = new DateTime(0);
+		//timeForLastFeaAnt = new DateTime(0);
 		
 		interestedTime = order.getStartTime(); 
 		interestedDeliveryNo = 0;
@@ -115,12 +115,10 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	@Override
 	public void tick(TimeLapse timeLapse) {
 		checkMsgs(timeLapse.getStartTime());
-		//processExplorationAnts(timeLapse.getStartTime());
-		state.processExplorationAnts(timeLapse.getStartTime(), this.explorationAnts, this);
-		processIntentionAnts(timeLapse);
+		state.processExplorationAnts(timeLapse.getStartTime(), this.explorationAnts);
+		state.processIntentionAnts(timeLapse,this.intentionAnts);
 		generateParcelDeliveries(timeLapse.getStartTime());
-		sendFeasibilityInfo(timeLapse.getStartTime());
-		
+		state.sendFeasibilityInfo(timeLapse.getStartTime());	
 //		if (GlobalParameters.ENABLE_JI)
 //			processBreakAnts(timeLapse);
 //		else //means JI isn't enabled so DelMAS should handle it independently
@@ -154,152 +152,11 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			}
 		}
 	}
-
-	private void processExplorationAnts(long startTime) {
-		if (explorationAnts.isEmpty()) //if no exploration has been sent by trucks, then return
-			return;
-		else if(getOrderState() == OrderAgentState.BOOKED || getOrderState() == OrderAgentState.WAITING) { //If order is fully booked, but still proposals of truck are there
-			explorationAnts.clear();
-			return;
-		}
-		Iterator<ExpAnt> i = explorationAnts.iterator();
-		logger.debug(order.getId() + "O Checking exp ants total are= " + explorationAnts.size() );
-		while (i.hasNext()) { 
-			ExpAnt exp = i.next(); //i guess once reached to order, it shud just include order in its list, since order was in general ok
-			long psToCyDur = (long)((Point.distance(exp.getSender().getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //hours to milli
-			if (exp.getCurrentInterestedTime().minus(exp.getCurrentLagTime()).equals(interestedTime.minus(psToCyDur).minusMinutes(GlobalParameters.LOADING_MINUTES)) ) {
-				logger.debug(order.getId() + "O expStarTim = " + exp.getCurrentInterestedTime() + " & interestedTim = " + interestedTime + " loadingTime = " + interestedTime.minus(psToCyDur).minusMinutes(GlobalParameters.LOADING_MINUTES));	
-				Delivery del = prepareNewDelivery(interestedDeliveryNo, exp, interestedTime, psToCyDur);
-				sendToPs(exp, del);
-			}
-			i.remove(); //exp should die
-		} //end while (i.hasNext())
-		checkArgument (explorationAnts.isEmpty(), true);
-	}
-	private Delivery prepareNewDelivery(int pDeliveryNo, ExpAnt exp, DateTime pDeliveryTime, long travelDur) {
-		
-		Delivery.Builder delBuilder = new Delivery.Builder();
-		delBuilder.setOrder(this);
-		delBuilder.setDeliveryNo(pDeliveryNo);
-		delBuilder.setTruck(exp.getOriginator());
-		delBuilder.setDeliveredVolume((int)(exp.getOriginator().getCapacity())); //Shouldn't it be accoriding to remainig volume..?
-	
-		Duration unLoadingDuration; //SET LOADIing and unloading durations
-		if (remainingToBookVolume < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
-			int wastedVolume = (int)(exp.getOriginator().getCapacity() - remainingToBookVolume);
-			delBuilder.setWastedVolume(wastedVolume);
-			unLoadingDuration = new Duration((remainingToBookVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR));
-			//delBuilder.setUnloadingDuration(new Duration((remainingToBookVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
-		}
-		else {
-			delBuilder.setWastedVolume(0);// no wastage 
-			unLoadingDuration = new Duration((long)(exp.getOriginator().getCapacity()* 60l*60l*1000l / GlobalParameters.DISCHARGE_RATE_PERHOUR) );
-			//delBuilder.setUnloadingDuration(new Duration((long)(exp.getOriginator().getCapacity()* 60l*60l*1000l / GlobalParameters.DISCHARGE_RATE_PERHOUR) ));
-		}
-		delBuilder.setUnloadingDuration(unLoadingDuration);
-		delBuilder.setLoadingDuration(new Duration(GlobalParameters.LOADING_MINUTES*60l*1000l));
-		
-		ProductionSiteInitial selectedPs; //For selecting the return PS
-		if (exp.nextAfterCurrentUnit( pDeliveryTime.plus(exp.getCurrentLagTime()).plus(unLoadingDuration).plusMinutes(10))!= null) {//next slot in schedule exists, select the start PS of next slot
-			TruckScheduleUnit tu = exp.nextAfterCurrentUnit( pDeliveryTime.plus(exp.getCurrentLagTime()).plus(unLoadingDuration).plusMinutes(10)); //assuming travel time should be atleast 10min
-			selectedPs = (ProductionSiteInitial)tu.getTimeSlot().getProductionSiteAtStartTime(); 
-		}
-		else {//next slot in schedule doesn't exist, so select randomly
-			if (sites.size()>1) 				//select the next pC to visit at random..
-				selectedPs = sites.get(new RandomDataImpl().nextInt(0, sites.size()-1));
-			else
-				selectedPs = sites.get(0);
-		} 
-		
-		delBuilder.setStationToCYTravelTime(new Duration (travelDur));
-		travelDur = (long)((Point.distance(selectedPs.getPosition(), this.getPosition())/exp.getTruckSpeed())*60*60*1000); //CY to returnStation distance
-		delBuilder.setCYToStationTravelTime(new Duration(travelDur));
-		delBuilder.setDeliveryTime(pDeliveryTime.plus(exp.getCurrentLagTime()));
-//			if (this.deliveries.size() == 0 ) //means at the moment decesions are for first delivery so ST shud b included
-//				{ 
-//					//checkArgument(pDeliveryNo == 0, true);
-//					delBuilder.setLagTime(this.delayFromActualInterestedTime.plus(this.delayStartTime));
-//				}
-//			else
-//				delBuilder.setLagTime(this.delayFromActualInterestedTime); //no ST added this time
-//	
-		delBuilder.setLagTime(exp.getCurrentLagTime());
-		
-		delBuilder.setLoadingStation((ProductionSite)exp.getSender());
-		delBuilder.setReturnStation(selectedPs);
-		Delivery del = delBuilder.build();
-		return del;
-		
-	}
-
-	private void sendToPs(ExpAnt exp, Delivery del) {
-		ExpAnt newExp = (ExpAnt)exp.clone(this);
-		if (newExp.makeCurrentUnit(del)) {
-			logger.debug(order.getId() + "O delivery added in expAnts schedule, orginator = " + newExp.getOriginator().getId());
-			cApi.send(del.getReturnStation(), newExp);
-		}
-		else
-			logger.debug(order.getId() + "O FAILURE in adding delivery in expSchedule");
-	}
-	private void processIntentionAnts(TimeLapse timeLapse) {
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-		if ( intentionAnts.isEmpty()) 
-			return;
-		 //aparently it will reach beyond this point depending intention_interval
-			this.sortIntentionArts(); 
-		Iterator<IntAnt> i = intentionAnts.iterator();
-		while (i.hasNext()) { //at the moment just select the first one
-			IntAnt iAnt = i.next();
-			if (iAnt.getCurrentUnit().getDelivery().getDeliveryTime().minus(iAnt.getCurrentUnit().getDelivery().getLagTime()).equals(this.interestedTime) //so iAnt is according to order's current interest or according to currentInterest + lagTime
-					//|| (iAnt.getCurrentUnit().getDelivery().getDeliveryTime().compareTo(this.interestedTime ) > 0 && iAnt.getCurrentUnit().getDelivery().getDeliveryTime().compareTo(this.interestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES) ) <= 0))
-					&& iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo() == this.interestedDeliveryNo && getOrderState() == OrderAgentState.IN_PROCESS
-					&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == false) {
-				boolean iAntAccepted = false;
-				checkArgument(getOrderState() == OrderAgentState.IN_PROCESS, true);
-				if (refreshTimes.containsKey(iAnt.getCurrentUnit().getDelivery()) == false ) {//refreshTimes.get(iAnt.getCurrentUnit().getDelivery().getDeliveryNo()).equals(currTime) == false) {
-					if (iAnt.getCurrentUnit().getPsReply() == Reply.UNDER_PROCESS) { //PS is ok with this delivery
-							checkArgument(iAnt.getCurrentUnit().isAddedInTruckSchedule() == false, true);
-							acceptIntention(iAnt, currTime);
-							iAntAccepted = true;
-							setOrderState(OrderAgentState.WAITING);
-					}
-				} 
-				if (!iAntAccepted) {
-					iAnt.getCurrentUnit().setOrderReply(Reply.REJECT);
-					checkArgument(getOrderState() == OrderAgentState.IN_PROCESS);  //this could be wrong..haven't thought too much..
-				}
-			}
-			else { //order isn't interested, yet it could be refreshing of a previous booking
-				Delivery d = deliveryExists(iAnt.getCurrentUnit().getDelivery());
-				if (d != null && refreshTimes.get(d).compareTo(currTime) < 0 
-						&& iAnt.getCurrentUnit().getPsReply() == Reply.WEEK_ACCEPT  //make it check argument
-						&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == true) { //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
-					if (isConfirmed.get(iAnt.getCurrentUnit().getDelivery()) == false && getOrderState() == OrderAgentState.WAITING) {
-						isConfirmed.put(iAnt.getCurrentUnit().getDelivery(), true);
-						setOrderState(OrderAgentState.IN_PROCESS);
-						setOrderInterests();
-					} //else we shouldn't touch order state
-					refreshTimes.put(iAnt.getCurrentUnit().getDelivery(), currTime);
-					iAnt.getCurrentUnit().setOrderReply(Reply.WEEK_ACCEPT); //So earlier it could be UnderProcess, but once confirmed, its Weekly accepted
-					if (getOrderState() == OrderAgentState.BOOKED)
-						iAnt.getCurrentUnit().setOrderReply(Reply.ACCEPT); //order fully booked, so now reply full accept
-					logger.debug(order.getId() + "O int-" + iAnt.getOriginator().getId()+" booking refreshed");
-				}
-				else //now its sure order isn't interested!
-					iAnt.getCurrentUnit().setOrderReply(Reply.REJECT);
-			}
-			logger.debug(order.getId() + "O int-" + iAnt.getOriginator().getId()+" reply is " + iAnt.getCurrentUnit().getOrderReply() + " currTime= " + currTime);
-			IntAnt newAnt = iAnt.clone(this);
-			newAnt.setNextCurrentUnit();
-			cApi.send(iAnt.getCurrentUnit().getDelivery().getReturnStation(), newAnt);
-			i.remove();
-		}
-	}
 	
 	/**
 	 * sorts intention ants according to schedule score
 	 */
-	private void sortIntentionArts() {
+	protected void sortIntentionArts() {
 		//this.intentionAnts
 //		if (GlobalParameters.LAG_TIME_ENABLE) { //a temproary sorting mechanism to sort intention ants, so that we can execute lag time..TEsted as well
 //			Collections.sort(this.intentionAnts, new Comparator<IntAnt>(){
@@ -320,9 +177,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	 * should not be called for refresh deliveries, rather it should be called for the deliveries for which order was really interested.
 	 * @param iAnt the ant under process
 	 * @param currTime
-	 */
-	private void acceptIntention(IntAnt iAnt, DateTime currTime) {
-		iAnt.getCurrentUnit().setOrderReply(Reply.UNDER_PROCESS); // at the momnet its under consideration, once refreshed, it will be week_accept
+	 */ //TODO Check where the maps go, accordingly, move this method as well..
+	protected void acceptIntentionArangementInOrder(IntAnt iAnt, DateTime currTime) {
 		refreshTimes.put(iAnt.getCurrentUnit().getDelivery(), currTime);
 		deliveries.add(iAnt.getCurrentUnit().getDelivery());
 		isPhysicallyCreated.put(iAnt.getCurrentUnit().getDelivery(), false);
@@ -331,8 +187,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	}
 	/**
 	 * @param iAnt te ant under process
-	 */
-	private void setOrderInterests() {
+	 */ //TODO it should be in IN_PROCESS state, but see where does interested TIME and interested Delivery no. go
+	protected void setOrderInterests() {
 		checkArgument(getOrderState() == OrderAgentState.IN_PROCESS);
 		remainingToBookVolume = calculateRemainingVolume();
 		if (!deliveries.isEmpty()) {
@@ -361,148 +217,30 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		return remainingVolume;
 	}
 	
-//	private void processBreakAnts(TimeLapse timeLapse) {
-//		if (breakAnts.isEmpty())
-//			return;
-//		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-//		//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
-//		//make state = TEAM_NEEDED
-//		//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
-//		Iterator<BreakAnt> i = breakAnts.iterator();
-//		while (i.hasNext()) { 
-//			BreakAnt bAnt = i.next();
-//			checkArgument (refreshTimes.containsKey(bAnt.getFailedDelivery()) == true, true); 	
-//			for (Delivery d: deliveries) {
-//				if (d.getTruck().getId() != bAnt.getOriginator().getId()) { //donot send to the broken truck
-//					CommitmentAnt cAnt = new CommitmentAnt(this, currTime, bAnt.getFailedDelivery(), this.possibleSites);
-//					cApi.send(d.getTruck(), cAnt);
-//				}
-//			}
-//			Iterator<Delivery> j = deliveries.iterator();
-//			while (j.hasNext()) {
-//				Delivery d = j.next();
-//				if (bAnt.getFailedDelivery().equals(d)) {
-//					//this.state = ORDER_STATE.IN_PROCESS;
-//					this.refreshTimes.remove(d);
-//					this.isConfirmed.remove(d);
-//					this.isPhysicallyCreated.remove(d);
-//					j.remove(); //delivery is removed
-//					break;
-//				}
-//			}
-//		}
-//		breakAnts.clear();
-//	}
-	
-//	/**handle the breakdown events when JI is not enabled 
-//	 * @param timeLapse
-//	 */
-//	private void processBreakAntDelMAS(TimeLapse timeLapse) {
-//		if (breakAnts.isEmpty())
-//			return;
-//		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-//		//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
-//		//make state = TEAM_NEEDED
-//		//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
-//		Iterator<BreakAnt> i = breakAnts.iterator();
-//		while (i.hasNext()) { 
-//			BreakAnt bAnt = i.next();
-//			checkArgument (refreshTimes.containsKey(bAnt.getFailedDelivery()) == true, true); 
-//			checkArgument (this.state == ORDER_STATE.BOOKED, true);
-//			Iterator<Delivery> j = deliveries.iterator();
-//			while (j.hasNext()) {
-//				Delivery d = j.next();
-//				if (bAnt.getFailedDelivery().equals(d)) {
-//					this.state = ORDER_STATE.IN_PROCESS;
-//					this.refreshTimes.remove(d);
-//					this.isConfirmed.remove(d);
-//					this.isPhysicallyCreated.remove(d);
-//					j.remove(); //delivery is removed
-//					break;
-//				}
-//			}
-//			setOrderInterests();
-//			i.remove();
-//		}
-//	}
 
-	
-	/*
-		 * chk for which delivery truck is intending
-		 *  if for first deliver, then make it week.Accept
-		 *  if not for first delivery, then chk are rest of deliveries before this delivery are intended? if no then
-		 *  wait and see rest of intentions
-		 *  
-		 *  if a delivery week accepted, order shud change its interestedTime at the the PS by sending feasiblity ants
-		 *       
-		 *  Also set the logic, if no one is sending intention for long time
-		 *  adjust the starttime delay and interestedtime delay..
-		 */
-
-	private Delivery deliveryExists(Delivery newDel) {
-		for (Delivery existingDel: deliveries) {
-			if (existingDel.equals(newDel))
-				return existingDel;
-		}
-		return null;
-	}
-	
 
 	@Override
-	public void afterTick(TimeLapse timeLapse) {
+	public void afterTick(TimeLapse timeLapse) {}
 
-	}
-	private void sendFeasibilityInfo(long startTime) {
-		if (getOrderState() == OrderAgentState.BOOKED)
-			return;
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		if (currTime.minusMinutes(timeForLastFeaAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN ){
-			if (getOrderState() == OrderAgentState.IN_PROCESS) { // && remainingToBookVolume > 0)  {
-				//setOrderInterests();
-				this.sendFAntToPS();
-				timeForLastFeaAnt = currTime;
-			}
-			else { //means ORDER.STATE is WAITING
-				Delivery d = checkOrderStatus(startTime);
-				if (d != null){
-					interestedTime = d.getDeliveryTime();
-					interestedDeliveryNo = d.getDeliveryNo();
-					deliveries.remove(d);
-					refreshTimes.remove(d);
-					isConfirmed.remove(d); 
-					isPhysicallyCreated.remove(d);
-					this.sendFAntToPS();
-				}
-				timeForLastFeaAnt = currTime;
-			}
-		}
+	/**
+	 * @param d
+	 */
+	//TODO may be moveTo Waiting state?
+	protected void reSetOrder(Delivery d) {
+		interestedTime = d.getDeliveryTime();
+		interestedDeliveryNo = d.getDeliveryNo();
+		deliveries.remove(d);
+		refreshTimes.remove(d);
+		isConfirmed.remove(d); 
+		isPhysicallyCreated.remove(d);
+		setOrderState(OrderAgentState.IN_PROCESS);
+		logger.info(order.getId() + "O Order Re-set");
 	}
 	
 	/**
-	 * Called when order is WAITING	for the confirmation from the Truck Agent. If the WAIT gets too long, the interestedTime, 
-	 * and interested DeliveryNo need to be reconsidered. So this method checks all the deliveries, if any of t hem isn't refreshed,
-	 * then it will Re-set order.
-	 * @param currMilli current time
-	 * @return The delivery which caused the Re-set of order
-	 */
-	private Delivery checkOrderStatus(long currMilli) {
-		checkArgument(getOrderState() == OrderAgentState.WAITING, true);
-		long currMilliInterval;
-		for (Delivery d : deliveries){
-			currMilliInterval = GlobalParameters.START_DATETIME.plusMillis((int)currMilli).getMillis() - refreshTimes.get(d).getMillis();
-			if (isConfirmed.get(d) == false 
-					&& (new Duration (currMilliInterval)).getStandardMinutes() > GlobalParameters.INTENTION_EVAPORATION_MIN) {
-				setOrderState(OrderAgentState.IN_PROCESS);
-				logger.info(order.getId() + "O Order Re-set");
-				return d;
-			}
-		}
-		return null;
-	} 
-	/**
 	 * Send feasiblility info to only those PS, that comes within range according to concrete Perish limit
-	 */
-	private void sendFAntToPS() {
+	 */ //TODO may be move to orderAgentState
+	protected void sendFAntToPS() {
 		FeaAnt fAnt = new FeaAnt(this, this.interestedTime); //the distance is calculated when ant reaches the PS
 		for (ProductionSiteInitial p : possibleSites) {
 			//if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
@@ -523,7 +261,27 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 		return null;
 	}
-	
+	protected List<Delivery> getDeliveries() {
+		return   (List<Delivery>) Collections.unmodifiableList(this.deliveries);
+	}
+	//TODO this should be refactored with getIsCOnfirmedD(Delivery d)
+	protected Map<Delivery, Boolean> getIsConfirmed () {
+		return Collections.unmodifiableMap(this.isConfirmed);
+				
+	} 
+	// TODO this should be refactored with getRefreshTimesD(Delivery d)
+	protected Map<Delivery, DateTime> getRefreshTimes() {
+		return Collections.unmodifiableMap(this.refreshTimes);
+				
+	} 
+	//TODO move accroding to map placements..used by all states..
+	protected void putInRefreshTimes(Delivery d, DateTime dt) {
+		refreshTimes.put(d, dt);
+	}
+	//TODO move accroding to map placements..used by all states..
+	protected void putInIsConfirmed(Delivery d, boolean isConfirm) {
+		isConfirmed.put(d, isConfirm);
+	}
 	@Override
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
 		this.roadModel = pRoadModel;
@@ -639,28 +397,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 //			this.delayStartTime = new Duration(3600000); //delay one hour
 //			
 //	}
-	private void processCommitmentAnts(TimeLapse timeLapse) {
-		if (commitmentAnts.isEmpty())
-			return;
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-		//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
-		//make state = TEAM_NEEDED
-		//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
-		Iterator<CommitmentAnt> i = commitmentAnts.iterator();
-		while (i.hasNext()) { 
-			CommitmentAnt cAnt = i.next();
-			checkArgument (refreshTimes.containsKey(cAnt.getFailedDelivery()) == true, true); 	
-//			if (cAnt.getTruckReply() == Reply.UNDER_PROCESS) {// means truck can make the delivery
-//				ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
-//						new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
-//				if (b.availableSlots.size()>0) {
-//					checkArgument(b.availableSlots.get(0).getProductionSiteAtStartTime() != null, true);
-//					cApi.send(b.availableSlots.get(0).getProductionSiteAtStartTime(), eAnt); 				
-//				}
-//			}
-		}
-		breakAnts.clear();
-	} 
 
 	@Override
 	public void receive(Message message) {
@@ -687,8 +423,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private int getOrderState() {
 		return this.state.getStateCode();
 	}
-	private void setOrderState (int newState) {
-		this.state = OrderAgentState.newState(newState);
+	protected void setOrderState (int newState) {
+		this.state = OrderAgentState.newState(newState, this);
 	}
 
 	@Override
@@ -699,7 +435,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	public String toString() {
 		return "OrderAgentInitial [ "
 				+ "order=" + order.toString() + "\n , deliveries=" + deliveries
-				+ ", timeForLastFeaAnt=" + timeForLastFeaAnt
+	//			+ ", timeForLastFeaAnt=" + timeForLastFeaAnt
 				+ ", refreshTimes=" + refreshTimes
 				+ ", interestedTime=" + interestedTime
 				+ ", interestedDeliveryNo=" + interestedDeliveryNo
@@ -710,7 +446,93 @@ public class OrderAgentInitial  extends Depot implements Agent {
 				+ parcelDeliveries + ", orderState="
 				+ getOrderState() + "]";
 	}
-	
+//	private void processBreakAnts(TimeLapse timeLapse) {
+//	if (breakAnts.isEmpty())
+//		return;
+//	DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+//	//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
+//	//make state = TEAM_NEEDED
+//	//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
+//	Iterator<BreakAnt> i = breakAnts.iterator();
+//	while (i.hasNext()) { 
+//		BreakAnt bAnt = i.next();
+//		checkArgument (refreshTimes.containsKey(bAnt.getFailedDelivery()) == true, true); 	
+//		for (Delivery d: deliveries) {
+//			if (d.getTruck().getId() != bAnt.getOriginator().getId()) { //donot send to the broken truck
+//				CommitmentAnt cAnt = new CommitmentAnt(this, currTime, bAnt.getFailedDelivery(), this.possibleSites);
+//				cApi.send(d.getTruck(), cAnt);
+//			}
+//		}
+//		Iterator<Delivery> j = deliveries.iterator();
+//		while (j.hasNext()) {
+//			Delivery d = j.next();
+//			if (bAnt.getFailedDelivery().equals(d)) {
+//				//this.state = ORDER_STATE.IN_PROCESS;
+//				this.refreshTimes.remove(d);
+//				this.isConfirmed.remove(d);
+//				this.isPhysicallyCreated.remove(d);
+//				j.remove(); //delivery is removed
+//				break;
+//			}
+//		}
+//	}
+//	breakAnts.clear();
+//}
+
+///**handle the breakdown events when JI is not enabled 
+// * @param timeLapse
+// */
+//private void processBreakAntDelMAS(TimeLapse timeLapse) {
+//	if (breakAnts.isEmpty())
+//		return;
+//	DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+//	//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
+//	//make state = TEAM_NEEDED
+//	//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
+//	Iterator<BreakAnt> i = breakAnts.iterator();
+//	while (i.hasNext()) { 
+//		BreakAnt bAnt = i.next();
+//		checkArgument (refreshTimes.containsKey(bAnt.getFailedDelivery()) == true, true); 
+//		checkArgument (this.state == ORDER_STATE.BOOKED, true);
+//		Iterator<Delivery> j = deliveries.iterator();
+//		while (j.hasNext()) {
+//			Delivery d = j.next();
+//			if (bAnt.getFailedDelivery().equals(d)) {
+//				this.state = ORDER_STATE.IN_PROCESS;
+//				this.refreshTimes.remove(d);
+//				this.isConfirmed.remove(d);
+//				this.isPhysicallyCreated.remove(d);
+//				j.remove(); //delivery is removed
+//				break;
+//			}
+//		}
+//		setOrderInterests();
+//		i.remove();
+//	}
+//}
+//	private void processCommitmentAnts(TimeLapse timeLapse) {
+//	if (commitmentAnts.isEmpty())
+//		return;
+//	DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+//	//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
+//	//make state = TEAM_NEEDED
+//	//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
+//	Iterator<CommitmentAnt> i = commitmentAnts.iterator();
+//	while (i.hasNext()) { 
+//		CommitmentAnt cAnt = i.next();
+//		checkArgument (refreshTimes.containsKey(cAnt.getFailedDelivery()) == true, true); 	
+////		if (cAnt.getTruckReply() == Reply.UNDER_PROCESS) {// means truck can make the delivery
+////			ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
+////					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
+////			if (b.availableSlots.size()>0) {
+////				checkArgument(b.availableSlots.get(0).getProductionSiteAtStartTime() != null, true);
+////				cApi.send(b.availableSlots.get(0).getProductionSiteAtStartTime(), eAnt); 				
+////			}
+////		}
+//	}
+//	breakAnts.clear();
+//} 
+
 	
 	
 }
