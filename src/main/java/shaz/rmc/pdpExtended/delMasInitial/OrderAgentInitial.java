@@ -47,7 +47,10 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 
 /**
  * @author Shaza
- *
+ * Represents the agent deployed to handle a single order. 
+ * 
+ * Agent has different behaviour based on its current state.
+ * The private members are those that require tracking throughtout agent lifecycle.  
  */
 public class OrderAgentInitial  extends Depot implements Agent {
 	private RoadModel roadModel;
@@ -58,8 +61,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private final ArrayList<Delivery> deliveries; //virtual deliveries..twhich stores general information of the deliveries that have been intended by other trucks
 	
 	private final Logger logger; //for logging
-	private ArrayList<ExpAnt> explorationAnts;
-	private ArrayList<IntAnt> intentionAnts;
+
 	private ArrayList<BreakAnt> breakAnts;
 	private ArrayList<CommitmentAnt> commitmentAnts;
 	private final Mailbox mailbox;
@@ -72,9 +74,12 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	//REalted to current interest
 	private DateTime interestedTime;  //time sent by FeaAnts, to indicate this is the time at which order is interested
 	private int interestedDeliveryNo; //the no. of current delivery 
+	private int remainingToBookVolume; //=  totalConcrete - (deliverable concrete by all deliveries)
+	
 	private Duration delayFromActualInterestedTime; //to keep recored of delay before interestedTime, for first delivery it should be zero
 	private Duration delayStartTime; //delay in startTime
-	private int remainingToBookVolume;
+	
+	protected DateTime timeForLastFeaAnt; 	/** to keep track of feasibility interval */
 	
 	private ArrayList<DeliveryInitial> parcelDeliveries; //physical deliveries, to be created just before delivery (5min b4 actual delivery needed to b picked up)
 	private ArrayList<ProductionSiteInitial> sites; //all sites information
@@ -93,7 +98,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		
 		setOrderState(OrderAgentState.IN_PROCESS);
 		mailbox = new Mailbox();
-		//timeForLastFeaAnt = new DateTime(0);
+		timeForLastFeaAnt = new DateTime(0);
 		
 		interestedTime = order.getStartTime(); 
 		interestedDeliveryNo = 0;
@@ -101,8 +106,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		delayStartTime = new Duration(0);
 		remainingToBookVolume = order.getRequiredTotalVolume();
 		
-		explorationAnts = new ArrayList<ExpAnt>();
-		intentionAnts = new ArrayList<IntAnt>();
 		breakAnts = new ArrayList<BreakAnt>();
 		commitmentAnts = new ArrayList<CommitmentAnt>();
 		deliveries = new ArrayList<Delivery>();
@@ -115,8 +118,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	@Override
 	public void tick(TimeLapse timeLapse) {
 		checkMsgs(timeLapse.getStartTime());
-		state.processExplorationAnts(timeLapse.getStartTime(), this.explorationAnts);
-		state.processIntentionAnts(timeLapse,this.intentionAnts);
+		state.processExplorationAnts(timeLapse.getStartTime());
+		state.processIntentionAnts(timeLapse);
 		generateParcelDeliveries(timeLapse.getStartTime());
 		state.sendFeasibilityInfo(timeLapse.getStartTime());	
 //		if (GlobalParameters.ENABLE_JI)
@@ -153,26 +156,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 	}
 	
-	/**
-	 * sorts intention ants according to schedule score
-	 */
-	protected void sortIntentionArts() {
-		//this.intentionAnts
-//		if (GlobalParameters.LAG_TIME_ENABLE) { //a temproary sorting mechanism to sort intention ants, so that we can execute lag time..TEsted as well
-//			Collections.sort(this.intentionAnts, new Comparator<IntAnt>(){
-//		        public int compare( IntAnt a, IntAnt b ){//sort descending order based in lag time
-//		            return (int)(b.getScheduleLagTime().minus(a.getScheduleLagTime()).getStandardSeconds());
-//		        }
-//			});
-//			return;
-//		}
-		Collections.sort(this.intentionAnts, new Comparator<IntAnt>(){
-	        public int compare( IntAnt a, IntAnt b ){ //sort in ascending order based on schedule score
-	            return a.getCurrentUnitScore() - b.getCurrentUnitScore();
-	        }
-		});
-		
-	}
 	/**
 	 * should not be called for refresh deliveries, rather it should be called for the deliveries for which order was really interested.
 	 * @param iAnt the ant under process
@@ -217,15 +200,12 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		return remainingVolume;
 	}
 	
-
-
 	@Override
 	public void afterTick(TimeLapse timeLapse) {}
 
 	/**
 	 * @param d
 	 */
-	//TODO may be moveTo Waiting state?
 	protected void reSetOrder(Delivery d) {
 		interestedTime = d.getDeliveryTime();
 		interestedDeliveryNo = d.getDeliveryNo();
@@ -282,6 +262,12 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	protected void putInIsConfirmed(Delivery d, boolean isConfirm) {
 		isConfirmed.put(d, isConfirm);
 	}
+	protected int getTimeForLastFeaAntInMin() { 
+		return timeForLastFeaAnt.getMinuteOfDay();
+	}
+	protected void setTimeForLastFeaAnt(DateTime timeForLastFeaAnt) {
+		this.timeForLastFeaAnt = timeForLastFeaAnt;
+	}
 	@Override
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
 		this.roadModel = pRoadModel;
@@ -298,10 +284,10 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		if (messages.size() > 0) {
 			for (Message m : messages) {
 				if (m.getClass() == ExpAnt.class) {
-					this.explorationAnts.add((ExpAnt)m);
+					state.addExpAnt((ExpAnt)m);
 				}
 				else if (m.getClass() == IntAnt.class) {
-					this.intentionAnts.add((IntAnt)m);
+					state.addIntAnt((IntAnt)m);
 				}		
 				else if (m.getClass() == BreakAnt.class) {
 					logger.info(order.getId() + "O BREAKDOWN signal received");
