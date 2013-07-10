@@ -135,6 +135,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	 * @param startTime
 	 */
 	private void generateParcelDeliveries(long startTime) {
+		//checkArgument(getOrderState() == OrderAgentState.BOOKED, true); should be checked when i make the change of truck that truck delivers only ACCEPTED deliveries
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (!deliveries.isEmpty()) {
 			int dNo = 0;
@@ -162,6 +163,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	 * @param currTime
 	 */ //TODO Check where the maps go, accordingly, move this method as well..
 	protected void acceptIntentionArangementInOrder(IntAnt iAnt, DateTime currTime) {
+		checkArgument(getOrderState() == OrderAgentState.IN_PROCESS, true);
 		refreshTimes.put(iAnt.getCurrentUnit().getDelivery(), currTime);
 		deliveries.add(iAnt.getCurrentUnit().getDelivery());
 		isPhysicallyCreated.put(iAnt.getCurrentUnit().getDelivery(), false);
@@ -207,6 +209,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	 * @param d
 	 */
 	protected void reSetOrder(Delivery d) {
+		checkArgument(getOrderState() == OrderAgentState.WAITING, true);
 		interestedTime = d.getDeliveryTime();
 		interestedDeliveryNo = d.getDeliveryNo();
 		deliveries.remove(d);
