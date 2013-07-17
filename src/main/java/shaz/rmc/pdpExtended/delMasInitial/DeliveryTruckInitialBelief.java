@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import org.joda.time.Duration;
 
 import rinde.sim.core.graph.Point;
+import shaz.rmc.core.AvailableSlot;
+import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.communication.CommitmentAnt;
@@ -22,6 +24,7 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 public class DeliveryTruckInitialBelief {
 	
 	private Point startLocation;
+	private ProductionSite startPS;
 	private final TimeSlot totalTimeRange; //for storing the actual period of activity of truck. i.e when trucks start its day, and ends it
 	//only start and endTime will be used
 	protected final ArrayList<ExpAnt> explorationAnts;
@@ -32,7 +35,7 @@ public class DeliveryTruckInitialBelief {
 	Duration totalTravelTime; //keeps record of the time vehicle kept on traveling
 	private int wastedConcrete; // to keep record of wasted concrete 
 	
-	protected ArrayList<TimeSlot> availableSlots;
+	protected ArrayList<AvailableSlot> availableSlots;
 	private final DeliveryTruckInitial deliveryTruckAgent; 
 	protected final ArrayList<TruckScheduleUnit> schedule; //schedule that is used in truck agent as well as for intentions till 17June, 2013
 	protected final ArrayList<TruckScheduleUnit> practicalSchdule; //to be used by intentions practically, for assuring that only StrongAccepted are delivered.
@@ -47,8 +50,8 @@ public class DeliveryTruckInitialBelief {
 		intentionAnts = new ArrayList<IntAnt>();
 		commitmentAnts = new ArrayList<CommitmentAnt>();
 		totalTimeRange = new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME);
-		availableSlots = new ArrayList<TimeSlot>();
-		availableSlots.add(new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME));
+		availableSlots = new ArrayList<AvailableSlot>();
+		availableSlots.add(new AvailableSlot(new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME), null));
 	}
 //	public ArrayList<TimeSlot> getAvailableSlots() {
 //		return availableSlots;
@@ -80,6 +83,16 @@ public class DeliveryTruckInitialBelief {
 	public void setStartLocation(Point startLocation) {
 		this.startLocation = startLocation;
 	}
+	public ProductionSite getStartPS() {
+		return startPS;
+	}
+
+
+	public void setStartPS(ProductionSite startPS) {
+		this.startPS = startPS;
+	}
+
+
 	public TimeSlot getTotalTimeRange() {
 		return totalTimeRange;
 	}

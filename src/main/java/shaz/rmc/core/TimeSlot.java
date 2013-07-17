@@ -39,16 +39,16 @@ public TimeSlot() {
 //		this.hasLocationAtStartTime = false;
 //		this.locationAtStartTime = null;
 	}
-	public TimeSlot(DateTime startTime, DateTime endTime, Point loc, ProductionSite pProductionSite) {
-		super();
-		if (startTime != null && endTime != null)
-			checkArgument(startTime.compareTo(endTime) <= 0, "StartTime is greater than end time");
-		this.startTime = startTime;
-		this.endTime = endTime;
-//		this.hasLocationAtStartTime = true;
-//		this.locationAtStartTime = loc;
-//		productionSiteAtStartTime = pProductionSite;
-	}
+//	public TimeSlot(DateTime startTime, DateTime endTime, Point loc, ProductionSite pProductionSite) {
+//		super();
+//		if (startTime != null && endTime != null)
+//			checkArgument(startTime.compareTo(endTime) <= 0, "StartTime is greater than end time");
+//		this.startTime = startTime;
+//		this.endTime = endTime;
+////		this.hasLocationAtStartTime = true;
+////		this.locationAtStartTime = loc;
+////		productionSiteAtStartTime = pProductionSite;
+//	}
 	
 //	public boolean isHasLocationAtStartTime() {
 //		return hasLocationAtStartTime;

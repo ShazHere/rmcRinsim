@@ -12,13 +12,13 @@ import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
  * Make it immutable ..
  */
 public class TruckDeliveryUnit extends TruckScheduleUnit {
-	private final Delivery delivery; //TODO The type should not be RmcDlivery, rather, it shud b some common type like prodcution site. BUt abi kaam chuloa mamla hay..:(
+	private final Delivery delivery;
 
-	public TruckDeliveryUnit(Agent pTruck) {
-		super(pTruck);
-		delivery = null;
-
-	}
+//	public TruckDeliveryUnit(Agent pTruck) {
+//		super(pTruck);
+//		delivery = null;
+//
+//	}
 	public TruckDeliveryUnit(Agent pTruck, TimeSlot pSlot, Delivery pDelivery) {
 		super(pTruck, pSlot);
 		delivery = pDelivery;

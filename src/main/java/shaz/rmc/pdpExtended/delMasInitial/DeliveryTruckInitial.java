@@ -32,6 +32,7 @@ import rinde.sim.core.model.pdp.PDPModel;
 import rinde.sim.core.model.road.MovingRoadUser;
 import rinde.sim.core.model.road.RoadModel;
 import shaz.rmc.core.Agent;
+import shaz.rmc.core.AvailableSlot;
 import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
 import shaz.rmc.core.ResultElementsTruck;
@@ -109,50 +110,12 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			assert ((ProductionSiteInitial)(b.schedule.get(b.schedule.size()-1).getTimeSlot().getProductionSiteAtStartTime())).getStation() != null : truck.getId()+"T: The return location of Truck shouldn't be null";
 			i.followSchedule(timeLapse);
 		}
-		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN)
-			sendBreakDownEvent(timeLapse.getStartTime());
-		if (GlobalParameters.ENABLE_JI)
-			processCommitmentAnts(timeLapse.getStartTime());
+//		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN)
+//			sendBreakDownEvent(timeLapse.getStartTime());
+//		if (GlobalParameters.ENABLE_JI)
+//			processCommitmentAnts(timeLapse.getStartTime());
 	}
-	/**
-	 * Used to send the break Down evet
-	 * @param currTime Time at which breakDown event message would be sent.
-	 */ //already tested..
-	private void sendBreakDownEvent(long startTime) {
-		
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		if (currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4)) != 0 )
-			//(currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4)) < 0 )
-			//	&& currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4).plusMinutes(1)) < 0)) //if X hours are not passed, then simply return
-			return;
-		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false || this.state == TRUCK_STATE.BROKEN 
-				||b.schedule.isEmpty())
-			return;
-		//if (this.id >2 )//!= 1 && this.id != 2)
-		
-		//means X hours are passed
-		
-		//for (TruckScheduleUnit tu : b.schedule) {
-		Iterator<TruckScheduleUnit> j = b.schedule.iterator();
-		while (j.hasNext()) {
-			TruckScheduleUnit tu = j.next();
-			if ((((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId().equals("4")
-					&& tu.getDelivery().getDeliveryNo() == 10) //if 40O del2 or
-					|| (((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId().equals("30")//or 30O del3
-							&& tu.getDelivery().getDeliveryNo() == 5 )) {
-				if (this.unitStatus.get(tu.getDelivery()) == Reply.ACCEPT) { //means JI team is formed
-					BreakAnt bAnt = new BreakAnt(this, currTime, tu.getDelivery());
-					logger.info(this.getId()+"T Sending BREAKDOWN signal to " + ((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId() + "O for delivery No " + tu.getDelivery().getDeliveryNo());
-					cApi.send(tu.getDelivery().getOrder(), bAnt);
-					this.state = TRUCK_STATE.BROKEN;
-					this.unitStatus.remove(tu);
-					b.schedule.remove(tu);
-					break;
-				}
-			}
-		}
-		
-	}
+//	
 	private void processExplorationAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (b.explorationAnts.isEmpty())
@@ -248,14 +211,26 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		//check  exp ants to be sent after particular interval only
 		if (currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN ) {
-			ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
+			ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots,  
 					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
 			if (b.availableSlots.size()>0) {
-				checkArgument(b.availableSlots.get(0).getProductionSiteAtStartTime() != null, true);
-				cApi.send(b.availableSlots.get(0).getProductionSiteAtStartTime(), eAnt); 				
+				//checkArgument(b.availableSlots.get(0).getProductionSiteAtStartTime() != null, true);
+				//cApi.send(b.availableSlots.get(0).getProductionSiteAtStartTime(), eAnt);
+				sentToPS(eAnt, b.availableSlots );
 			}
 			timeForLastExpAnt = currTime;
 		}		
+	}
+	private void sentToPS(ExpAnt eAnt, ArrayList<AvailableSlot> pAvSlots) {
+		checkArgument(pAvSlots.isEmpty(), false);
+		if (pAvSlots.get(0).getStartTime().compareTo(this.getTotalTimeRange().getStartTime()) == 0)
+			cApi.send(b.getStartPS(), eAnt); //in the begining truck is at a PS, if we send ot all PS then latter PS to PS travel may be required, 
+									//which is'nt seem desirable at the moment
+		else { //send to all PS
+			for (ProductionSiteInitial ps : sites) {
+				cApi.send(ps, eAnt);
+			}
+		}
 	}
 	private void sendIntAnts(long startTime) { 
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);//send int ants to book again the whole schedule..
@@ -337,39 +312,39 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		}
 		return false;
 	}
-	private void processCommitmentAnts(long startTime) {
-		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		if (b.commitmentAnts.isEmpty() )
-			return;
-		Iterator<CommitmentAnt> i = b.commitmentAnts.iterator();
-		//checkArgument(b.commitmentAnts.size() == 0, true); // at the moment truck shud receive only one commitment ant
-		
-		while (i.hasNext()) { 
-			CommitmentAnt cAnt = i.next();
-			Utility.getAvailableSlots(b.schedule, b.availableSlots, //recent available slots 
-					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime()));
-			Delivery d = cAnt.getFailedDelivery();
-			DateTime actualTime = d.getDeliveryTime().minusMinutes(GlobalParameters.LOADING_MINUTES);
-			for (TimeSlot t :b.availableSlots) {
-				//if (cAnt.getPossibleSites().contains(t.getProductionSiteAtStartTime())) {//means delivery could be feasible w.r.t PS
-				if (cAnt.getFailedDelivery().getLoadingStation().equals(t.getProductionSiteAtStartTime())) {//means delivery could be feasible w.r.t PS
-					Duration StToCy = new Duration ((long)(Point.distance(t.getProductionSiteAtStartTime().getPosition(), cAnt.getOriginator().getPosition())));
-					if (t.getStartTime().compareTo(actualTime.minus(StToCy))<0  //30 min since not sure which ps the truck will return
-							&& t.getEndTime().compareTo(d.getDeliveryTime().plus(StToCy).plus(d.getUnloadingDuration()).plusMinutes(10)) >0) {
-						//means time slot is oK and loading PS is also ok;
-						cAnt.setTruckReply(Reply.UNDER_PROCESS);
-						break;
-					}
-				}
-			}
-			if (cAnt.getTruckReply() == Reply.NO_REPLY)
-				cAnt.setTruckReply(Reply.REJECT);
-			logger.info(this.getId() + "T com-" + cAnt.getOriginator().getOrder().getId()+" reply is " + cAnt.getTruckReply() + " currTime= " + currTime);
-			CommitmentAnt newAnt = cAnt.clone(this);
-			cApi.send(cAnt.getOriginator(), newAnt);
-			i.remove();
-		}
-	}
+//	private void processCommitmentAnts(long startTime) {
+//		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+//		if (b.commitmentAnts.isEmpty() )
+//			return;
+//		Iterator<CommitmentAnt> i = b.commitmentAnts.iterator();
+//		//checkArgument(b.commitmentAnts.size() == 0, true); // at the moment truck shud receive only one commitment ant
+//		
+//		while (i.hasNext()) { 
+//			CommitmentAnt cAnt = i.next();
+//			Utility.getAvailableSlots(b.schedule, b.availableSlots, //recent available slots 
+//					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime()));
+//			Delivery d = cAnt.getFailedDelivery();
+//			DateTime actualTime = d.getDeliveryTime().minusMinutes(GlobalParameters.LOADING_MINUTES);
+//			for (TimeSlot t :b.availableSlots) {
+//				//if (cAnt.getPossibleSites().contains(t.getProductionSiteAtStartTime())) {//means delivery could be feasible w.r.t PS
+//				if (cAnt.getFailedDelivery().getLoadingStation().equals(t.getProductionSiteAtStartTime())) {//means delivery could be feasible w.r.t PS
+//					Duration StToCy = new Duration ((long)(Point.distance(t.getProductionSiteAtStartTime().getPosition(), cAnt.getOriginator().getPosition())));
+//					if (t.getStartTime().compareTo(actualTime.minus(StToCy))<0  //30 min since not sure which ps the truck will return
+//							&& t.getEndTime().compareTo(d.getDeliveryTime().plus(StToCy).plus(d.getUnloadingDuration()).plusMinutes(10)) >0) {
+//						//means time slot is oK and loading PS is also ok;
+//						cAnt.setTruckReply(Reply.UNDER_PROCESS);
+//						break;
+//					}
+//				}
+//			}
+//			if (cAnt.getTruckReply() == Reply.NO_REPLY)
+//				cAnt.setTruckReply(Reply.REJECT);
+//			logger.info(this.getId() + "T com-" + cAnt.getOriginator().getOrder().getId()+" reply is " + cAnt.getTruckReply() + " currTime= " + currTime);
+//			CommitmentAnt newAnt = cAnt.clone(this);
+//			cApi.send(cAnt.getOriginator(), newAnt);
+//			i.remove();
+//		}
+//	}
 	private void checkMsgs(long currentTime) {
 		Queue<Message> messages = mailbox.getMessages();
 		if (messages.size() > 0) {
@@ -394,8 +369,9 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		sites = new ArrayList<ProductionSiteInitial>(roadModel.getObjectsOfType(ProductionSiteInitial.class));
 		int rand = randomPCSelector.nextInt(sites.size());
 		//in the begining truck is at start location
-		b.availableSlots.get(0).setLocationAtStartTime(sites.get(rand).getLocation(), sites.get(rand)); //setting start location
+		//b.availableSlots.get(0).setLocationAtStartTime(sites.get(rand).getLocation(), sites.get(rand)); //setting start location
 		b.setStartLocation( sites.get(rand).getLocation());
+		b.setStartPS(sites.get(rand));
 		roadModel.addObjectAt(this, b.getStartLocation());
 		logger.info(this.getId()+"T capacity is = " + this.truck.getNormalVolume() + " & startLocation = " + sites.get(rand).getStation().getId());
 	}
@@ -489,5 +465,43 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		BROKEN,
 		TEAM_NEED, //Truck is in a transition state w.r.t team. shouldn't send exp or int ants, neither process them. 
 	}
-
+	/**
+//	 * Used to send the break Down evet
+//	 * @param currTime Time at which breakDown event message would be sent.
+//	 */ //already tested..
+//	private void sendBreakDownEvent(long startTime) {
+//		
+//		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+//		if (currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4)) != 0 )
+//			//(currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4)) < 0 )
+//			//	&& currTime.compareTo(b.getTotalTimeRange().getStartTime().plusHours(4).plusMinutes(1)) < 0)) //if X hours are not passed, then simply return
+//			return;
+//		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false || this.state == TRUCK_STATE.BROKEN 
+//				||b.schedule.isEmpty())
+//			return;
+//		//if (this.id >2 )//!= 1 && this.id != 2)
+//		
+//		//means X hours are passed
+//		
+//		//for (TruckScheduleUnit tu : b.schedule) {
+//		Iterator<TruckScheduleUnit> j = b.schedule.iterator();
+//		while (j.hasNext()) {
+//			TruckScheduleUnit tu = j.next();
+//			if ((((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId().equals("4")
+//					&& tu.getDelivery().getDeliveryNo() == 10) //if 40O del2 or
+//					|| (((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId().equals("30")//or 30O del3
+//							&& tu.getDelivery().getDeliveryNo() == 5 )) {
+//				if (this.unitStatus.get(tu.getDelivery()) == Reply.ACCEPT) { //means JI team is formed
+//					BreakAnt bAnt = new BreakAnt(this, currTime, tu.getDelivery());
+//					logger.info(this.getId()+"T Sending BREAKDOWN signal to " + ((OrderAgentInitial)tu.getDelivery().getOrder()).getOrder().getId() + "O for delivery No " + tu.getDelivery().getDeliveryNo());
+//					cApi.send(tu.getDelivery().getOrder(), bAnt);
+//					this.state = TRUCK_STATE.BROKEN;
+//					this.unitStatus.remove(tu);
+//					b.schedule.remove(tu);
+//					break;
+//				}
+//			}
+//		}
+//		
+//	}
 }

@@ -11,15 +11,22 @@ import org.joda.time.Duration;
 import com.rits.cloning.Cloner;
 import static com.google.common.base.Preconditions.checkArgument;
 
+import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationUser;
+import shaz.rmc.core.Agent;
 import shaz.rmc.core.Ant;
+import shaz.rmc.core.AvailableSlot;
 import shaz.rmc.core.TimeSlot;
+import shaz.rmc.core.TruckDeliveryUnit;
 import shaz.rmc.core.TruckScheduleUnit;
+import shaz.rmc.core.TruckTravelUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
 import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters;
 import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters.Weights;
+import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
+import shaz.rmc.pdpExtended.delMasInitial.ProductionSiteInitial;
 
 /**
  * @author Shaza
@@ -27,7 +34,7 @@ import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters.Weights;
  */
 public class ExpAnt extends Ant {
 
-	private ArrayList<TimeSlot> availableSlots;
+	private ArrayList<AvailableSlot> availableSlots;
 	private final ArrayList<TruckScheduleUnit> schedule;
 	private boolean scheduleComplete;
 	private final DateTime creationTime;
@@ -39,6 +46,8 @@ public class ExpAnt extends Ant {
 	private TruckScheduleUnit currentUnit;
 	private DateTime currentInterestedTime;
 	private Duration currentLagTime;
+	private TruckTravelUnit lastOrderTravelUnit;
+	private TruckTravelUnit pS4NextOrderVisited;
 
 	private final DeliveryTruckInitial originator; //the actual truck agent which initialized the ExpAnt 
 	private int scheduleUnitsAdded; //to keep track that exp ant itself added how many units.
@@ -52,7 +61,7 @@ public class ExpAnt extends Ant {
 	 * @param pReturnEarlyProbability probability that ant can return early (with one unit in schedule)
 	 */
 	public ExpAnt(CommunicationUser sender,
-			ArrayList<TimeSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime) {
+			ArrayList<AvailableSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime) {
 		super(sender);
 		originator = (DeliveryTruckInitial)sender;  //ant originator, creater. Sender means the one who is curreently sending ant after cloning
 		
@@ -67,6 +76,7 @@ public class ExpAnt extends Ant {
 		currentUnit = null; // It should not contain any unit if currently expAnt isn't interested in any order.
 		currentInterestedTime = null;
 		currentLagTime = null;
+		lastOrderTravelUnit = null;
 	}
 	/**
 	 * used by clone(sender) method..for hop by hop movement
@@ -78,7 +88,7 @@ public class ExpAnt extends Ant {
 	 * @param pOriginator
 	 */
 	private ExpAnt(CommunicationUser sender,
-			ArrayList<TimeSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime, CommunicationUser pOriginator) {
+			ArrayList<AvailableSlot> pAvailableSlots, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime, CommunicationUser pOriginator) {
 		super(sender);
 		originator = (DeliveryTruckInitial)pOriginator;
 		availableSlots = Utility.getCloner().deepClone(pAvailableSlots);
@@ -115,35 +125,117 @@ public class ExpAnt extends Ant {
 	 * @return true if the ExpAnt is interested at interested time even though it has to travel through 
 	 * the travelDistance after loading time (LOADING_MINUTES). 
 	 */
-	public boolean isInterested(DateTime interestedTime, Double travelDistance,  final DateTime currTime) {
+	public boolean isInterested(DateTime interestedTime, Double travelDistance,  final DateTime currTime, ProductionSiteInitial pS, OrderAgentInitial pOr) {
 		Duration travelTime = new Duration((long)((travelDistance/truckSpeed)*60*60*1000)); //travel time required to reach order from specific PS
 		Utility.getAvailableSlots(this.schedule, this.availableSlots, new TimeSlot (new DateTime(currTime), this.truckTotalTimeRange.getEndTime()));
 		if (availableSlots.size() == 0)
 			return false;
-		TimeSlot currentSlot = availableSlots.get(0);
+		AvailableSlot currentSlot = availableSlots.get(0);
 		DateTime actualInterestedTime = interestedTime.minus(travelTime).minusMinutes(GlobalParameters.LOADING_MINUTES); //means time at which truck should start its slot for current delivery
-			if (currentSlot.getStartTime().compareTo(actualInterestedTime)<= 0 //making rough estimation that will order enoughÊ interesting to be visited, one hour added since we donot not know how much could be travel distance from selected PS. PS is selected latter
-					&& currentSlot.getEndTime().compareTo(interestedTime.plusMinutes(70).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
+			if (isInterestedAtExactTime(interestedTime, travelTime, currentSlot,actualInterestedTime, pS, pOr)) {
 				//if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
-					currentInterestedTime = actualInterestedTime;
 					this.currentLagTime = new Duration(0);
-						return true;
+					currentInterestedTime = actualInterestedTime;
+					lastOrderTravelUnit = makeLastOrderTravelUnit(currentSlot, pS);
+					pS4NextOrderVisited = makeNextOrderTravelUnit(currentSlot, pOr);
+					return true;
 				//}
 			}
 			else if (GlobalParameters.LAG_TIME_ENABLE) {//estimate with lag time
-				if (currentSlot.getStartTime().compareTo(actualInterestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES))< 0 //making rough estimation that will order enoughÊ interesting to be visited
-						&& currentSlot.getEndTime().compareTo(interestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES).plusMinutes(70).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0) {
+				if (isInterestedWithLagTime(interestedTime, travelTime,currentSlot, actualInterestedTime, pS, pOr)) {
 //					Duration possibleLagtime = new Duration(actualInterestedTime, currentSlot.getStartTime() );
 //					if (currentSlot.getStartTime().compareTo(actualInterestedTime.plus(possibleLagtime)) <= 0) {// this condition is added since, once entered in from outer if, there were chances hat 
 						//(new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
 					checkArgument( ((new Duration(currentSlot.getStartTime(), currentSlot.getEndTime())).getStandardMinutes() >= (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()), true);						
-						this.currentLagTime = new Duration (actualInterestedTime, currentSlot.getStartTime() );
+						this.currentLagTime = new Duration (actualInterestedTime, currentSlot.getStartTime() );//TODO: check this, it should be duraton b/w actualInterestedTime and the induced lag time! should calculate with seperate method..17/07/2013
 						currentInterestedTime = actualInterestedTime.plus(this.currentLagTime);
-							return true;
+						lastOrderTravelUnit = makeLastOrderTravelUnit(currentSlot, pS);
+						pS4NextOrderVisited = makeNextOrderTravelUnit(currentSlot, pOr);
+						return true;
 					//}
 				}
 			}
 		return false;
+	}
+	/**
+	 * @param currentSlot
+	 * @param pOr current order under consideration
+	 * @return the TruckTravelUnit to travel from last order to current PS. Should be called 
+	 * - after setting currentTnterestedTime and currentLagTime
+	 * - if isInterestedWithLagTime(..) or isInterestedAtExactTime(..) is true
+	 */
+	private TruckTravelUnit makeNextOrderTravelUnit(AvailableSlot currentSlot, OrderAgentInitial pOr) { 
+		Double distanceOrderToPS4NextOrder = Point.distance(pOr.getPosition(), currentSlot.getPS4NextOrderVisitedd().getPosition());
+		Duration durationOrderToPS4NextOrder = new Duration((long)((distanceOrderToPS4NextOrder/truckSpeed)*60*60*1000));
+		TimeSlot travelSlot =  new TimeSlot( currentSlot.getEndTime().minus(durationOrderToPS4NextOrder), currentSlot.getEndTime());
+		TruckTravelUnit ttu = new TruckTravelUnit(originator, travelSlot, pOr.getPosition(), currentSlot.getPS4NextOrderVisitedd().getPosition(), durationOrderToPS4NextOrder );
+		checkArgument(currentInterestedTime.compareTo(ttu.getTimeSlot().getStartTime()) < 0, true);
+		return ttu;	
+		}
+	/**
+	 * @param currentSlot
+	 * @param pS
+	 * @return the TruckTravelUnit to travel from last order to current PS. Should be called 
+	 * - after setting currentTnterestedTime and currentLagTime
+	 * - if isInterestedWithLagTime(..) or isInterestedAtExactTime(..) is true
+	 */
+	private TruckTravelUnit makeLastOrderTravelUnit(AvailableSlot currentSlot, ProductionSiteInitial pS) {
+		Double distanceLastOrderToPS = Point.distance( currentSlot.getLastOrderVisited().getPosition(), pS.getPosition());
+		Duration durationLastOrderToPS = new Duration((long)((distanceLastOrderToPS/truckSpeed)*60*60*1000));
+		TimeSlot travelSlot =  new TimeSlot(currentInterestedTime.minus(durationLastOrderToPS), currentInterestedTime);
+		TruckTravelUnit ttu = new TruckTravelUnit(originator, travelSlot, currentSlot.getLastOrderVisited().getPosition(), pS.getPosition(),durationLastOrderToPS );
+		checkArgument(currentInterestedTime.compareTo(ttu.getTimeSlot().getStartTime()) > 0, true);
+		return ttu;
+	}
+	/**
+	 * @param interestedTime
+	 * @param travelTime
+	 * @param currentSlot
+	 * @param actualInterestedTime
+	 * @return
+	 */
+	private boolean isInterestedWithLagTime(DateTime interestedTime, Duration travelTime, AvailableSlot currentSlot,
+			DateTime actualInterestedTime, ProductionSiteInitial pS, OrderAgentInitial pOr) {
+		Double distanceLastOrderToPS = Point.distance(pS.getPosition(), currentSlot.getLastOrderVisited().getPosition());
+		Duration durationLastOrderToPS = new Duration((long)((distanceLastOrderToPS/truckSpeed)*60*60*1000));
+		DateTime lastOrderToPSJustBeforeActualInterstedTime = actualInterestedTime.minus(durationLastOrderToPS); 
+		DateTime currentSlotEndTime = currentSlot.getEndTime();
+		if (currentSlot.getPS4NextOrderVisitedd() != null) {
+			Double distanceOrderToPS4NextOrder = Point.distance(pOr.getPosition(), currentSlot.getPS4NextOrderVisitedd().getPosition());
+			Duration durationOrderToPS4NextOrder = new Duration((long)((distanceOrderToPS4NextOrder/truckSpeed)*60*60*1000));
+			currentSlotEndTime = currentSlotEndTime.minus(durationOrderToPS4NextOrder);
+		}
+		return currentSlot.getStartTime().compareTo(lastOrderToPSJustBeforeActualInterstedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES))< 0 //making rough estimation that will order enoughÊ interesting to be visited
+				&& currentSlotEndTime.compareTo(interestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES).plusMinutes(70).plus(getCurrentOrderEstimatedTravelTimeAndUnloadingTime(travelTime))) > 0;
+//		return currentSlot.getStartTime().compareTo(actualInterestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES))< 0 //making rough estimation that will order enoughÊ interesting to be visited
+//				&& currentSlot.getEndTime().compareTo(interestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES).plusMinutes(70).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0;
+	}
+	/**
+	 * @param interestedTime
+	 * @param travelTime
+	 * @param currentSlot
+	 * @param actualInterestedTime
+	 * @return
+	 */
+	private boolean isInterestedAtExactTime(DateTime interestedTime, Duration travelTime, AvailableSlot currentSlot,
+			DateTime actualInterestedTime, ProductionSiteInitial pS, OrderAgentInitial pOr) {
+		Double distanceLastOrderToPS = Point.distance(pS.getPosition(), currentSlot.getLastOrderVisited().getPosition());
+		Duration durationLastOrderToPS = new Duration((long)((distanceLastOrderToPS/truckSpeed)*60*60*1000));
+		DateTime lastOrderToPSJustBeforeActualInterstedTime = actualInterestedTime.minus(durationLastOrderToPS);
+		DateTime currentSlotEndTime = currentSlot.getEndTime();
+		if (currentSlot.getPS4NextOrderVisitedd() != null) {
+			Double distanceOrderToPS4NextOrder = Point.distance(pOr.getPosition(), currentSlot.getPS4NextOrderVisitedd().getPosition());
+			Duration durationOrderToPS4NextOrder = new Duration((long)((distanceOrderToPS4NextOrder/truckSpeed)*60*60*1000));
+			currentSlotEndTime = currentSlotEndTime.minus(durationOrderToPS4NextOrder);
+		}
+		return currentSlot.getStartTime().compareTo(lastOrderToPSJustBeforeActualInterstedTime)<= 0 //making rough estimation that will order enoughÊ interesting to be visited, one hour added since we donot not know how much could be travel distance from selected PS. PS is selected latter
+				&& currentSlotEndTime.compareTo(interestedTime.plusMinutes(70).plus(getCurrentOrderEstimatedTravelTimeAndUnloadingTime(travelTime))) > 0;
+//		return currentSlot.getStartTime().compareTo(actualInterestedTime)<= 0 //making rough estimation that will order enoughÊ interesting to be visited, one hour added since we donot not know how much could be travel distance from selected PS. PS is selected latter
+//				&& currentSlot.getEndTime().compareTo(interestedTime.plusMinutes(70).plus(travelTime).plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)))) > 0;
+	}
+	
+	private Duration getCurrentOrderEstimatedTravelTimeAndUnloadingTime(Duration pTravelTime) {
+		return pTravelTime.plus(new Duration((long)(originator.getCapacity() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
 	}
 //TODO make it return defensive copy
 	public TruckScheduleUnit getCurrentUnit() {
@@ -178,6 +270,7 @@ public class ExpAnt extends Ant {
 		exp.scheduleComplete = this.scheduleComplete;
 		exp.scheduleUnitsAdded = this.scheduleUnitsAdded;
 		exp.currentLagTime = this.currentLagTime;
+		exp.lastOrderTravelUnit = this.lastOrderTravelUnit;
 		return exp;
 	}
  
@@ -196,12 +289,16 @@ public class ExpAnt extends Ant {
 		int deliveryNoEffect = 0;
 		if (!schedule.isEmpty()) {
 			for(TruckScheduleUnit u: schedule) {
-				travelMin += u.getDelivery().getStationToCYTravelTime().getStandardMinutes();
-				travelMin += u.getDelivery().getCYToStationTravelTime().getStandardMinutes();
-				//lagTimeInMin += u.getDelivery().getLagTime().getStandardMinutes();
-				wastedConcrete += u.getDelivery().getWastedVolume();
-				if (u.getDelivery().getDeliveryNo() == 0)
-					deliveryNoEffect += 1;
+				if (u instanceof TruckTravelUnit)
+					travelMin += ((TruckTravelUnit) u).getTravelTime().getStandardMinutes();
+				else {
+					travelMin += ((TruckDeliveryUnit) u).getDelivery().getStationToCYTravelTime().getStandardMinutes();
+					//travelMin += u.getDelivery().getCYToStationTravelTime().getStandardMinutes();
+					//lagTimeInMin += u.getDelivery().getLagTime().getStandardMinutes();
+					wastedConcrete += ((TruckDeliveryUnit) u).getDelivery().getWastedVolume();
+					if (((TruckDeliveryUnit) u).getDelivery().getDeliveryNo() == 0)
+						deliveryNoEffect += 1;
+				}
 			}
 			//TODO: add weights as well..
 			int score = (Weights.TRAVEL_TIME * travelMin) + //(Weights.LAGTIME*lagTimeInMin) + 
@@ -221,7 +318,7 @@ public class ExpAnt extends Ant {
 	public double getTruckSpeed() {
 		return truckSpeed;
 	}
-	public ArrayList<TimeSlot> getAvailableSlots() {
+	public ArrayList<AvailableSlot> getAvailableSlots() {
 		return availableSlots;
 	}
 
@@ -243,6 +340,7 @@ public class ExpAnt extends Ant {
 
 	private boolean addCurrentUnitInSchedule() {
 		try {
+			this.schedule.add(lastOrderTravelUnit); //travel unit from last order to current order
 			this.schedule.add(this.currentUnit);//Actual addition in schedule
 			scheduleUnitsAdded += 1;
 			Utility.getAvailableSlots(this.schedule, this.availableSlots, this.truckTotalTimeRange);
@@ -254,8 +352,9 @@ public class ExpAnt extends Ant {
 	}
 	public boolean makeCurrentUnit(Delivery del) {
 		DateTime unitEndTime = del.getDeliveryTime().plus(del.getUnloadingDuration()).plus(del.getCYToStationTravelTime());
-		TimeSlot ts = new TimeSlot(this.getCurrentInterestedTime(), unitEndTime, del.getLoadingStation().getLocation(), del.getLoadingStation());
-		this.currentUnit = new TruckScheduleUnit(originator, ts, del);
+		//TimeSlot ts = new TimeSlot(this.getCurrentInterestedTime(), unitEndTime, del.getLoadingStation().getLocation(), del.getLoadingStation());
+		TimeSlot ts = new TimeSlot(this.getCurrentInterestedTime(), unitEndTime);
+		this.currentUnit = new TruckDeliveryUnit(originator, ts, del);
 		if (this.addCurrentUnitInSchedule())
 			return true;
 		else
@@ -274,7 +373,8 @@ public class ExpAnt extends Ant {
 		if (this.schedule.isEmpty())
 			return lagTime;
 		for(TruckScheduleUnit u: schedule) {
-			lagTime = lagTime.plus( u.getDelivery().getLagTime());
+			if (u instanceof TruckDeliveryUnit)
+				lagTime = lagTime.plus( ((TruckDeliveryUnit) u).getDelivery().getLagTime());
 		}
 		return lagTime;
 	}

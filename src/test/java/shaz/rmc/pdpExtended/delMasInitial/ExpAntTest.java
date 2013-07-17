@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import shaz.rmc.core.TimeSlot;
+import shaz.rmc.core.TruckDeliveryUnit;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.domain.Vehicle;
@@ -28,8 +29,7 @@ public class ExpAntTest {
 		END_DATETIME = new DateTime(2011, 1, 10, 23, 55, 0, 0, GregorianChronology.getInstance());
 		schedule = new ArrayList<TruckScheduleUnit>();
 		availableSlots = new ArrayList<TimeSlot>();
-		schedule.add(new TruckScheduleUnit(null));
-		schedule.get(0).setTimeSlot(new TimeSlot (START_DATETIME, START_DATETIME.plusHours(2)));
+		schedule.add(new TruckDeliveryUnit(null, new TimeSlot (START_DATETIME, START_DATETIME.plusHours(2)), null));
 		schedule.add(new TruckScheduleUnit(null));
 		schedule.get(1).setTimeSlot(new TimeSlot(START_DATETIME.plusHours(4).plusMinutes(5), 
 				START_DATETIME.plusHours(4).plusMinutes(20)));

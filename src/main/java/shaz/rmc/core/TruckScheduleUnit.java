@@ -18,10 +18,10 @@ public abstract class TruckScheduleUnit {
 	private final Agent truck;
 	private final TimeSlot timeSlot; //It includes full slot, including loading time at station, then St to CY time then unloading time then CY to next ST time include travel time etc.
 
-	public TruckScheduleUnit(Agent pTruck) {
-		timeSlot = null;
-		truck = pTruck;
-	}
+//	public TruckScheduleUnit(Agent pTruck) {
+//		timeSlot = null;
+//		truck = pTruck;
+//	}
 	public TruckScheduleUnit(Agent pTruck, TimeSlot pSlot) {
 		truck = pTruck;
 		timeSlot = pSlot;
