@@ -38,7 +38,7 @@ public final class GlobalParameters {
 	public static final int INTENTION_INTERVAL_MIN = 5; //means no. of mintues earlier = 5
 	public static final int INTENTION_EVAPORATION_MIN = INTENTION_INTERVAL_MIN +3; //earlier 3
 	public static final int EXPLORATION_SCHEDULE_SIZE = 2; //earlier 3 (5/02/2014)
-	public static final int TOTAL_TRUCKS =6; //almost 29 trucks are there in the instances
+	public static final int TOTAL_TRUCKS =3; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = true; //will all the vehicles have same capacity
 	public static final double TRUCK_SPEED = 4;
 	//public static final int FIXED_VEHICLE_CAPACITY =10000;
@@ -61,8 +61,8 @@ public final class GlobalParameters {
 	
 	//CHECK NOTES ABOUT INPUT FILES!!
 	//public static final String INPUT_FILE = "canonical-30May2013.xml";  //with expanded order start times
-	public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-bigger2.xml";  //with expanded order start times
-	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //compaq deliveries, the normal basic set
+	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-bigger2.xml";  //with expanded order start times
+	public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //compaq deliveries, the normal basic set
 	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-6Delivery.xml";
 	//public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-expanded.xml";
 	//public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-1Delivery.xml";
@@ -71,9 +71,9 @@ public final class GlobalParameters {
 	//public static final String INPUT_FILE = "planning2011-02-15-update-ucy.xml";
 	//public static final String INPUT_FILE = "planning2011-01-11/planning2011-01-11-update-ucy-shaz-requiredRateFixed.xml";
 	//public static final String INPUT_FILE = "planning2011-01-20-update-ucy-sameTruck1.xml";  //total trucks = 28
-	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10/"; //planning2011-01-20/";canonicalFrom
+	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10/"; //planning2011-01-20/";canonicalFrom
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/canonicalFrom/";
-	public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-bigger2/"; 
+	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-bigger2/"; 
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-1Delivery/"; 
 	//public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/JIExpMay2013/";
 	public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/1July2013/";
