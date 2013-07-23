@@ -12,6 +12,8 @@ import shaz.rmc.core.AvailableSlot;
 import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckScheduleUnit;
+import shaz.rmc.core.TruckDeliveryUnit;
+import shaz.rmc.core.TruckTravelUnit;
 import shaz.rmc.pdpExtended.delMasInitial.communication.CommitmentAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
@@ -51,7 +53,7 @@ public class DeliveryTruckInitialBelief {
 		commitmentAnts = new ArrayList<CommitmentAnt>();
 		totalTimeRange = new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME);
 		availableSlots = new ArrayList<AvailableSlot>();
-		availableSlots.add(new AvailableSlot(new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME), null));
+		availableSlots.add(new AvailableSlot(new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME), null, null));
 	}
 //	public ArrayList<TimeSlot> getAvailableSlots() {
 //		return availableSlots;
@@ -102,15 +104,25 @@ public class DeliveryTruckInitialBelief {
 	 * @return true if all b.schedule units are still in newSch, and false if not.
 	 */ //TODO check do i need to compare sizes of newSch and b.schedule? to validate that newSch also contains new explored stuff
 	protected boolean scheduleStillValid(ArrayList<TruckScheduleUnit> oldSch, ArrayList<TruckScheduleUnit> newSch) {
+		if (isNewScheduleConsistent(newSch) == false)
+			return false;
 		if (oldSch.isEmpty()) //if already existing schedule is empty, then what ever new schedule is, its ok for truck
 			return true;
 		boolean foundMatch = false;
 		for (TruckScheduleUnit u : oldSch) {
 			foundMatch = false;
 			for (TruckScheduleUnit newUnit: newSch) {
-				if (u.getDelivery().equals(newUnit.getDelivery())) {
-					foundMatch = true;
-					break;
+				if (newUnit instanceof TruckDeliveryUnit && u instanceof TruckDeliveryUnit) {
+					if (((TruckDeliveryUnit)u).getDelivery().equals(((TruckDeliveryUnit)newUnit).getDelivery())) {
+						foundMatch = true;
+						break;
+					}
+				}
+				else if (newUnit instanceof TruckTravelUnit && u instanceof TruckTravelUnit) {
+					if (newUnit.equals(u)){
+						foundMatch = true;
+						break;
+					}
 				}
 			}
 			if (!foundMatch)
@@ -121,4 +133,18 @@ public class DeliveryTruckInitialBelief {
 		else 
 			return false;
 	}
+	//TODO:There is some bug in exploration ants, due to which for a bigger2 file, a schedule was generated with overalpping units. So this method is 
+	//to ensure that such schedule isn't selected as bestAnt. But infact, exp ants shouldn't have any bug at all!Remove the bug!!..23/07/2013
+	private boolean isNewScheduleConsistent(ArrayList<TruckScheduleUnit> newSch) {
+		if (newSch.size() == 1) //if size is only 1 then one unit is always consistent with itself
+			return true;
+		for (int i = 0; i< newSch.size()-1; i++) {
+			if (newSch.get(i).getTimeSlot().getEndTime().compareTo(newSch.get(i+1).getTimeSlot().getStartTime()) > 0
+					){
+				return false;
+			}
+		}
+		return true;
+	} 
 }
+

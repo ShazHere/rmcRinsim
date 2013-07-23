@@ -7,67 +7,59 @@ import org.joda.time.Duration;
 
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.ProductionSite;
+import shaz.rmc.core.domain.DeliveryS.Builder;
 
 /**
  * @author Shaza
  * Immutable class for saving details of a delivery object. 
+ * made major changes at 11/07/2013
  */
-final public class Delivery {
 
+final public class Delivery { 
 	final private ProductionSite loadingStation;
-	final private ProductionSite returnStation;
 	//final private DateTime loadingTime, unloadingTime; //Start time
 	final private Duration loadingDuration, unloadingDuration;
-	final private Duration stationToCYTravelTime, CYToStationTravelTime;
+	final private Duration stationToCYTravelTime;
 	final private  Agent order;
 	final private int deliveredVolume;
-	final private Duration lagTime;// for storing lagTime before this delivery
 	final private int deliveryNo; //which delivery of order it could be?
-	
 	
 	//added by shaz
 	final private DateTime deliveryTime;  //according to d1 which might be settled
-	final private int wastedVolume; // filed by truck while adding unit
 	private final Agent truck;
+	final private int wastedVolume; // filed by truck while adding unit
 
 	private Delivery(Builder builder) {
 		this.order = builder.order;
 		this.truck = builder.truck;
 		this.deliveredVolume = builder.deliveredVolume;
 		this.loadingStation = builder.loadingStation;
-		this.returnStation = builder.returnStation;
+		//this.returnStation = builder.returnStation;
 		this.deliveryTime = builder.deliveryTime;
 		this.deliveryNo = builder.deliveryNo;
 		this.loadingDuration = builder.loadingDuration;
 		this.unloadingDuration = builder.unloadingDuration;
 		this.stationToCYTravelTime = builder.stationToCYTravelTime;
-		this.CYToStationTravelTime = builder.CYToStationTravelTime;
-		this.lagTime = builder.lagTime;
+//		this.CYToStationTravelTime = builder.CYToStationTravelTime;
+//		this.lagTime = builder.lagTime;
 		this.wastedVolume =  builder.wastedVolume;
 	}
 	
 	public static class Builder {
 		private ProductionSite loadingStation;
-		private ProductionSite returnStation;
 		private Duration loadingDuration, unloadingDuration;
-		private Duration stationToCYTravelTime, CYToStationTravelTime;
+		private Duration stationToCYTravelTime;
 		private Agent order;
 		private int deliveredVolume;
-		private Duration lagTime;// for storing lagTime before this delivery
 		private int deliveryNo; //which delivery of order it could be?
 		private DateTime deliveryTime;  //according to d1 which might be settled
-		private int wastedVolume; // filed by truck while adding unit
 		private Agent truck;
+		private int wastedVolume; // filed by truck while adding unit
 		
 		public Builder() {}
 
 		public Builder setLoadingStation(ProductionSite loadingStation) {
 			this.loadingStation = loadingStation;
-			return this;
-		}
-
-		public Builder setReturnStation(ProductionSite returnStation) {
-			this.returnStation = returnStation;
 			return this;
 		}
 
@@ -86,11 +78,6 @@ final public class Delivery {
 			return this;
 		}
 
-		public Builder setCYToStationTravelTime(Duration cYToStationTravelTime) {
-			CYToStationTravelTime = cYToStationTravelTime;
-			return this;
-		}
-
 		public Builder setOrder(Agent order) {
 			this.order = order;
 			return this;
@@ -98,11 +85,6 @@ final public class Delivery {
 
 		public Builder setDeliveredVolume(int deliveredVolume) {
 			this.deliveredVolume = deliveredVolume;
-			return this;
-		}
-
-		public Builder setLagTime(Duration lagTime) {
-			this.lagTime = lagTime;
 			return this;
 		}
 
@@ -116,11 +98,6 @@ final public class Delivery {
 			return this;
 		}
 
-		public Builder setWastedVolume(int wastedVolume) {
-			this.wastedVolume = wastedVolume;
-			return this;
-		}
-
 		public Builder setTruck(Agent truck) {
 			this.truck = truck;
 			return this;
@@ -129,7 +106,10 @@ final public class Delivery {
 		public Delivery build(){
 			return new Delivery (this);
 		}
-		
+		public Builder setWastedVolume(int wastedVolume) {
+			this.wastedVolume = wastedVolume;
+			return this;
+		}
 	}
 
 	public Agent getOrder() {
@@ -139,13 +119,12 @@ final public class Delivery {
 	public int getDeliveredVolume() {
 		return deliveredVolume;
 	}
+	public int getWastedVolume() {
+		return wastedVolume;
+	}
 
 	public ProductionSite getLoadingStation() {
 		return loadingStation;
-	}
-
-	public ProductionSite getReturnStation() {
-		return returnStation;
 	}
 
 	public Duration getLoadingDuration() {
@@ -160,10 +139,6 @@ final public class Delivery {
 		return stationToCYTravelTime;
 	}
 
-	public Duration getCYToStationTravelTime() {
-		return CYToStationTravelTime;
-	}
-
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -176,8 +151,6 @@ final public class Delivery {
 		sb.append("\n  departs at station=").append(deliveryTime.minus(stationToCYTravelTime));
 		sb.append("\n  unloading time=").append(deliveryTime);
 		sb.append("\n  leaves CY at =").append(deliveryTime.plus(unloadingDuration));
-		sb.append("\n  reaches at Station=").append(deliveryTime.plus(unloadingDuration).plus(CYToStationTravelTime));
-		sb.append("\n  at Station=" + returnStation);
 		sb.append("]");
 		
 		return sb.toString();
@@ -195,50 +168,9 @@ final public class Delivery {
 		return truck;
 	}
 
-	public int getWastedVolume() {
-		return wastedVolume;
-	}
-
-	public Duration getLagTime() {
-		return lagTime;
-	}
-
 	public int getDeliveryNo() {
 		return deliveryNo;
 	}
 	
-	/**
-	 * @param del delivery to be checked
-	 * @return true if two deliveries have same values of truckId, order, deliverTime, and delivery no.
-	 * false if any of these values doesn't match 
-	 */
-//	public boolean equalsWithSameTruck(Delivery del) {
-//		if (this.truck.getId() ==del.truck.getId() && this.order.equals(del.order) 
-//				&& this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 && this.deliveryNo == del.deliveryNo)
-//			return true;
-//		return false;
-//	}
-
-//	/** 
-//	 * Returns true if two deliveries have same values of order, deliverTime, and delivery no. 
-//	 * false otherwise.
-//	 */
-//	@Override
-//	public boolean equals(Object obj) {
-//		if (obj == null)
-//			return false;
-//		if (obj == this)
-//			return true;
-//		Delivery del = (Delivery)obj;
-//		if (this.order.equals(del.order) && this.deliveryTime.compareTo(del.getDeliveryTime()) == 0 
-//				&& this.deliveryNo == del.deliveryNo)
-//			return true;
-//		return false;
-//	}
-//	@Override
-//	public int hashCode() {
-//	  assert false : "hashCode not designed";
-//	  return 0; // any arbitrary constant will do
-//	}
 
 }

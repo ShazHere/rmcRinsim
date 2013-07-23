@@ -43,7 +43,7 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 public class ProductionSiteInitial extends Depot implements ProductionSite, Agent{
 	private RoadModel roadModel;
 	private PDPModel pdpModel;
-	private Point Location;
+	private Point Location; 
 	
 	protected final RandomGenerator rnd;
 	private final Station station;
@@ -121,9 +121,10 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			return;
 		Iterator<IntAnt> i = intentionAnts.iterator();
 		while (i.hasNext()) { //includes booking of Station
-			IntAnt iAnt = i.next();
-			checkArgument(iAnt.getCurrentUnit().getTunit().getTimeSlot().getProductionSiteAtStartTime() == iAnt.getCurrentUnit().getTunit().getDelivery().getLoadingStation(),
-					"UnExpectedly, INtAnt getProductionAtStartTime != getDelivery.getLoadingStation");
+			IntAnt iAnt = i.next(); 
+			//checkArgument(iAnt.getCurrentUnit().getTunit().getTimeSlot().getProductionSiteAtStartTime() == iAnt.getCurrentUnit().getTunit().getDelivery().getLoadingStation(),
+				//	"UnExpectedly, INtAnt getProductionAtStartTime != getDelivery.getLoadingStation"); 
+			checkArgument(this == iAnt.getCurrentUnit().getTunit().getDelivery().getLoadingStation(),"UnExpectedly, INtAnt getProductionAtStartTime != getDelivery.getLoadingStation");
 			if (iAnt.isScheduleComplete()) { //send back to originator
 				IntAnt newAnt = (IntAnt)iAnt.clone(this);
 				logger.debug(station.getId() +"P Int-" +newAnt.getOriginator().getId()+ " is being sent back since schedule complete with schedule size = " + newAnt.getSchedule().size());
@@ -189,7 +190,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((OrderAgentInitial)exp.getSender()).getOrder().getId() +"O expScheduleSize = " + exp.getSchedule().size());
 		
 		for (OrderAgentInitial or : interestedTime.keySet()) { //check all order pheromones..
-			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), currTime, this, or) {
+			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), currTime, this, or)) {
 				//	&& noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) { //if interested, and order in't explored too much
 				logger.debug(station.getId() +"P exp-" +exp.getOriginator().getId()+ " is interested " + exp.getCurrentInterestedTime() +
 						", O" + or.getOrder().getId()+ " InterestedAt=" + interestedTime.get(or) + " & curTim=" + currTime);//", travelDistance= " + travelDistanceToOrder.get(or));

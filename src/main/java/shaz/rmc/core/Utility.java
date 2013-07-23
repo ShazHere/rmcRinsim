@@ -69,8 +69,8 @@ public class Utility {
 							TruckDeliveryUnit tdu = (TruckDeliveryUnit)pSchedule.get(i-1); 
 							av.setLastOrderVisited(tdu.getDelivery().getOrder());
 						}
-						if (i< pSchedule.size() - 1 && pSchedule.get(i+1) instanceof TruckDeliveryUnit) {
-							TruckDeliveryUnit tdu = (TruckDeliveryUnit)pSchedule.get(i+1);
+						if (i< pSchedule.size()  && pSchedule.get(i) instanceof TruckDeliveryUnit) {
+							TruckDeliveryUnit tdu = (TruckDeliveryUnit)pSchedule.get(i);
 							av.setpS4NextOrderVisited((ProductionSiteInitial)tdu.getDelivery().getLoadingStation());
 						}
 						availableSlots.add(av);
@@ -109,7 +109,9 @@ public class Utility {
 	/**
 	 * @param pSchedule
 	 */
-	private static void sortSchedule(ArrayList<TruckScheduleUnit> pSchedule) {
+	public static void sortSchedule(ArrayList<TruckScheduleUnit> pSchedule) {
+		if (pSchedule.size() <= 1)
+			return;
 		Collections.sort(pSchedule, new Comparator<TruckScheduleUnit>(){
 		    public int compare( TruckScheduleUnit a, TruckScheduleUnit b ){
 		        return (int)((a.getTimeSlot().getStartTime().getMillis()/1000)- (b.getTimeSlot().getStartTime().getMillis()/1000));

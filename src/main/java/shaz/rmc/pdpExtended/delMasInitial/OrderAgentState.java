@@ -72,8 +72,12 @@ abstract class OrderAgentState {
 	protected void sendAccordingToNextUnit(DateTime currTime, IntAnt iAnt) {
 		logger.debug(orderAgent.getOrder().getId() + "O int-" + iAnt.getOriginator().getId()+" reply is " + iAnt.getCurrentUnit().getOrderReply() + " currTime= " + currTime);
 		IntAnt newAnt = iAnt.clone(orderAgent);
-		newAnt.setNextCurrentUnit();
-		orderAgent.getcApi().send(iAnt.getCurrentUnit().getDelivery().getReturnStation(), newAnt);
+		//newAnt.setNextCurrentUnit();
+		//orderAgent.getcApi().send(iAnt.getCurrentUnit().getDelivery().getReturnStation(), newAnt);
+		if (newAnt.setNextCurrentUnit()) 
+			orderAgent.getcApi().send(iAnt.getCurrentUnit().getDelivery().getLoadingStation(), newAnt);
+		else //send to origniator truck
+			orderAgent.getcApi().send(iAnt.getOriginator(), newAnt);
 	}
 	
 	/**

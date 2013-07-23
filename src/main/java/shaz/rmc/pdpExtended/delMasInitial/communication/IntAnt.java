@@ -16,7 +16,9 @@ import com.rits.cloning.Cloner;
 import rinde.sim.core.model.communication.CommunicationUser;
 import shaz.rmc.core.Ant;
 import shaz.rmc.core.Reply;
+import shaz.rmc.core.TruckDeliveryUnit;
 import shaz.rmc.core.TruckScheduleUnit;
+import shaz.rmc.core.TruckTravelUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
@@ -28,7 +30,8 @@ import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters.Weights;
  */
 public class IntAnt extends Ant {
 
-	private final ArrayList<communicateAbleUnit> communicateAbleSchedule;
+	private final ArrayList<communicateAbleUnit> communicateAbleSchedule; //without travel units..
+	private final ArrayList<TruckScheduleUnit> fullSchedule; //to store full schedule with travelUnits as well..
 	private final DeliveryTruckInitial originator; //the actual truck agent which initialized the intAnt
 	private communicateAbleUnit currentUnit;
 	private int currentUnitNo;
@@ -36,10 +39,11 @@ public class IntAnt extends Ant {
 
 	
 	public IntAnt(CommunicationUser sender,
-			 ArrayList<communicateAbleUnit> pSchedule, DateTime pCreateTime) {
+			 ArrayList<communicateAbleUnit> pCommSchedule, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime) {
 		super(sender);
 		originator = (DeliveryTruckInitial)sender;
-		communicateAbleSchedule = pSchedule;
+		communicateAbleSchedule = pCommSchedule;
+		fullSchedule = pSchedule;
 		creationTime = pCreateTime;
 		currentUnitNo = 0;
 		if (!communicateAbleSchedule.isEmpty())
@@ -55,10 +59,11 @@ public class IntAnt extends Ant {
 	 * @param pOriginator
 	 */
 	private IntAnt(CommunicationUser sender,
-			 ArrayList<communicateAbleUnit> pSchedule, DateTime pCreateTime, CommunicationUser pOriginator) {
+			 ArrayList<communicateAbleUnit> pCommSchedule, ArrayList<TruckScheduleUnit> pSchedule, DateTime pCreateTime, CommunicationUser pOriginator) {
 		super(sender);
 		originator = (DeliveryTruckInitial)pOriginator;
-		communicateAbleSchedule = pSchedule;
+		communicateAbleSchedule = pCommSchedule;
+		fullSchedule = pSchedule;
 		creationTime = pCreateTime;
 		
 		if (!communicateAbleSchedule.isEmpty())
@@ -67,8 +72,8 @@ public class IntAnt extends Ant {
 
 	@Override
 	public IntAnt clone(CommunicationUser pSender) {
-		final Cloner cl = Utility.getCloner();
-		IntAnt iAnt = new IntAnt(pSender, cl.deepClone(this.communicateAbleSchedule), this.creationTime, this.originator );
+		final Cloner cl = Utility.getCloner(); //TODO:its intention ants, do i really need to clone schedules? There won't be multiple copies any way?
+		IntAnt iAnt = new IntAnt(pSender, cl.deepClone(this.communicateAbleSchedule), cl.deepClone(this.fullSchedule), this.creationTime, this.originator );
 		iAnt.currentUnitNo = this.currentUnitNo;
 		iAnt.currentUnit = iAnt.communicateAbleSchedule.get(iAnt.currentUnitNo);
 		return iAnt;
@@ -80,11 +85,13 @@ public class IntAnt extends Ant {
 	public communicateAbleUnit getCurrentUnit() {
 		return this.currentUnit;
 	}
-	public void setNextCurrentUnit() {
+	public boolean setNextCurrentUnit() {
 		if (currentUnitNo < communicateAbleSchedule.size()-1) {
 			currentUnitNo += 1;
 			currentUnit = communicateAbleSchedule.get(currentUnitNo);
+			return true; //means next unit is advanced
 		}
+		return false;// means next communicatable unit doesn't exist, so may be return
 	}
 	
 	/**
@@ -100,7 +107,7 @@ public class IntAnt extends Ant {
 		}
 		else
 			return false;
-	}
+	} 
 	
 	/**
 	 * before returning, it also removes the REJECTed unit from the intAnt's schedule
@@ -142,7 +149,7 @@ public class IntAnt extends Ant {
 			for (TruckScheduleUnit u : existingSchedule) {//for each of existing schedule in truck
 				unitExist = false;
 				for (communicateAbleUnit newu: this.communicateAbleSchedule) { //chek if existing unit, exists in iAnt as well..
-					if (u.getDelivery().equals(newu.getTunit().getDelivery()) && unitExist == false) {
+					if (u instanceof TruckDeliveryUnit && ((TruckDeliveryUnit)u).getDelivery().equals(newu.getTunit().getDelivery()) && unitExist == false) {
 						unitExist = true;
 						//checkArgument(u.isAddedInTruckSchedule() == true, true);
 						checkArgument((newu.getOrderReply() == Reply.ACCEPT &&newu.getPsReply() == Reply.WEEK_ACCEPT) 
@@ -150,6 +157,8 @@ public class IntAnt extends Ant {
 						break;
 					}
 				}
+				if (u instanceof TruckTravelUnit) //suppose it exists..
+					unitExist = true;
 				checkArgument(unitExist, true);
 				if (!unitExist) //means a previous unit doesn't exist...theoratically this should never be the case, because none deletes the existing units of an ant!
 					return false;
@@ -167,6 +176,10 @@ public class IntAnt extends Ant {
 		return communicateAbleSchedule;
 	}
 
+	public ArrayList<TruckScheduleUnit> getFullSchedule() {
+		return fullSchedule;
+	}
+
 	public DateTime getCreationTime() {
 		return creationTime;
 	}
@@ -178,13 +191,13 @@ public class IntAnt extends Ant {
 		if (this.communicateAbleSchedule.isEmpty())
 			return lagTime;
 		for(communicateAbleUnit u: communicateAbleSchedule) {
-			lagTime = lagTime.plus( u.getDelivery().getLagTime());
+			lagTime = lagTime.plus( u.getTunit().getLagTime());
 		}
 		return lagTime;
 	}
 	public int getCurrentUnitScore () {
-		long travelTimeMin = this.getCurrentUnit().getDelivery().getCYToStationTravelTime().getStandardMinutes() + 
-				this.getCurrentUnit().getDelivery().getCYToStationTravelTime().getStandardMinutes();
+		long travelTimeMin = //this.getCurrentUnit().getDelivery().getCYToStationTravelTime().getStandardMinutes() + 
+				this.getCurrentUnit().getDelivery().getStationToCYTravelTime().getStandardMinutes();
 		long score = (Weights.TRAVEL_TIME * travelTimeMin) + //(Weights.LAGTIME*getCurrentUnit().getDelivery().getLagTime().getStandardMinutes()) + 
 				(Weights.CONCRETE_WASTAGE*getCurrentUnit().getDelivery().getWastedVolume());
 		return (int)score;

@@ -172,7 +172,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	}
 	/**
 	 * @param iAnt te ant under process
-	 */ //TODO it should be in IN_PROCESS state, but see where does interested TIME and interested Delivery no. go
+	 */ 
 	protected void setOrderInterests() {
 		checkArgument(getOrderState() == OrderAgentState.IN_PROCESS);
 		remainingToBookVolume = calculateRemainingVolume();

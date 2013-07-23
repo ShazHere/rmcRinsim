@@ -3,6 +3,7 @@
  */
 package shaz.rmc.core;
 
+import rinde.sim.core.graph.Point;
 import shaz.rmc.core.TimeSlot;
 //import shaz.rmc.pdpExtended.masDisco.RmcDelivery;
 //import shaz.rmc.pdpExtended.masDisco.RmcOrderAgent;
@@ -15,6 +16,8 @@ import shaz.rmc.core.TimeSlot;
  * 
  */
 public abstract class TruckScheduleUnit {
+	private final Point startLocation;
+	private final Point endLocation;
 	private final Agent truck;
 	private final TimeSlot timeSlot; //It includes full slot, including loading time at station, then St to CY time then unloading time then CY to next ST time include travel time etc.
 
@@ -22,9 +25,11 @@ public abstract class TruckScheduleUnit {
 //		timeSlot = null;
 //		truck = pTruck;
 //	}
-	public TruckScheduleUnit(Agent pTruck, TimeSlot pSlot) {
+	public TruckScheduleUnit(Agent pTruck, TimeSlot pSlot, Point pStartLocation, Point pEndLocation) {
 		truck = pTruck;
 		timeSlot = pSlot;
+		startLocation = pStartLocation;
+		endLocation = pEndLocation;
 	}
 
 	public TimeSlot getTimeSlot() {
@@ -32,6 +37,13 @@ public abstract class TruckScheduleUnit {
 	}
 	public Agent getTruck() {
 		return truck;
+	}
+	public Point getStartLocation() {
+		return startLocation;
+	}
+
+	public Point getEndLocation() {
+		return endLocation;
 	}
 
 	public String getSummary() {

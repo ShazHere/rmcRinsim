@@ -57,6 +57,14 @@ public class InProcess extends OrderAgentState {
 		checkArgument (explorationAnts.isEmpty(), true);
 	}
 	
+	/**
+	 * @param pOrderAgent
+	 * @param pDeliveryNo
+	 * @param exp
+	 * @param pDeliveryTime
+	 * @param travelDur
+	 * @return newly prepared deliery, it also sets the currentWastedConcrete in expAnt
+	 */
 	private Delivery prepareNewDelivery(OrderAgentInitial pOrderAgent, int pDeliveryNo, ExpAnt exp, DateTime pDeliveryTime, long travelDur) {
 		
 		Delivery.Builder delBuilder = new Delivery.Builder();
@@ -69,45 +77,47 @@ public class InProcess extends OrderAgentState {
 		if (pOrderAgent.getRemainingToBookVolume() < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
 			int wastedVolume = (int)(exp.getOriginator().getCapacity() - pOrderAgent.getRemainingToBookVolume());
 			delBuilder.setWastedVolume(wastedVolume);
+			exp.setCurrentWastedConcrete(wastedVolume);
 			unLoadingDuration = new Duration((pOrderAgent.getRemainingToBookVolume() * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR));
 			//delBuilder.setUnloadingDuration(new Duration((remainingToBookVolume * 60l*60l*1000l/ GlobalParameters.DISCHARGE_RATE_PERHOUR)));
 		}
 		else {
 			delBuilder.setWastedVolume(0);// no wastage 
+			exp.setCurrentWastedConcrete(0); // no wastage
 			unLoadingDuration = new Duration((long)(exp.getOriginator().getCapacity()* 60l*60l*1000l / GlobalParameters.DISCHARGE_RATE_PERHOUR) );
 			//delBuilder.setUnloadingDuration(new Duration((long)(exp.getOriginator().getCapacity()* 60l*60l*1000l / GlobalParameters.DISCHARGE_RATE_PERHOUR) ));
 		}
 		delBuilder.setUnloadingDuration(unLoadingDuration);
 		delBuilder.setLoadingDuration(new Duration(GlobalParameters.LOADING_MINUTES*60l*1000l));
 		
-		ProductionSiteInitial selectedPs; //For selecting the return PS
-		if (exp.nextAfterCurrentUnit( pDeliveryTime.plus(exp.getCurrentLagTime()).plus(unLoadingDuration).plusMinutes(10))!= null) {//next slot in schedule exists, select the start PS of next slot
-			TruckScheduleUnit tu = exp.nextAfterCurrentUnit( pDeliveryTime.plus(exp.getCurrentLagTime()).plus(unLoadingDuration).plusMinutes(10)); //assuming travel time should be atleast 10min
-			selectedPs = (ProductionSiteInitial)tu.getTimeSlot().getProductionSiteAtStartTime(); 
-		}
-		else {//next slot in schedule doesn't exist, so select randomly
-			if (pOrderAgent.getSites().size()>1) 				//select the next pC to visit at random..
-				selectedPs = pOrderAgent.getSites().get(new RandomDataImpl().nextInt(0, pOrderAgent.getSites().size()-1));
-			else
-				selectedPs = pOrderAgent.getSites().get(0);
-		} 
+//		ProductionSiteInitial selectedPs; //For selecting the return PS
+//		if (exp.nextAfterCurrentUnit( pDeliveryTime.plus(exp.getCurrentLagTime()).plus(unLoadingDuration).plusMinutes(10))!= null) {//next slot in schedule exists, select the start PS of next slot
+//			TruckScheduleUnit tu = exp.nextAfterCurrentUnit( pDeliveryTime.plus(exp.getCurrentLagTime()).plus(unLoadingDuration).plusMinutes(10)); //assuming travel time should be atleast 10min
+//			selectedPs = (ProductionSiteInitial)tu.getTimeSlot().getProductionSiteAtStartTime(); 
+//		}
+//		else {//next slot in schedule doesn't exist, so select randomly
+//			if (pOrderAgent.getSites().size()>1) 				//select the next pC to visit at random..
+//				selectedPs = pOrderAgent.getSites().get(new RandomDataImpl().nextInt(0, pOrderAgent.getSites().size()-1));
+//			else
+//				selectedPs = pOrderAgent.getSites().get(0);
+//		} 
 		
 		delBuilder.setStationToCYTravelTime(new Duration (travelDur));
-		travelDur = (long)((Point.distance(selectedPs.getPosition(), pOrderAgent.getPosition())/exp.getTruckSpeed())*60*60*1000); //CY to returnStation distance
-		delBuilder.setCYToStationTravelTime(new Duration(travelDur));
+//		travelDur = (long)((Point.distance(selectedPs.getPosition(), pOrderAgent.getPosition())/exp.getTruckSpeed())*60*60*1000); //CY to returnStation distance
+//		delBuilder.setCYToStationTravelTime(new Duration(travelDur));
 		delBuilder.setDeliveryTime(pDeliveryTime.plus(exp.getCurrentLagTime()));
-//			if (this.deliveries.size() == 0 ) //means at the moment decesions are for first delivery so ST shud b included
-//				{ 
-//					//checkArgument(pDeliveryNo == 0, true);
-//					delBuilder.setLagTime(this.delayFromActualInterestedTime.plus(this.delayStartTime));
-//				}
-//			else
-//				delBuilder.setLagTime(this.delayFromActualInterestedTime); //no ST added this time
-//	
-		delBuilder.setLagTime(exp.getCurrentLagTime());
+////			if (this.deliveries.size() == 0 ) //means at the moment decesions are for first delivery so ST shud b included
+////				{ 
+////					//checkArgument(pDeliveryNo == 0, true);
+////					delBuilder.setLagTime(this.delayFromActualInterestedTime.plus(this.delayStartTime));
+////				}
+////			else
+////				delBuilder.setLagTime(this.delayFromActualInterestedTime); //no ST added this time
+////	
+//		delBuilder.setLagTime(exp.getCurrentLagTime());
 		
 		delBuilder.setLoadingStation((ProductionSite)exp.getSender());
-		delBuilder.setReturnStation(selectedPs);
+//		delBuilder.setReturnStation(selectedPs);
 		Delivery del = delBuilder.build();
 		return del;
 	}
@@ -115,7 +125,18 @@ public class InProcess extends OrderAgentState {
 		ExpAnt newExp = (ExpAnt)exp.clone(pOrderAgent);
 		if (newExp.makeCurrentUnit(del)) {
 			logger.debug(pOrderAgent.getOrder().getId() + "O delivery added in expAnts schedule, orginator = " + newExp.getOriginator().getId());
-			pOrderAgent.getcApi().send(del.getReturnStation(), newExp);
+			ProductionSiteInitial selectedPs; //For selecting the return PS
+//			if (exp.nextAfterCurrentUnit( del.getDeliveryTime().plus(exp.getCurrentLagTime()).plus(del.getUnloadingDuration()).plusMinutes(10))!= null) {//next slot in schedule exists, select the start PS of next slot
+//				TruckScheduleUnit tu = exp.nextAfterCurrentUnit( del.getDeliveryTime().plus(exp.getCurrentLagTime()).plus(del.getUnloadingDuration()).plusMinutes(10)); //assuming travel time should be atleast 10min
+//				selectedPs = (ProductionSiteInitial)tu.getTimeSlot().getProductionSiteAtStartTime(); 
+//			}
+//			else {//next slot in schedule doesn't exist, so select randomly
+				if (pOrderAgent.getSites().size()>1) 				//select the next pC to visit at random..
+					selectedPs = pOrderAgent.getSites().get(new RandomDataImpl().nextInt(0, pOrderAgent.getSites().size()-1));
+				else
+					selectedPs = pOrderAgent.getSites().get(0);
+			//} 
+			pOrderAgent.getcApi().send(selectedPs, newExp);
 		}
 		else
 			logger.debug(pOrderAgent.getOrder().getId() + "O FAILURE in adding delivery in expSchedule");
@@ -167,7 +188,7 @@ public class InProcess extends OrderAgentState {
 	 * @return
 	 */
 	private boolean newIntentionAccordingToCurrentInterest(IntAnt iAnt) {
-		return iAnt.getCurrentUnit().getDelivery().getDeliveryTime().minus(iAnt.getCurrentUnit().getDelivery().getLagTime()).equals(orderAgent.getInterestedTime()) //so iAnt is according to order's current interest or according to currentInterest + lagTime
+		return iAnt.getCurrentUnit().getDelivery().getDeliveryTime().minus(iAnt.getCurrentUnit().getTunit().getLagTime()).equals(orderAgent.getInterestedTime()) //so iAnt is according to order's current interest or according to currentInterest + lagTime
 				//|| (iAnt.getCurrentUnit().getDelivery().getDeliveryTime().compareTo(this.interestedTime ) > 0 && iAnt.getCurrentUnit().getDelivery().getDeliveryTime().compareTo(this.interestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES) ) <= 0))
 				&& iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo() == orderAgent.getInterestedDeliveryNo() 
 				&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == false;

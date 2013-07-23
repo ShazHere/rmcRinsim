@@ -15,12 +15,12 @@ import shaz.rmc.pdpExtended.delMasInitial.ProductionSiteInitial;
  */
 public class communicateAbleUnit {
 	
-	private final TruckScheduleUnit tunit;
+	private final TruckDeliveryUnit tunit; //only delivery units needed to be replied..travel unit doesn't require any replies.
 	private Reply psReply;  //ps can have NO_REPLY, UNDERPROCESS, WEEK_ACCEPT, REJECT
 	private Reply orderReply;  //order can NO_REPLY, UNDERPROCESS, ACCEPT, WEEK_ACCEPT, REJECT
 	private boolean isAddedInTruckSchedule;
 	
-	public communicateAbleUnit(TruckScheduleUnit tunit, Reply psReply,
+	public communicateAbleUnit(TruckDeliveryUnit tunit, Reply psReply,
 			Reply orderReply, boolean isAddedInTruckSchedule) {
 		super();
 		this.tunit = tunit;
@@ -28,7 +28,7 @@ public class communicateAbleUnit {
 		this.orderReply = orderReply;
 		this.isAddedInTruckSchedule = isAddedInTruckSchedule;
 	}
-	public communicateAbleUnit(TruckScheduleUnit ptruckScheduleUnit){
+	public communicateAbleUnit(TruckDeliveryUnit ptruckScheduleUnit){
 		this.tunit = ptruckScheduleUnit;
 		psReply = Reply.NO_REPLY;
 		orderReply = Reply.NO_REPLY;
@@ -52,7 +52,7 @@ public class communicateAbleUnit {
 	public void setAddedInTruckSchedule(boolean isAddedInTruckSchedule) {
 		this.isAddedInTruckSchedule = isAddedInTruckSchedule;
 	}
-	public TruckScheduleUnit getTunit() {
+	public TruckDeliveryUnit getTunit() {
 		return tunit;
 	}
 	public Delivery getDelivery() {
