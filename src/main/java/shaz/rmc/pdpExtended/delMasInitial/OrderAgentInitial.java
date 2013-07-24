@@ -76,7 +76,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private int interestedDeliveryNo; //the no. of current delivery 
 	private int remainingToBookVolume; //=  totalConcrete - (deliverable concrete by all deliveries)
 	
-	private Duration delayFromActualInterestedTime; //to keep recored of delay before interestedTime, for first delivery it should be zero
 	private Duration delayStartTime; //delay in startTime
 	
 	protected DateTime timeForLastFeaAnt; 	/** to keep track of feasibility interval */
@@ -86,7 +85,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	
 	private ArrayList<ProductionSiteInitial> possibleSites; //sites from which this order could receive delivery according to PERISH time
 	
-	//private boolean orderReserved; //to track that all the intention ants are said ACCEPT to correstponding deliveriesm, means order is fully confirmed and no dleivery is remaining
 	private OrderAgentState state;
 	public OrderAgentInitial(Simulator pSim, Point pLocation, Order pOrder ) {
 		super();
@@ -102,7 +100,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		
 		interestedTime = order.getStartTime(); 
 		interestedDeliveryNo = 0;
-		delayFromActualInterestedTime = new Duration(0);
 		delayStartTime = new Duration(0);
 		remainingToBookVolume = order.getRequiredTotalVolume();
 		
@@ -341,7 +338,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		int wastedConcrete = 0;
 		if (deliveries.size() < 0)
 			return 0;
-		int index = 0;
 		for (DeliveryInitial di : this.parcelDeliveries) {
 			wastedConcrete += di.getDelivery().getWastedVolume();
 		}
@@ -429,7 +425,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 				+ ", interestedTime=" + interestedTime
 				+ ", interestedDeliveryNo=" + interestedDeliveryNo
 				+ ", delayFromActualInterestedTime="
-				+ delayFromActualInterestedTime + ", delayStartTime="
 				+ delayStartTime + ", remainingToBookVolume="
 				+ remainingToBookVolume + ", parcelDeliveries="
 				+ parcelDeliveries + ", orderState="
