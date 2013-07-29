@@ -40,14 +40,12 @@ public class DeliveryTruckInitialBelief {
 	protected ArrayList<AvailableSlot> availableSlots;
 	private final DeliveryTruckInitial deliveryTruckAgent; 
 	protected final ArrayList<TruckScheduleUnit> schedule; //schedule that is used in truck agent as well as for intentions till 17June, 2013
-	protected final ArrayList<TruckScheduleUnit> practicalSchdule; //to be used by intentions practically, for assuring that only StrongAccepted are delivered.
 	
 	public DeliveryTruckInitialBelief(DeliveryTruckInitial pDeliveryTruck,  ArrayList<TruckScheduleUnit> pSch) {
 		wastedConcrete = 0;
 		totalTravelTime = new Duration(0); //to keep record of total travelling time, to be used by objective function latter.
 		deliveryTruckAgent = pDeliveryTruck;
 		this.schedule = pSch;
-		this.practicalSchdule = new ArrayList<TruckScheduleUnit>();
 		explorationAnts = new ArrayList<ExpAnt>();
 		intentionAnts = new ArrayList<IntAnt>();
 		commitmentAnts = new ArrayList<CommitmentAnt>();

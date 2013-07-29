@@ -168,7 +168,7 @@ public class ExpAnt extends Ant {
 	 * @return the TruckTravelUnit to travel from last order to current PS. Should be called 
 	 * - after setting currentTnterestedTime and currentLagTime
 	 * - if isInterestedWithLagTime(..) or isInterestedAtExactTime(..) is true
-	 */
+	 */ //TODO: change accroding to utility.getTravelUnitTimeSlot..
 	private TruckTravelUnit makeNextOrderTravelUnit(AvailableSlot currentSlot, OrderAgentInitial pOr) { 
 		if (currentSlot.getPS4NextOrderVisitedd() == null)
 			return null;

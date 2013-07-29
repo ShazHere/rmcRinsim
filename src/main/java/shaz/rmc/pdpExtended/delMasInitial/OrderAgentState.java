@@ -44,13 +44,13 @@ abstract class OrderAgentState {
 
 
 	abstract int getStateCode();
-	protected abstract void processExplorationAnts(long startTime);
+	protected abstract void processExplorationAnts(OrderAgentPlan orderPlan, long startTime);
 	/**
 	 * manages to send feasibility ants to PS
 	 * @param startTime
 	 */
-	protected abstract void sendFeasibilityInfo(long startTime);
-	protected abstract void processIntentionAnts(TimeLapse timeLapse) ;
+	protected abstract void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime);
+	protected abstract void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) ;
 	
 	static OrderAgentState newState(int newState, OrderAgentInitial orderAgent) {
 		switch(newState) {
@@ -86,9 +86,9 @@ abstract class OrderAgentState {
 	 * @param d
 	 * @return
 	 */
-	protected boolean refreshBooking(DateTime currTime, IntAnt iAnt,
+	protected boolean refreshBooking(OrderAgentPlan orderPlan, DateTime currTime, IntAnt iAnt,
 			Delivery d) {  //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
-		return d != null && orderAgent.getRefreshTimes().get(d).compareTo(currTime) < 0 
+		return d != null && orderPlan.getRefreshTimes().get(d).compareTo(currTime) < 0 
 				&& iAnt.getCurrentUnit().getPsReply() == Reply.WEEK_ACCEPT  //make it check argument
 				&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == true;
 	}
@@ -104,8 +104,8 @@ abstract class OrderAgentState {
 	 *  Also set the logic, if no one is sending intention for long time
 	 *  adjust the starttime delay and interestedtime delay..
 	 */
-	protected Delivery deliveryExists(Delivery newDel) {
-		for (Delivery existingDel: orderAgent.getDeliveries()) {
+	protected Delivery deliveryExists(OrderAgentPlan orderPlan, Delivery newDel) {
+		for (Delivery existingDel: orderPlan.getDeliveries()) {
 			if (existingDel.equals(newDel))
 				return existingDel;
 		}

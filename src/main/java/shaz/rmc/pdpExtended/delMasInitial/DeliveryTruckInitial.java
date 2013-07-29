@@ -110,7 +110,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		//acting on intentions
 		if (!b.schedule.isEmpty()) {
 			//assert ((ProductionSiteInitial)(b.schedule.get(b.schedule.size()-1).getTimeSlot().getProductionSiteAtStartTime())).getStation() != null : truck.getId()+"T: The return location of Truck shouldn't be null";
-			i.followSchedule(timeLapse);
+			i.followSchedule(timeLapse, unitStatus);
 		}
 //		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN)
 //			sendBreakDownEvent(timeLapse.getStartTime());

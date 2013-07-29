@@ -118,6 +118,12 @@ public class Utility {
 		    }
 		});
 	} 
+	public static TimeSlot getTravelUnitTimeSlot(Duration travelDuration, DateTime referenceTime, boolean isbeforeReferenceTime) {
+		if (isbeforeReferenceTime)
+			return new TimeSlot(referenceTime.minus(travelDuration).minusMinutes(1), referenceTime.minusMinutes(1));
+		else
+			return new TimeSlot(referenceTime.plusMinutes(1), referenceTime.plus(travelDuration).plusMinutes(1));
+	}
 	public static boolean wrtieInFile( boolean isAppend, ResultElements resultElement) {
 		// PrintWriter out; //not using it any more because it swallows any exceptions and  
 		

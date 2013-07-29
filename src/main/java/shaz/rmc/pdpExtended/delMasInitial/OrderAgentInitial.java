@@ -58,25 +58,15 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private final Simulator sim;
 	private final Point Location;
 	private final Order order;
-	private final ArrayList<Delivery> deliveries; //virtual deliveries..twhich stores general information of the deliveries that have been intended by other trucks
+	//private final ArrayList<Delivery> deliveries; //virtual deliveries..twhich stores general information of the deliveries that have been intended by other trucks
 	
 	private final Logger logger; //for logging
+	private OrderAgentPlan orderPlan;
 
 	private ArrayList<BreakAnt> breakAnts;
 	private ArrayList<CommitmentAnt> commitmentAnts;
 	private final Mailbox mailbox;
 	private CommunicationAPI cApi;
-	
-	private final Map<Delivery, DateTime> refreshTimes; //for keepting track of when to evaporate intentions
-	private final Map<Delivery, Boolean> isPhysicallyCreated;
-	private final Map<Delivery, Boolean> isConfirmed;
-	
-	//REalted to current interest
-	private DateTime interestedTime;  //time sent by FeaAnts, to indicate this is the time at which order is interested
-	private int interestedDeliveryNo; //the no. of current delivery 
-	private int remainingToBookVolume; //=  totalConcrete - (deliverable concrete by all deliveries)
-	
-	private Duration delayStartTime; //delay in startTime
 	
 	protected DateTime timeForLastFeaAnt; 	/** to keep track of feasibility interval */
 	
@@ -98,130 +88,35 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		mailbox = new Mailbox();
 		timeForLastFeaAnt = new DateTime(0);
 		
-		interestedTime = order.getStartTime(); 
-		interestedDeliveryNo = 0;
-		delayStartTime = new Duration(0);
-		remainingToBookVolume = order.getRequiredTotalVolume();
-		
 		breakAnts = new ArrayList<BreakAnt>();
 		commitmentAnts = new ArrayList<CommitmentAnt>();
-		deliveries = new ArrayList<Delivery>();
+		//deliveries = new ArrayList<Delivery>();
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
-		
-		refreshTimes = new LinkedHashMap<Delivery, DateTime>();
-		isConfirmed =new LinkedHashMap<Delivery, Boolean>();
-		isPhysicallyCreated = new LinkedHashMap<Delivery, Boolean>();
+		orderPlan = new OrderAgentPlan(order.getStartTime(), order.getRequiredTotalVolume(), this);
+
 	}
 	@Override
 	public void tick(TimeLapse timeLapse) {
 		checkMsgs(timeLapse.getStartTime());
-		state.processExplorationAnts(timeLapse.getStartTime());
-		state.processIntentionAnts(timeLapse);
-		generateParcelDeliveries(timeLapse.getStartTime());
-		state.sendFeasibilityInfo(timeLapse.getStartTime());	
+		state.processExplorationAnts(orderPlan, timeLapse.getStartTime()); 
+		state.processIntentionAnts(orderPlan, timeLapse);
+		orderPlan.generateParcelDeliveries(this, timeLapse.getStartTime()); 
+		state.sendFeasibilityInfo(orderPlan, timeLapse.getStartTime());	
 //		if (GlobalParameters.ENABLE_JI)
 //			processBreakAnts(timeLapse);
 //		else //means JI isn't enabled so DelMAS should handle it independently
 //			processBreakAntDelMAS(timeLapse);
 	}
 
-
-	/**
-	 * Generates actual parcels corresponding to the deliveries, to be picked up physically by trucks. 
-	 * Parcels are created at the production Site where they have to be picked. 
-	 * @param startTime
-	 */
-	private void generateParcelDeliveries(long startTime) {
-		//checkArgument(getOrderState() == OrderAgentState.BOOKED, true); should be checked when i make the change of truck that truck delivers only ACCEPTED deliveries
-		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		if (!deliveries.isEmpty()) {
-			int dNo = 0;
-			int cushionMinutes = 5; //mintues before pickup time, when delivery should be created.
-			for (Delivery d : deliveries) { //5 min cushion time, 5min for PS fillling time
-				DateTime createTime = d.getDeliveryTime().minus(d.getStationToCYTravelTime()).minusMinutes(cushionMinutes).minusMinutes(GlobalParameters.LOADING_MINUTES); 
-				if (currTime.compareTo(createTime) >= 0) {
-					if (isPhysicallyCreated.get(d) == false && isConfirmed.get(d) == true){ //isReservd means isPhysically created..
-						DeliveryInitial pd = new DeliveryInitial(this, d, dNo, d.getLoadingStation().getPosition(), 
-								this.getPosition(), d.getLoadingDuration().getMillis(), d.getUnloadingDuration().getMillis(), (double)d.getDeliveredVolume());
-						sim.register(pd);
-						parcelDeliveries.add(pd);
-						logger.debug(order.getId() + "O Delivery physically created..del NO = " + dNo + "current time = " + currTime + ", Loading time = " + createTime.plusMinutes(cushionMinutes));
-						isPhysicallyCreated.put(d, true);
-					}
-				}
-				dNo ++;
-			}
-		}
-	}
-	
-	/**
-	 * should not be called for refresh deliveries, rather it should be called for the deliveries for which order was really interested.
-	 * @param iAnt the ant under process
-	 * @param currTime
-	 */ //TODO Check where the maps go, accordingly, move this method as well..
-	protected void acceptIntentionArangementInOrder(IntAnt iAnt, DateTime currTime) {
-		checkArgument(getOrderState() == OrderAgentState.IN_PROCESS, true);
-		refreshTimes.put(iAnt.getCurrentUnit().getDelivery(), currTime);
-		deliveries.add(iAnt.getCurrentUnit().getDelivery());
-		isPhysicallyCreated.put(iAnt.getCurrentUnit().getDelivery(), false);
-		isConfirmed.put(iAnt.getCurrentUnit().getDelivery(), false);
-		//setOrderInterests();
-	}
-	/**
-	 * @param iAnt te ant under process
-	 */ 
-	protected void setOrderInterests() {
-		checkArgument(getOrderState() == OrderAgentState.IN_PROCESS);
-		remainingToBookVolume = calculateRemainingVolume();
-		if (!deliveries.isEmpty()) {
-			Delivery lastDelivery = deliveries.get(deliveries.size()-1);
-			interestedTime = lastDelivery.getDeliveryTime().plus(lastDelivery.getUnloadingDuration());
-			interestedDeliveryNo = lastDelivery.getDeliveryNo() +1;
-		}
-		else{
-			interestedTime = order.getStartTime(); 
-			interestedDeliveryNo = 0;
-		}			
-		if (remainingToBookVolume <= 0) {
-			setOrderState(OrderAgentState.BOOKED);
-			logger.info(order.getId() + "O fully BOOKED");
-		}
-	}
-	private int calculateRemainingVolume() {
-		int remainingVolume = order.getRequiredTotalVolume();
-		if (!deliveries.isEmpty()){
-			for (Delivery d : deliveries) {
-				remainingVolume -= d.getDeliveredVolume()-d.getWastedVolume();
-			}
-		}
-		if (remainingVolume < 0)
-			remainingVolume = 0;
-		return remainingVolume;
-	}
-	
 	@Override
 	public void afterTick(TimeLapse timeLapse) {}
 
-	/**
-	 * @param d
-	 */
-	protected void reSetOrder(Delivery d) {
-		checkArgument(getOrderState() == OrderAgentState.WAITING, true);
-		interestedTime = d.getDeliveryTime();
-		interestedDeliveryNo = d.getDeliveryNo();
-		deliveries.remove(d);
-		refreshTimes.remove(d);
-		isConfirmed.remove(d); 
-		isPhysicallyCreated.remove(d);
-		setOrderState(OrderAgentState.IN_PROCESS);
-		logger.info(order.getId() + "O Order Re-set");
-	}
 	
 	/**
 	 * Send feasiblility info to only those PS, that comes within range according to concrete Perish limit
 	 */ //TODO may be move to orderAgentState
 	protected void sendFAntToPS() {
-		FeaAnt fAnt = new FeaAnt(this, this.interestedTime); //the distance is calculated when ant reaches the PS
+		FeaAnt fAnt = new FeaAnt(this, orderPlan.getInterestedTime()); //the distance is calculated when ant reaches the PS
 		for (ProductionSiteInitial p : possibleSites) {
 			//if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
 				cApi.send(p, fAnt);
@@ -240,27 +135,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			}
 		}
 		return null;
-	}
-	protected List<Delivery> getDeliveries() {
-		return   (List<Delivery>) Collections.unmodifiableList(this.deliveries);
-	}
-	//TODO this should be refactored with getIsCOnfirmedD(Delivery d)
-	protected Map<Delivery, Boolean> getIsConfirmed () {
-		return Collections.unmodifiableMap(this.isConfirmed);
-				
-	} 
-	// TODO this should be refactored with getRefreshTimesD(Delivery d)
-	protected Map<Delivery, DateTime> getRefreshTimes() {
-		return Collections.unmodifiableMap(this.refreshTimes);
-				
-	} 
-	//TODO move accroding to map placements..used by all states..
-	protected void putInRefreshTimes(Delivery d, DateTime dt) {
-		refreshTimes.put(d, dt);
-	}
-	//TODO move accroding to map placements..used by all states..
-	protected void putInIsConfirmed(Delivery d, boolean isConfirm) {
-		isConfirmed.put(d, isConfirm);
 	}
 	protected int getTimeForLastFeaAntInMin() { 
 		return timeForLastFeaAnt.getMinuteOfDay();
@@ -303,14 +177,14 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	
 	public ResultElementsOrder getOrderResult(ArrayList<Integer> truckCapacities) { //truck capacities
 		int deliveredConcrete = 0;
-		if (deliveries.size() > 0) {
-			for (Delivery d : deliveries) { //there might b some error in this calculation.
+		if (orderPlan.getDeliveries().size() > 0) {
+			for (Delivery d : orderPlan.getDeliveries()) { //there might b some error in this calculation.
 				DeliveryInitial di = this.getDeliveryForDomainDelivery(d);
 				if (di != null) {
 					deliveredConcrete += di.getDelivery().getDeliveredVolume();
 				}
 			}
-			return new ResultElementsOrder(deliveries, this.order.getRequiredTotalVolume(), 
+			return new ResultElementsOrder(new ArrayList<Delivery>(orderPlan.getDeliveries()), this.order.getRequiredTotalVolume(), 
 					deliveredConcrete, this.recordHourlyConcrete(), this.order.getEarliestStartTime(), getExpectedWastedConcrete(truckCapacities), getActualWastedConcrete());
 		}
 		//else if no deliveries..means order wasn't delivered.
@@ -322,7 +196,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	 */
 	private int[] recordHourlyConcrete() {
 		int hoursConcrete[] = new int[24];
-		if (deliveries.size() < 0)
+		if (orderPlan.getDeliveries().size() < 0)
 			return null;
 		int index = 0;
 		for (DeliveryInitial di : this.parcelDeliveries) {
@@ -336,7 +210,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	 */
 	private int getActualWastedConcrete() {
 		int wastedConcrete = 0;
-		if (deliveries.size() < 0)
+		if (orderPlan.getDeliveries().size() < 0)
 			return 0;
 		for (DeliveryInitial di : this.parcelDeliveries) {
 			wastedConcrete += di.getDelivery().getWastedVolume();
@@ -396,20 +270,17 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	public CommunicationAPI getcApi() {
 		return cApi;
 	}
-	public DateTime getInterestedTime() {
-		return interestedTime;
-	}
-	public int getInterestedDeliveryNo() {
-		return interestedDeliveryNo;
-	}
-	public int getRemainingToBookVolume() {
-		return remainingToBookVolume;
-	}
-	private int getOrderState() {
+	
+	protected int getOrderState() {
 		return this.state.getStateCode();
 	}
 	protected void setOrderState (int newState) {
 		this.state = OrderAgentState.newState(newState, this);
+	}
+	protected boolean registerParcel (DeliveryInitial pDel) {
+		sim.register(pDel);
+		parcelDeliveries.add(pDel);
+		return true;
 	}
 
 	@Override
@@ -419,14 +290,13 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	@Override
 	public String toString() {
 		return "OrderAgentInitial [ "
-				+ "order=" + order.toString() + "\n , deliveries=" + deliveries
+				+ "order=" + order.toString() + "\n , deliveries=" + orderPlan.getDeliveries().size()
 	//			+ ", timeForLastFeaAnt=" + timeForLastFeaAnt
-				+ ", refreshTimes=" + refreshTimes
-				+ ", interestedTime=" + interestedTime
-				+ ", interestedDeliveryNo=" + interestedDeliveryNo
-				+ ", delayFromActualInterestedTime="
-				+ delayStartTime + ", remainingToBookVolume="
-				+ remainingToBookVolume + ", parcelDeliveries="
+				+ ", interestedTime=" + orderPlan.getInterestedTime()
+				+ ", interestedDeliveryNo=" + orderPlan.getInterestedDeliveryNo()
+				+ ", delayFromStartTime="
+				+ orderPlan.getDelayStartTime() + ", remainingToBookVolume="
+				+ orderPlan.getRemainingToBookVolume() + ", parcelDeliveries="
 				+ parcelDeliveries + ", orderState="
 				+ getOrderState() + "]";
 	}

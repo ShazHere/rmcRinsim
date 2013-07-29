@@ -32,18 +32,18 @@ public class Booked extends OrderAgentState {
 	}
 	
 	@Override
-	protected void processExplorationAnts(long startTime) {
+	protected void processExplorationAnts(OrderAgentPlan orderPlan,long startTime) {
 	//If order is fully booked, but still explorations are there then ignore 
 		explorationAnts.clear();
 	}
 	
 	@Override
-	protected void sendFeasibilityInfo(long startTime) {
+	protected void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime) {
 		//already order booked, no need to send feasibility info now.
 		return;
 	}
 	@Override
-	protected void processIntentionAnts(TimeLapse timeLapse) {
+	protected void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
 		if ( intentionAnts.isEmpty()) 
 			return;
@@ -52,10 +52,10 @@ public class Booked extends OrderAgentState {
 		while (i.hasNext()) { //at the moment just select the first one
 			IntAnt iAnt = i.next();
 			 //order isn't interested, yet it could be refreshing of a previous booking
-				Delivery d = deliveryExists(iAnt.getCurrentUnit().getDelivery());
-				if (refreshBooking(currTime, iAnt, d)) {
+				Delivery d = deliveryExists(orderPlan, iAnt.getCurrentUnit().getDelivery());
+				if (refreshBooking(orderPlan, currTime, iAnt, d)) {
 					// we shouldn't touch order state
-					orderAgent.putInRefreshTimes(iAnt.getCurrentUnit().getDelivery(), currTime);
+					orderPlan.putInRefreshTimes(iAnt.getCurrentUnit().getDelivery(), currTime);
 					iAnt.getCurrentUnit().setOrderReply(Reply.ACCEPT); //order fully booked, so now reply full accept
 					logger.debug(orderAgent.getOrder().getId() + "O int-" + iAnt.getOriginator().getId()+" booking refreshed");
 				}
