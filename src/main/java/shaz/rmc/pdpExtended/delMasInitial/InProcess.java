@@ -113,7 +113,7 @@ public class InProcess extends OrderAgentState {
 		if (newExp.makeCurrentUnit(del)) {
 			logger.debug(pOrderAgent.getOrder().getId() + "O delivery added in expAnts schedule, orginator = " + newExp.getOriginator().getId());
 			ProductionSiteInitial selectedPs; //For selecting the return PS
-			selectedPs = selectPsToSend(pOrderAgent);
+			selectedPs = selectPsToSend(pOrderAgent, newExp);
 			pOrderAgent.getcApi().send(selectedPs, newExp);
 		}
 		else
@@ -124,12 +124,21 @@ public class InProcess extends OrderAgentState {
 	 * @param pOrderAgent
 	 * @return selected Ps
 	 */
-	private ProductionSiteInitial selectPsToSend(OrderAgentInitial pOrderAgent) {
+	private ProductionSiteInitial selectPsToSend(OrderAgentInitial pOrderAgent, ExpAnt exp) {
 		ProductionSiteInitial selectedPs;
-		if (pOrderAgent.getSites().size()>1) 				//select the next pC to visit at random..
-			selectedPs = pOrderAgent.getSites().get(new RandomDataImpl().nextInt(0, pOrderAgent.getSites().size()-1));
-		else
-			selectedPs = pOrderAgent.getSites().get(0);
+		if (exp.getAvailableSlots().get(0).getStartTime().compareTo(exp.getSchedule().get(0).getTimeSlot().getEndTime()) >= 0) {
+			if (pOrderAgent.getSites().size()>1) 				//select the next pC to visit at random..
+				selectedPs = pOrderAgent.getSites().get(new RandomDataImpl().nextInt(0, pOrderAgent.getSites().size()-1));
+			else
+				selectedPs = pOrderAgent.getSites().get(0);
+			return selectedPs;
+		}
+		selectedPs = (ProductionSiteInitial) exp.getOriginator().getStartPS();
+			
+//		if (pOrderAgent.getSites().size()>1) 				//select the next pC to visit at random..
+//			selectedPs = pOrderAgent.getSites().get(new RandomDataImpl().nextInt(0, pOrderAgent.getSites().size()-1));
+//		else
+//			selectedPs = pOrderAgent.getSites().get(0);
 		return selectedPs;
 	}
 	
@@ -181,7 +190,8 @@ public class InProcess extends OrderAgentState {
 		return iAnt.getCurrentUnit().getDelivery().getDeliveryTime().minus(iAnt.getCurrentUnit().getTunit().getLagTime()).equals(orderPlan.getInterestedTime()) //so iAnt is according to order's current interest or according to currentInterest + lagTime
 				//|| (iAnt.getCurrentUnit().getDelivery().getDeliveryTime().compareTo(this.interestedTime ) > 0 && iAnt.getCurrentUnit().getDelivery().getDeliveryTime().compareTo(this.interestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES) ) <= 0))
 				&& iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo() == orderPlan.getInterestedDeliveryNo() 
-				&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == false;
+				&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == false
+				&& orderAgent.getOrderState() == OrderAgentState.IN_PROCESS;
 	}
 	/**
 	 * @param currTime
@@ -191,12 +201,23 @@ public class InProcess extends OrderAgentState {
 	private Reply getIAntReply(OrderAgentPlan orderPlan, DateTime currTime, IntAnt iAnt) {
 		if (orderPlan.getRefreshTimes().containsKey(iAnt.getCurrentUnit().getDelivery()) == false ) {//refreshTimes.get(iAnt.getCurrentUnit().getDelivery().getDeliveryNo()).equals(currTime) == false) {
 			if (iAnt.getCurrentUnit().getPsReply() == Reply.UNDER_PROCESS) { //PS is ok with this delivery
-					checkArgument(iAnt.getCurrentUnit().isAddedInTruckSchedule() == false, true);
-					orderPlan.acceptIntentionArangementInOrder(iAnt, currTime);
-					orderAgent.setOrderState(OrderAgentState.WAITING);
-					return Reply.UNDER_PROCESS;
+				checkArgument(iAnt.getCurrentUnit().isAddedInTruckSchedule() == false, true);
+				orderPlan.acceptIntentionArangementInOrder(iAnt, currTime);
+				orderAgent.setOrderState(OrderAgentState.WAITING);
+				return Reply.UNDER_PROCESS;
+				
 			}
 		} 
 			return Reply.REJECT;
+	}
+
+	@Override
+	protected void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		if (currTime.minusMinutes(orderPlan.getTimeForLastIntention().getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.MINUTES_TO_CHANGE_ST4ORDER ){
+			//add code to check if orderdeliverable? yest then proceed else change state = undeliverable
+			orderAgent.makeNewOrderPlan(currTime);
+		}
+		// 		return currTime.minusMinutes(orderAgent.getTimeForLastFeaAntInMin()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN;
 	}
 }

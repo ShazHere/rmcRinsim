@@ -40,7 +40,7 @@ public final class GlobalParameters {
 	public static final int EXPLORATION_SCHEDULE_SIZE = 2; //earlier 3 (5/02/2013)
 	public static final int TOTAL_TRUCKS =6; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = true; //will all the vehicles have same capacity
-	public static final double TRUCK_SPEED = 4;
+	public static final double TRUCK_SPEED = 6;
 	//public static final int FIXED_VEHICLE_CAPACITY =10000;
 	public static final int TRUCKS_PLAN_IN_ADVANCE_HOURS = 6; //specifies how much time in advance the truck can plan. but if deliveries are so many, the truck
 	//accepts the deliveyr time of even after TRUCKS_PLAN_IN_ADVANCE_HOURS. 

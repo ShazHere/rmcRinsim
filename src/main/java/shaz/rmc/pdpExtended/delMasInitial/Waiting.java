@@ -91,4 +91,9 @@ public class Waiting extends OrderAgentState{
 			i.remove();
 		}
 	}
+	@Override
+	protected void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
+		// TODO Auto-generated method stub
+		
+	}
 }

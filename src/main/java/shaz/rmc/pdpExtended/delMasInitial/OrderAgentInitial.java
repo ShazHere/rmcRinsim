@@ -92,7 +92,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		commitmentAnts = new ArrayList<CommitmentAnt>();
 		//deliveries = new ArrayList<Delivery>();
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
-		orderPlan = new OrderAgentPlan(order.getStartTime(), order.getRequiredTotalVolume(), this);
+		orderPlan = new OrderAgentPlan(new Duration(0), this, GlobalParameters.START_DATETIME);
 
 	}
 	@Override
@@ -101,7 +101,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		state.processExplorationAnts(orderPlan, timeLapse.getStartTime()); 
 		state.processIntentionAnts(orderPlan, timeLapse);
 		orderPlan.generateParcelDeliveries(this, timeLapse.getStartTime()); 
-		state.sendFeasibilityInfo(orderPlan, timeLapse.getStartTime());	
+		state.sendFeasibilityInfo(orderPlan, timeLapse.getStartTime());
+		//state.changeOrderPlan(orderPlan, timeLapse.getStartTime());
 //		if (GlobalParameters.ENABLE_JI)
 //			processBreakAnts(timeLapse);
 //		else //means JI isn't enabled so DelMAS should handle it independently
@@ -121,6 +122,17 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			//if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
 				cApi.send(p, fAnt);
 		}
+	}
+	
+	/**
+	 * makes new orderPlan, by changing ST delay
+	 * @param currTime 
+	 */
+	public void makeNewOrderPlan(DateTime currTime) {
+		Duration dur = new Duration(GlobalParameters.MINUTES_TO_DELAY_ST * 60 * 1000);
+		orderPlan = new OrderAgentPlan(orderPlan.getDelayStartTime().plus(dur), this, currTime);
+		parcelDeliveries = new ArrayList<DeliveryInitial>();
+		logger.info(order.getId() + "O NewOrder Plan StDelay = " + orderPlan.getDelayStartTime().getStandardMinutes());
 	}
 	/**
 	 * @param pdelivery the domaim.delivery object which stores general information of the deliveries that have been intended by other trucks
@@ -332,6 +344,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 //	}
 //	breakAnts.clear();
 //}
+	
 
 ///**handle the breakdown events when JI is not enabled 
 // * @param timeLapse

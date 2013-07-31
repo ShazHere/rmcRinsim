@@ -124,7 +124,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			IntAnt iAnt = i.next(); 
 			//checkArgument(iAnt.getCurrentUnit().getTunit().getTimeSlot().getProductionSiteAtStartTime() == iAnt.getCurrentUnit().getTunit().getDelivery().getLoadingStation(),
 				//	"UnExpectedly, INtAnt getProductionAtStartTime != getDelivery.getLoadingStation"); 
-			checkArgument(this == iAnt.getCurrentUnit().getTunit().getDelivery().getLoadingStation(),"UnExpectedly, INtAnt getProductionAtStartTime != getDelivery.getLoadingStation");
+			checkArgument(this.equals(iAnt.getCurrentUnit().getDelivery().getLoadingStation()) == true, true);
 			if (iAnt.isScheduleComplete()) { //send back to originator
 				IntAnt newAnt = (IntAnt)iAnt.clone(this);
 				logger.debug(station.getId() +"P Int-" +newAnt.getOriginator().getId()+ " is being sent back since schedule complete with schedule size = " + newAnt.getSchedule().size());

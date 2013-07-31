@@ -74,10 +74,17 @@ public class DeliveryTruckInitialIntention {
 	public void followSchedule(TimeLapse time, Map<Delivery, Reply> unitStatus) {
 		//previousFollowSchedule(time);
 		//currentFollowSchedule(time);
-		//ArrayList<TruckScheduleUnit> practicalSchedule = b.schedule;
-		ArrayList<TruckScheduleUnit> practicalSchedule = getPracticalSchedule(b.schedule, unitStatus); //enabling this metthod is taking 43 seconds vs 10 second during computation..:(
+		ArrayList<TruckScheduleUnit> practicalSchedule = rmcTruck.getSchedule();
+		//ArrayList<TruckScheduleUnit> practicalSchedule = getPracticalSchedule(rmcTruck.getSchedule(), unitStatus); //enabling this metthod is taking 43 seconds vs 10 second during computation..:(
 		newFollowSchedule(time, practicalSchedule);
 	}
+	/**
+	 * @param schedule
+	 * @param unitStatus
+	 * @return the practical schedule containing truckDeliveryUnit with status of ACCEPT only. The travel units are modified/added 
+	 * according to the ACCEPTed truckDeliveryUnits.
+	 * TODO: can write independent tests for this method, since it doesn't depend on external stuff. 
+	 */
 	public ArrayList<TruckScheduleUnit> getPracticalSchedule(ArrayList<TruckScheduleUnit> schedule, Map<Delivery, Reply> unitStatus) {
 		if (schedule.isEmpty() || !unitStatus.containsValue(Reply.ACCEPT))
 			return new ArrayList<TruckScheduleUnit>();

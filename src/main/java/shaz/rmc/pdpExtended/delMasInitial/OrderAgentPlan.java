@@ -43,22 +43,24 @@ public class OrderAgentPlan {
 	private int interestedDeliveryNo; //the no. of current delivery 
 	private int remainingToBookVolume; //=  totalConcrete - (deliverable concrete by all deliveries)
 	private final int totalConcreteRequired; //taken form agent.order.
+	private DateTime timeForLastIntention;
 	
-	private Duration delayStartTime; //delay in startTime
+	private final Duration delayStartTime; //delay in startTime
 	
-	protected OrderAgentPlan(DateTime orderStartTime, int requiredTotalVolume, OrderAgentInitial pOrderAgent){
+	protected OrderAgentPlan(Duration pDelayStartTime, OrderAgentInitial pOrderAgent, DateTime pCurrTime){
 		logger = Logger.getLogger(OrderAgentInitial.class);
 		deliveries = new ArrayList<Delivery>();
-		interestedTime = orderStartTime; 
+		interestedTime = pOrderAgent.getOrder().getStartTime().plus(pDelayStartTime); 
 		interestedDeliveryNo = 0;
-		delayStartTime = new Duration(0);
-		remainingToBookVolume = requiredTotalVolume;
+		delayStartTime = pDelayStartTime;
+		remainingToBookVolume = pOrderAgent.getOrder().getRequiredTotalVolume();
 		totalConcreteRequired = pOrderAgent.getOrder().getRequiredTotalVolume();
 		
 		refreshTimes = new LinkedHashMap<Delivery, DateTime>();
 		isConfirmed =new LinkedHashMap<Delivery, Boolean>();
 		isPhysicallyCreated = new LinkedHashMap<Delivery, Boolean>();
 		orderAgent = pOrderAgent;
+		timeForLastIntention = pCurrTime;
 	}
 	/**
 	 * should not be called for refresh deliveries, rather it should be called for the deliveries for which order was really interested.
@@ -71,6 +73,7 @@ public class OrderAgentPlan {
 		deliveries.add(iAnt.getCurrentUnit().getDelivery());
 		isPhysicallyCreated.put(iAnt.getCurrentUnit().getDelivery(), false);
 		isConfirmed.put(iAnt.getCurrentUnit().getDelivery(), false);
+		timeForLastIntention = currTime;
 		//setOrderInterests();
 	}
 	/**
@@ -170,6 +173,9 @@ public class OrderAgentPlan {
 	} 
 	protected Duration getDelayStartTime() {
 		return delayStartTime;
+	}
+	protected DateTime getTimeForLastIntention() {
+		return timeForLastIntention;
 	}
 	//TODO move accroding to map placements..used by all states..
 	protected void putInRefreshTimes(Delivery d, DateTime dt) {

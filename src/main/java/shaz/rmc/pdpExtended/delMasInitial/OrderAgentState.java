@@ -51,6 +51,8 @@ abstract class OrderAgentState {
 	 */
 	protected abstract void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime);
 	protected abstract void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) ;
+	protected abstract void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) ;
+
 	
 	static OrderAgentState newState(int newState, OrderAgentInitial orderAgent) {
 		switch(newState) {
@@ -75,9 +77,9 @@ abstract class OrderAgentState {
 		//newAnt.setNextCurrentUnit();
 		//orderAgent.getcApi().send(iAnt.getCurrentUnit().getDelivery().getReturnStation(), newAnt);
 		if (newAnt.setNextCurrentUnit()) 
-			orderAgent.getcApi().send(iAnt.getCurrentUnit().getDelivery().getLoadingStation(), newAnt);
+			orderAgent.getcApi().send(newAnt.getCurrentUnit().getDelivery().getLoadingStation(), newAnt);
 		else //send to origniator truck
-			orderAgent.getcApi().send(iAnt.getOriginator(), newAnt);
+			orderAgent.getcApi().send(newAnt.getOriginator(), newAnt);
 	}
 	
 	/**
@@ -152,4 +154,6 @@ abstract class OrderAgentState {
 		//TEAM_NEED //order was fully booked, but then one of the team members broke, so rest of the team has to
 					// fullfill the order as they committed 
 	//}
+
+		
 }

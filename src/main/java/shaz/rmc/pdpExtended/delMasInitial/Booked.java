@@ -65,4 +65,9 @@ public class Booked extends OrderAgentState {
 			i.remove();
 		}
 	}
+	@Override
+	protected void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
+		// TODO Auto-generated method stub
+		
+	}
 }
