@@ -71,95 +71,15 @@ public class DeliveryTruckInitialIntention {
 	 * At the beginning, currentUnitNo = 0, isLoaded = false, destination = null
 	 * The time between two units could be long, but it will keep on passing quietly, without moving.
 	 */
-	public void followSchedule(TimeLapse time, Map<Delivery, Reply> unitStatus) {
+	public void followSchedule(TimeLapse time) {
 		//previousFollowSchedule(time);
 		//currentFollowSchedule(time);
-		ArrayList<TruckScheduleUnit> practicalSchedule = rmcTruck.getSchedule();
-		//ArrayList<TruckScheduleUnit> practicalSchedule = getPracticalSchedule(rmcTruck.getSchedule(), unitStatus); //enabling this metthod is taking 43 seconds vs 10 second during computation..:(
+		//ArrayList<TruckScheduleUnit> practicalSchedule = rmcTruck.getSchedule();
+		ArrayList<TruckScheduleUnit> practicalSchedule = rmcTruck.getPracticalSchedule(); //enabling this metthod is taking 43 seconds vs 10 second during computation..:(
 		newFollowSchedule(time, practicalSchedule);
 	}
-	/**
-	 * @param schedule
-	 * @param unitStatus
-	 * @return the practical schedule containing truckDeliveryUnit with status of ACCEPT only. The travel units are modified/added 
-	 * according to the ACCEPTed truckDeliveryUnits.
-	 * TODO: can write independent tests for this method, since it doesn't depend on external stuff. 
-	 */
-	public ArrayList<TruckScheduleUnit> getPracticalSchedule(ArrayList<TruckScheduleUnit> schedule, Map<Delivery, Reply> unitStatus) {
-		if (schedule.isEmpty() || !unitStatus.containsValue(Reply.ACCEPT))
-			return new ArrayList<TruckScheduleUnit>();
-		
-		//checkArgument(isScheduleValid(schedule) == true, true); //comment only for saving time..
-		//checkArgument(isUnitStatusValid(schedule, unitStatus) == true, true);
-		
-		ArrayList<TruckScheduleUnit> practicalSchedule = new ArrayList<TruckScheduleUnit>();
-		final Cloner cl = Utility.getCloner();
-		for (TruckScheduleUnit tsu: schedule) //just put ACCEPTED DeliveryUnits
-		{
-			if (tsu instanceof TruckDeliveryUnit)
-				if (unitStatus.get(((TruckDeliveryUnit) tsu).getDelivery()) == Reply.ACCEPT)
-					practicalSchedule.add(cl.deepClone(tsu));
-		}
-		//fill the travelUnits between ACCEPTED DeliveryUNits
-		for (int i =0;i < practicalSchedule.size()-1; i+=2) {
-			if (getTravelUnitIfExists(schedule, practicalSchedule.get(i), practicalSchedule.get(i+1)) != null)
-				practicalSchedule.add(cl.deepClone(getTravelUnitIfExists(schedule, practicalSchedule.get(i), practicalSchedule.get(i+1))));
-			else{
-				Double distance = Point.distance(practicalSchedule.get(i).getEndLocation(), practicalSchedule.get(i+1).getStartLocation());
-				Duration travelDist = new Duration((long)((distance/rmcTruck.getSpeed())*60*60*1000));
-				TruckTravelUnit reqUnit = new TruckTravelUnit(rmcTruck, Utility.getTravelUnitTimeSlot(travelDist, practicalSchedule.get(i+1).getTimeSlot().getStartTime(), true),
-						practicalSchedule.get(i).getEndLocation(), practicalSchedule.get(i+1).getStartLocation(), travelDist) ; //createNewTravelUnit
-				practicalSchedule.add(reqUnit);
-			}
-					
-		}
-		Utility.sortSchedule(practicalSchedule);
-		return practicalSchedule;
-	}
-	private TruckTravelUnit getTravelUnitIfExists(ArrayList<TruckScheduleUnit> schedule,
-			TruckScheduleUnit first,TruckScheduleUnit second) {
-		for (TruckScheduleUnit tsu : schedule) {
-			if (tsu instanceof TruckTravelUnit) {
-				if  (tsu.getStartLocation().equals(first.getEndLocation()) == true && tsu.getEndLocation().equals(second.getStartLocation()))
-					if (tsu.getTimeSlot().getStartTime().compareTo(first.getTimeSlot().getEndTime()) >= 0 && tsu.getTimeSlot().getEndTime().compareTo(second.getTimeSlot().getStartTime()) <= 0)
-						return (TruckTravelUnit)tsu;
-			}
-		}
-		return null;
-	}
-	/**
-	 * @param schedule
-	 * @param unitStatus
-	 * @return true if schedule and unitStatus are consistent with eachother, otherwise false
-	 */
-	private boolean isUnitStatusValid(ArrayList<TruckScheduleUnit> schedule,
-			Map<Delivery, Reply> unitStatus) {
-		if (schedule.size() < unitStatus.size())
-			return false;
-		for(TruckScheduleUnit tsu: schedule){
-			if (tsu instanceof TruckDeliveryUnit)
-				if (!unitStatus.containsKey(((TruckDeliveryUnit) tsu).getDelivery()))
-					return false;
-		}
-		return true;
-	}
-	/**
-	 * @param schedule
-	 * @return true if schedule is a valid schedule. alternating sequence of travelUnit and DeliverUnit. 
-	 */
-	private boolean isScheduleValid(ArrayList<TruckScheduleUnit> schedule) {
-		if (schedule.size() == 1){
-			if (schedule.get(0) instanceof TruckDeliveryUnit)
-				return true;
-			else
-				return false;
-		}
-		for (int i = 0 ; i< schedule.size()-1; i = i +2) {
-			if (!(schedule.get(i) instanceof TruckDeliveryUnit && schedule.get(i+1) instanceof TruckTravelUnit))
-				return false;
-		}
-		return true;
-	}
+	
+
 	private void newFollowSchedule(TimeLapse time, ArrayList<TruckScheduleUnit> practicalSchedule) {
 		long currentTime = GlobalParameters.START_DATETIME.getMillis() + (time.getStartTime()); //currentTime contains value in millis
 		if (currentUnitNo >= practicalSchedule.size())

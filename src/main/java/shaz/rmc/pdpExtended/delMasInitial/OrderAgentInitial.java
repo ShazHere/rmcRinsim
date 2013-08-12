@@ -28,6 +28,7 @@ import rinde.sim.core.model.communication.Message;
 import rinde.sim.core.model.pdp.Depot;
 import rinde.sim.core.model.pdp.PDPModel;
 import rinde.sim.core.model.road.RoadModel;
+import rinde.sim.ui.SimulationViewer;
 import shaz.rmc.core.Agent;
 import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
@@ -69,6 +70,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private CommunicationAPI cApi;
 	
 	protected DateTime timeForLastFeaAnt; 	/** to keep track of feasibility interval */
+	private final DateTime maximumPossibleStartTime; /// according to total quantity and end of simulation time and truck capacity
 	
 	private ArrayList<DeliveryInitial> parcelDeliveries; //physical deliveries, to be created just before delivery (5min b4 actual delivery needed to b picked up)
 	private ArrayList<ProductionSiteInitial> sites; //all sites information
@@ -93,7 +95,14 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		//deliveries = new ArrayList<Delivery>();
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
 		orderPlan = new OrderAgentPlan(new Duration(0), this, GlobalParameters.START_DATETIME);
+		maximumPossibleStartTime = makeMaximumPossibleStartTime();
 
+	}
+	private DateTime makeMaximumPossibleStartTime() {
+		int possibleDeliveries =  (int)Math.ceil(((double)order.getRequiredTotalVolume()) / GlobalParameters.FIXED_CAPACITY);
+		DateTime maxST = GlobalParameters.END_DATETIME.minusHours((int) (possibleDeliveries*(1)));
+
+		return maxST;
 	}
 	@Override
 	public void tick(TimeLapse timeLapse) {
@@ -102,7 +111,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		state.processIntentionAnts(orderPlan, timeLapse);
 		orderPlan.generateParcelDeliveries(this, timeLapse.getStartTime()); 
 		state.sendFeasibilityInfo(orderPlan, timeLapse.getStartTime());
-		//state.changeOrderPlan(orderPlan, timeLapse.getStartTime());
+		state.changeOrderPlan(orderPlan, timeLapse.getStartTime());
 //		if (GlobalParameters.ENABLE_JI)
 //			processBreakAnts(timeLapse);
 //		else //means JI isn't enabled so DelMAS should handle it independently
@@ -128,11 +137,22 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	 * makes new orderPlan, by changing ST delay
 	 * @param currTime 
 	 */
-	public void makeNewOrderPlan(DateTime currTime) {
+	protected void makeNewOrderPlan(DateTime currTime) {
 		Duration dur = new Duration(GlobalParameters.MINUTES_TO_DELAY_ST * 60 * 1000);
 		orderPlan = new OrderAgentPlan(orderPlan.getDelayStartTime().plus(dur), this, currTime);
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
 		logger.info(order.getId() + "O NewOrder Plan StDelay = " + orderPlan.getDelayStartTime().getStandardMinutes());
+	}
+	
+	/**
+	 * @param currTime
+	 * @return true if according to maximumPossibleStartTime and Global.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED the Order could be served..
+	 */
+	protected boolean isOrderDeliverable(DateTime currTime) {
+		if (currTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED).compareTo(maximumPossibleStartTime) < 0)
+			return true;
+		else 
+			return false;
 	}
 	/**
 	 * @param pdelivery the domaim.delivery object which stores general information of the deliveries that have been intended by other trucks
@@ -197,11 +217,11 @@ public class OrderAgentInitial  extends Depot implements Agent {
 				}
 			}
 			return new ResultElementsOrder(new ArrayList<Delivery>(orderPlan.getDeliveries()), this.order.getRequiredTotalVolume(), 
-					deliveredConcrete, this.recordHourlyConcrete(), this.order.getEarliestStartTime(), getExpectedWastedConcrete(truckCapacities), getActualWastedConcrete());
+					deliveredConcrete, this.recordHourlyConcrete(), this.order.getEarliestStartTime(), getExpectedWastedConcrete(truckCapacities), getActualWastedConcrete(), orderPlan.getDelayStartTimeInMin());
 		}
 		//else if no deliveries..means order wasn't delivered.
 		return new ResultElementsOrder(null, this.order.getRequiredTotalVolume(), deliveredConcrete, null, this.order.getEarliestStartTime(), 
-				getExpectedWastedConcrete(truckCapacities), getActualWastedConcrete());
+				getExpectedWastedConcrete(truckCapacities), getActualWastedConcrete(), 0);
 	}
 	/**
 	 * @return array of 24 elements, where each integer specifies amount of concrete delivered in the index-1th hour
@@ -302,9 +322,10 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	@Override
 	public String toString() {
 		return "OrderAgentInitial [ "
-				+ "order=" + order.toString() + "\n , deliveries=" + orderPlan.getDeliveries().size()
+				+ "order=" + order.toString() + "\ndeliveries=" + orderPlan.getDeliveries().size()
 	//			+ ", timeForLastFeaAnt=" + timeForLastFeaAnt
-				+ ", interestedTime=" + orderPlan.getInterestedTime()
+				+ ", state=" + state
+				+ ",\ninterestedTime=" + orderPlan.getInterestedTime()
 				+ ", interestedDeliveryNo=" + orderPlan.getInterestedDeliveryNo()
 				+ ", delayFromStartTime="
 				+ orderPlan.getDelayStartTime() + ", remainingToBookVolume="

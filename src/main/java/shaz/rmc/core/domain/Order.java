@@ -127,8 +127,8 @@ public class Order implements Serializable {
 			sb.append("\n  order=").append(this.getId());
 			sb.append("\n  Earliest StartTime=").append(this.earliestStartTime);
 			sb.append("\n  Required Volume=").append(this.requiredTotalVolume);
-			sb.append("\n  Discharge Rate=").append(this.requiredDischargePerHour);
-			sb.append("\n  Required discharge Rate per minute=" ).append (this.getRequiredDischargePerMinute());
+			//sb.append("\n  Discharge Rate=").append(this.requiredDischargePerHour);
+			//sb.append("\n  Required discharge Rate per minute=" ).append (this.getRequiredDischargePerMinute());
 			
 			sb.append("]");
 			

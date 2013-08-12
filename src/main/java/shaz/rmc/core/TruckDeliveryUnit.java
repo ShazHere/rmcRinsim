@@ -44,12 +44,14 @@ public class TruckDeliveryUnit extends TruckScheduleUnit {
 		return lagTime;
 	}
 
-	public String getSummary() {
+	private String getSummary() {
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append("Delivery[");
-		if (delivery != null)
-			sb.append("\n  order=").append(((OrderAgentInitial)delivery.getOrder()).getOrder().getId());
+		if (delivery != null) {
+			sb.append("\n order=").append(((OrderAgentInitial)delivery.getOrder()).getOrder().getId());
+			sb.append("\n deliveryNo=").append(delivery.getDeliveryNo());
+		}
 		sb.append("\n  truck=").append(getTruck().getId());
 		sb.append("\n Unit start time=").append(getTimeSlot().getStartTime());
 		sb.append("\n  loading time=").append(delivery.getDeliveryTime().minus(delivery.getLoadingDuration()).minus(delivery.getStationToCYTravelTime())).append(", from Station=" + delivery.getLoadingStation());

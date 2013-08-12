@@ -84,6 +84,7 @@ public class ResultElements {
 				allResultOrder.addTotalDeliveriesReadyByOrder(ro.getTotalDeliveriesReadyByOrder());
 				allResultOrder.addUndeliveredConcrete(ro.getUndeliveredConcrete());
 				allResultOrder.addHoursConcreteInList(ro.getHoursConcrteList(),ro.getStartHour(), ro.getTotalConcreteByOrder(), ro.getExpectedWastedConcrete(), ro.getActualWastedConcrete());
+				allResultOrder.addOrderStartTimeDelayInMin(ro.getOrderStartTimeDelayInMin());
 				if (ro.getUndeliveredConcrete() == 0)
 					totalOrderServed +=1;
 			}
@@ -133,7 +134,9 @@ public class ResultElements {
 	public int getUndeliveredConcrete() {
 		return resultOrder.getUndeliveredConcrete();//this.getDeliveredConcrete() - (this.getTotalConcrete() - this.getWastedConcrete());
 	}
-	
+	public int getOrderStartTimeDelay() {
+		return resultOrder.getOrderStartTimeDelayInMin();
+	}
 	
 	/*
 	 * From ResultTruck
@@ -194,7 +197,8 @@ public class ResultElements {
 		colNames.append("TotalDeliveriesReadyByOrder").append(seperator);
 		colNames.append("TotalConcreteByOrder").append(seperator);
 		colNames.append("DeliveredConcrete").append(seperator);
-		colNames.append("UnDeliveredConcrete");
+		colNames.append("UnDeliveredConcrete").append(seperator);
+		colNames.append("OrderStartTimeDelay");
 		
 		return colNames.toString();
 	}
@@ -260,7 +264,8 @@ public class ResultElements {
 		resultDetails.append(getTotalDeliveriesReadyByOrder()).append(seperator);
 		resultDetails.append(getTotalConcreteByOrder()).append(seperator);
 		resultDetails.append(getDeliveredConcrete()).append(seperator);
-		resultDetails.append(getUndeliveredConcrete());
+		resultDetails.append(getUndeliveredConcrete()).append(seperator);;
+		resultDetails.append(getOrderStartTimeDelay());
 		
 		return resultDetails.toString();
 	}

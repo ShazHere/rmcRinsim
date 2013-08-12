@@ -47,11 +47,20 @@ public class DeliveryTruckInitialBelief {
 		commitmentAnts = new ArrayList<CommitmentAnt>();
 		totalTimeRange = new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME);
 		availableSlots = new ArrayList<AvailableSlot>();
-		availableSlots.add(new AvailableSlot(new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME), null, null));
+		adjustAvailableSlotInBeginning();
 	}
 //	public ArrayList<TimeSlot> getAvailableSlots() {
 //		return availableSlots;
 //	}
+
+
+	/**
+	 * Just to avoid that AvailableSlot is 1 if truck schedule is empty.
+	 */
+	protected void adjustAvailableSlotInBeginning() {
+		availableSlots.clear();
+		availableSlots.add(new AvailableSlot(new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME), null, null));
+	}
 	
 
 	public int getWastedConcrete() {

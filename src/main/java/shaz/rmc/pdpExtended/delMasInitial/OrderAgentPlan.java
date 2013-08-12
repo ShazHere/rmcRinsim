@@ -174,6 +174,9 @@ public class OrderAgentPlan {
 	protected Duration getDelayStartTime() {
 		return delayStartTime;
 	}
+	protected int getDelayStartTimeInMin() {
+		return (int) delayStartTime.getStandardMinutes();
+	}
 	protected DateTime getTimeForLastIntention() {
 		return timeForLastIntention;
 	}

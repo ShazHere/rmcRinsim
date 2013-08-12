@@ -41,7 +41,7 @@ public class Utility {
 	 * @return An array of available slots of more than GLOBALPARAMETERS.AVAILABLE_SLOT_SIZE found between the units of pSchedule. 
 	 * Also param availableSlot contains the same returning arrayList 
 	 */
-	public static ArrayList<AvailableSlot> getAvailableSlots(ArrayList<TruckScheduleUnit> pSchedule , ArrayList<AvailableSlot> availableSlots, final TimeSlot truckTotalTimeRange) {
+	 public static ArrayList<AvailableSlot> getAvailableSlots(ArrayList<TruckScheduleUnit> pSchedule , ArrayList<AvailableSlot> availableSlots, final TimeSlot truckTotalTimeRange) {
 		if (pSchedule.isEmpty()) {
 			checkArgument(availableSlots.size() == 1 , true);
 			availableSlots.get(0).setStartTime(new DateTime(truckTotalTimeRange.getStartTime())); //start time fixed according to currrent time

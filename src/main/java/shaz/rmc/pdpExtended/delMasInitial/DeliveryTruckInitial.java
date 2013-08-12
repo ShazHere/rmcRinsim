@@ -111,7 +111,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		//acting on intentions
 		if (!truckSchedule.isEmpty()) {
 			//assert ((ProductionSiteInitial)(b.schedule.get(b.schedule.size()-1).getTimeSlot().getProductionSiteAtStartTime())).getStation() != null : truck.getId()+"T: The return location of Truck shouldn't be null";
-			i.followSchedule(timeLapse, unitStatus);
+			i.followSchedule(timeLapse);
 		}
 //		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN)
 //			sendBreakDownEvent(timeLapse.getStartTime());
@@ -194,29 +194,36 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 							truckSchedule.add(tu);
 							unitStatus.put(tu.getDelivery(), u.getOrderReply());
 							newDeliveryUnitAdded = true;
-							logger.info(this.getId()+"T Schedule unit added in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().getSummary());
+							logger.debug(this.getId()+"T Schedule unit added in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
 						}
 						else//the unit already exists in the truck's schedule, check its status
 						{
-//							if (u.getOrderReply() == Reply.REJECT){ //means proably orderPlan changed
-//								unitStatus.remove(u.getTunit().getDelivery());
-//								truckSchedule.remove(u.getTunit());
-//							}
-//							else
+							if (u.getOrderReply() == Reply.REJECT){ //means proably orderPlan changed
+								unitStatus.remove(u.getTunit().getDelivery());
+								truckSchedule.remove(u.getTunit());
+								if (truckSchedule.isEmpty())
+									b.adjustAvailableSlotInBeginning();
+								else
+									truckSchedule.adjustTruckSchedule(this);
+								logger.debug(this.getId()+"T Schedule unit removed in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
+							}
+							else
 								unitStatus.put(u.getTunit().getDelivery(), u.getOrderReply()); //update status, either it could be WEEK_ACCEPT, or STRONG_ACCEPT
 						}
 					}
-				//	if (newDeliveryUnitAdded) {
+ 					if (newDeliveryUnitAdded) {
 						for(TruckScheduleUnit tsu: iAnt.getFullSchedule()) {
 							if (tsu instanceof TruckTravelUnit){
 								if (truckSchedule.alreadyExist(tsu) == false){
 									TruckTravelUnit tu = cl.deepClone((TruckTravelUnit)tsu);
-									truckSchedule.add(tsu);
+									truckSchedule.add(tu);
+									logger.debug(this.getId()+"T Travel unit added: " + tu.toString());
 								}
 							}
 						}
-				//	}
+					}
 					scheduleDone = true;
+					truckSchedule.makePracticalSchedule(this, unitStatus);
 				} //no need of else,coz it will be removed any way..
 				i.remove();
 				if (scheduleDone)
@@ -313,7 +320,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		logger.debug(this.getId()+"T Best schedule changed: total Units= " + bestAnt.getSchedule().size() +" , lagTime= "+ bestAnt.getScheduleLagTime()+ " and Score= " + bestAnt.getScheduleScore() +" & total ants="+ b.explorationAnts.size() + "currTime= " + currTime);
 		for (TruckScheduleUnit unit: bestAnt.getSchedule()) {
-			logger.debug(unit.getSummary());
+			logger.debug(unit.toString());
 		}
 	}
 
@@ -387,6 +394,9 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 
 	protected ArrayList<TruckScheduleUnit> getSchedule() {
 		return truckSchedule.getSchedule();
+	}
+	protected ArrayList<TruckScheduleUnit> getPracticalSchedule() {
+		return truckSchedule.getPracticalSchedule();
 	}
 	public int getId() {
 		return id;

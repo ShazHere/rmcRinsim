@@ -51,6 +51,12 @@ abstract class OrderAgentState {
 	 */
 	protected abstract void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime);
 	protected abstract void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) ;
+	/**
+	 * @param orderPlan
+	 * @param startTime
+	 * 
+	 * Identifies if Order should change is start time and start a new plan? if yes then it starts with new plan
+	 */
 	protected abstract void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) ;
 
 	
@@ -62,6 +68,8 @@ abstract class OrderAgentState {
 			return new Waiting(orderAgent);
 		case BOOKED:
 			return new Booked(orderAgent);
+		case UNDELIVERABLE:
+			return new Undeliverable(orderAgent);
 			default:
 				throw new IllegalArgumentException( "Illegal order  Agent State");
 		}
@@ -151,6 +159,7 @@ abstract class OrderAgentState {
 		static final int IN_PROCESS = 0; // The normal and general state
 		static final int WAITING = 1; // order is waiting for a delivery's confirmation from TruckAgent
 		static final int BOOKED = 2; //whole concrete of order is booked.
+		static final int UNDELIVERABLE = 3; //order cannot be delivered in current day. 
 		//TEAM_NEED //order was fully booked, but then one of the team members broke, so rest of the team has to
 					// fullfill the order as they committed 
 	//}

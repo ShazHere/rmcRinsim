@@ -25,19 +25,19 @@ public class ResultElementsOrder {
 	private int undeliveredConcrete = 0; //amount of concrete, not furnished by any of trucks
 	private ArrayList<HourConcreteDetail> hourConcreteDetail; //arrayList to handle the case when ResultElementsOrder is used to store commulative data of all..
 	// if ResultElementOrder is used to store store result for a single order, this arrayList should have only one object.
+	
+	private int orderStartTimeDelayInMin = 0; //total startTimedelay caused due to changes in orderPlan.
 	public ResultElementsOrder () {
-		//deliveries = null;
 		totalDeliveriesReadyByOrder =0;
 		totalConcreteByOrder = 0;
 		deliveredConcrete = 0;
 		undeliveredConcrete = 0;
-		//hoursConcrete = new int[24];
 		hourConcreteDetail = new ArrayList<ResultElementsOrder.HourConcreteDetail>();
-		
+		orderStartTimeDelayInMin = 0;
 	}
 	
 	public ResultElementsOrder(ArrayList<Delivery> deliveriesReadyByOrder,
-			int totalConcreteByOrder, int deliveredConcrete, int []hoursConcrete, DateTime startTime, int expectedWastedConcrete, int actualWastedConcrete) {
+			int totalConcreteByOrder, int deliveredConcrete, int []hoursConcrete, DateTime startTime, int expectedWastedConcrete, int actualWastedConcrete, int startTimeDelayInMin) {
 		super();
 		//this.deliveries = deliveriesReadyByOrder;
 		
@@ -56,6 +56,7 @@ public class ResultElementsOrder {
 		hourConcreteDetail = new ArrayList<ResultElementsOrder.HourConcreteDetail>();
 		HourConcreteDetail hcd = new HourConcreteDetail(hoursConcrete, startTime.getHourOfDay(),this.totalConcreteByOrder, expectedWastedConcrete, actualWastedConcrete);
 		hourConcreteDetail.add(hcd);
+		this.orderStartTimeDelayInMin = startTimeDelayInMin;
 	}
 
 	public int getTotalDeliveriesReadyByOrder() {
@@ -87,6 +88,15 @@ public class ResultElementsOrder {
 	public void addUndeliveredConcrete(int undeliveredConcrete) {
 		this.undeliveredConcrete += undeliveredConcrete;
 	} 
+	
+	protected int getOrderStartTimeDelayInMin() {
+		return orderStartTimeDelayInMin;
+	}
+
+	protected void addOrderStartTimeDelayInMin(int orderStartTimeDelayInMin) {
+		this.orderStartTimeDelayInMin += orderStartTimeDelayInMin;
+	}
+
 	public void addHoursConcreteInList( int []hoursConcrete, int startHour, int concreteByOrder, int expectedWastedConcrete, int actualWastedConcrete) {
 		this.hourConcreteDetail.add(new HourConcreteDetail(hoursConcrete, startHour, concreteByOrder, expectedWastedConcrete, actualWastedConcrete));
 	}
@@ -165,6 +175,7 @@ public class ResultElementsOrder {
 			colNames.append("totalConcrete" + index).append(columnSeperator);
 			colNames.append("ExpectedWasted" + index).append(columnSeperator);
 			colNames.append("ActualWasted" + index).append(columnSeperator);
+			colNames.append("StartTimeDelayInMin" + index).append(columnSeperator);
 			index++;
 		}
 		return colNames.toString();
@@ -194,6 +205,7 @@ public class ResultElementsOrder {
 		sb.append("TotalConcreteByOrder: ").append(totalConcreteByOrder).append("\n");
 		sb.append("DeliveredConcrete: ").append(deliveredConcrete).append("\n");
 		sb.append("UndeliveredConcrete: ").append(undeliveredConcrete).append("\n");
+		sb.append("OrderStartTimeDelayInMin: ").append(orderStartTimeDelayInMin).append("\n");
 		return sb.toString();
 	}
 	/**

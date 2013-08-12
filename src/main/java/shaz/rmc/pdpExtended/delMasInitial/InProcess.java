@@ -191,7 +191,7 @@ public class InProcess extends OrderAgentState {
 				//|| (iAnt.getCurrentUnit().getDelivery().getDeliveryTime().compareTo(this.interestedTime ) > 0 && iAnt.getCurrentUnit().getDelivery().getDeliveryTime().compareTo(this.interestedTime.plusMinutes(GlobalParameters.MAX_LAG_TIME_MINUTES) ) <= 0))
 				&& iAnt.getCurrentUnit().getTunit().getDelivery().getDeliveryNo() == orderPlan.getInterestedDeliveryNo() 
 				&& iAnt.getCurrentUnit().isAddedInTruckSchedule() == false
-				&& orderAgent.getOrderState() == OrderAgentState.IN_PROCESS;
+				&& orderAgent.getOrderState() == OrderAgentState.IN_PROCESS; //this condition is crucial, since for one ant it will change to WAITING, yet some part of IN_PROCESS could be underexectution for remaining ants
 	}
 	/**
 	 * @param currTime
@@ -216,7 +216,10 @@ public class InProcess extends OrderAgentState {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (currTime.minusMinutes(orderPlan.getTimeForLastIntention().getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.MINUTES_TO_CHANGE_ST4ORDER ){
 			//add code to check if orderdeliverable? yest then proceed else change state = undeliverable
-			orderAgent.makeNewOrderPlan(currTime);
+			if (orderAgent.isOrderDeliverable(currTime))
+				orderAgent.makeNewOrderPlan(currTime);
+			else
+				orderAgent.setOrderState(OrderAgentState.UNDELIVERABLE);
 		}
 		// 		return currTime.minusMinutes(orderAgent.getTimeForLastFeaAntInMin()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN;
 	}

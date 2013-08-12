@@ -138,13 +138,13 @@ public class IntAnt extends Ant {
 	public boolean isConsiderable(final ArrayList<TruckScheduleUnit> existingSchedule) {
 		checkArgument(this.communicateAbleSchedule.isEmpty() == false, true);
 		for (communicateAbleUnit newu: this.communicateAbleSchedule) {
-			if (newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) {//if any reply REJECT, dnot consider schedule
+			if ((newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) && newu.isAddedInTruckSchedule() == false) {//if any reply REJECT, dnot consider schedule
 				return false;
 			}
 			checkArgument((newu.getPsReply() == Reply.NO_REPLY || newu.getOrderReply() == Reply.NO_REPLY) == false, true);
 				//return false;
 		}
-		if (!existingSchedule.isEmpty()){
+		if (!existingSchedule.isEmpty()){ // to check if an already existing unit in truck schedule, also exists in iAnt?
 			boolean unitExist = false;
 			for (TruckScheduleUnit u : existingSchedule) {//for each of existing schedule in truck
 				unitExist = false;
@@ -153,7 +153,8 @@ public class IntAnt extends Ant {
 						unitExist = true;
 						//checkArgument(u.isAddedInTruckSchedule() == true, true);
 						checkArgument((newu.getOrderReply() == Reply.ACCEPT &&newu.getPsReply() == Reply.WEEK_ACCEPT) 
-								|| (newu.getOrderReply() == Reply.WEEK_ACCEPT && newu.getPsReply() == Reply.WEEK_ACCEPT), true);
+								|| (newu.getOrderReply() == Reply.WEEK_ACCEPT && newu.getPsReply() == Reply.WEEK_ACCEPT)
+								|| (newu.getOrderReply() == Reply.REJECT && newu.getPsReply() == Reply.WEEK_ACCEPT && newu.isAddedInTruckSchedule() == true), true);
 						break;
 					}
 				}

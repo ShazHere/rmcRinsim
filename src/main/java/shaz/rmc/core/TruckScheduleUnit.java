@@ -46,7 +46,7 @@ public abstract class TruckScheduleUnit {
 		return endLocation;
 	}
 
-	public String getSummary() {
+	private String getSummary() {
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append("Delivery[");

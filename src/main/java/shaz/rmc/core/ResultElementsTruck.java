@@ -13,7 +13,7 @@ import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters.Weights;
 public class ResultElementsTruck {
 	private int travelMin = 0;
 	private int lagTimeInMin = 0;
-	private int startTimeDelay = 0; //already included in lag time
+	private int startTimeDelayInMin = 0; //already included in lag time, this is delay caused during exploration ants
 	private int wastedConcrete = 0; //wasted conrete is here since while exploring (and latter booking) ants fill the schedule unit if a deliveyr involves wastage of concrete. 
 	private int totalConcrete = 0;  //total concrete delivered by truck(s)
 	private int totalDeliveries = 0; //totoal Deliveries made by truck(s)
@@ -24,7 +24,7 @@ public class ResultElementsTruck {
 		this.totalDeliveries = totalDeliveries;  
 		this.travelMin = travelMin;
 		this.lagTimeInMin = lagTimeInMin;
-		this.startTimeDelay = startTimeDelay;
+		this.startTimeDelayInMin = startTimeDelay;
 		this.wastedConcrete = wastedConcrete;
 		this.totalConcrete = totalConcrete;
 		
@@ -32,7 +32,7 @@ public class ResultElementsTruck {
 	public ResultElementsTruck() {
 		this.travelMin = 0;
 		this.lagTimeInMin = 0;
-		this.startTimeDelay = 0;
+		this.startTimeDelayInMin = 0;
 		this.wastedConcrete = 0;
 		this.totalDeliveries = 0;
 		this.totalConcrete = 0;
@@ -46,7 +46,7 @@ public class ResultElementsTruck {
 	}
 
 	public int getStartTimeDelay() {
-		return startTimeDelay;
+		return startTimeDelayInMin;
 	}
 
 	public int getWastedConcrete() {
@@ -64,8 +64,8 @@ public class ResultElementsTruck {
 	}
 
 	public int addStartTimeDelay(int pStartTimeDelay) {
-		startTimeDelay += pStartTimeDelay;
-		return startTimeDelay;
+		startTimeDelayInMin += pStartTimeDelay;
+		return startTimeDelayInMin;
 	}
 
 	public int addWastedConcrete(int pWastedConcrete) {
@@ -93,7 +93,7 @@ public class ResultElementsTruck {
 		sb.append("LagTime: ").append(lagTimeInMin).append("\n");
 		sb.append("TravelDistance: ").append(travelMin).append("\n");
 		sb.append("WastedConcrete: ").append(wastedConcrete).append("\n");
-		sb.append("StartTimeDelay: ").append(startTimeDelay).append("\n");
+		sb.append("StartTimeDelay: ").append(startTimeDelayInMin).append("\n");
 		return sb.toString();
 	}
 }
