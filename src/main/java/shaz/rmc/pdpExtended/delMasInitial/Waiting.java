@@ -75,7 +75,7 @@ public class Waiting extends OrderAgentState{
 			IntAnt iAnt = i.next();
 			 //order isn't interested, yet it could be refreshing of a previous booking
 				Delivery d = deliveryExists(orderPlan, iAnt.getCurrentUnit().getDelivery());
-				if (refreshBooking(orderPlan, currTime, iAnt, d)) { //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
+				if (isRefreshBooking(orderPlan, currTime, iAnt, d)) { //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
 					if (orderPlan.getIsConfirmed().get(iAnt.getCurrentUnit().getDelivery()) == false ){
 						orderPlan.putInIsConfirmed(iAnt.getCurrentUnit().getDelivery(), true);
 						orderAgent.setOrderState(OrderAgentState.IN_PROCESS);

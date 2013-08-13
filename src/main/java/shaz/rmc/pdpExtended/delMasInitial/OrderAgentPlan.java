@@ -43,7 +43,7 @@ public class OrderAgentPlan {
 	private int interestedDeliveryNo; //the no. of current delivery 
 	private int remainingToBookVolume; //=  totalConcrete - (deliverable concrete by all deliveries)
 	private final int totalConcreteRequired; //taken form agent.order.
-	private DateTime timeForLastIntention;
+	private DateTime timeForLastIntention;// last time when an iAnt is accepted with status 'UNDERPROCESS'. Doesn't mean the lastTime an intention get refreshed.
 	
 	private final Duration delayStartTime; //delay in startTime
 	
@@ -66,7 +66,7 @@ public class OrderAgentPlan {
 	 * should not be called for refresh deliveries, rather it should be called for the deliveries for which order was really interested.
 	 * @param iAnt the ant under process
 	 * @param currTime
-	 */ //TODO Check where the maps go, accordingly, move this method as well..
+	 */ 
 	protected void acceptIntentionArangementInOrder(IntAnt iAnt, DateTime currTime) {
 		checkArgument(orderAgent.getOrderState() == OrderAgentState.IN_PROCESS, true);
 		refreshTimes.put(iAnt.getCurrentUnit().getDelivery(), currTime);
@@ -180,11 +180,10 @@ public class OrderAgentPlan {
 	protected DateTime getTimeForLastIntention() {
 		return timeForLastIntention;
 	}
-	//TODO move accroding to map placements..used by all states..
+	
 	protected void putInRefreshTimes(Delivery d, DateTime dt) {
 		refreshTimes.put(d, dt);
 	}
-	//TODO move accroding to map placements..used by all states..
 	protected void putInIsConfirmed(Delivery d, boolean isConfirm) {
 		isConfirmed.put(d, isConfirm);
 	}

@@ -46,10 +46,10 @@ public final class GlobalParameters {
 	public static final int TRUCKS_PLAN_IN_ADVANCE_HOURS = 6; //specifies how much time in advance the truck can plan. but if deliveries are so many, the truck
 	//accepts the deliveyr time of even after TRUCKS_PLAN_IN_ADVANCE_HOURS. 
 	public static final int MINUTES_TO_PERISH_CONCRETE = 80; //in minutes..
-	public static final int MAX_LAG_TIME_MINUTES = 40; //used when LAG_TIME_ENABLE = true
+	public static final int MAX_LAG_TIME_MINUTES = 30; //used when LAG_TIME_ENABLE = true
 	public static final boolean LAG_TIME_ENABLE = true;
-	public static final int MINUTES_TO_CHANGE_ST4ORDER = 20; // When shold start time of the order be delayed..
-	public static final int MINUTES_TO_DELAY_ST = 10; //means ST should be delayed with MINUTES_TO_DELAY_ST if MINUTES_TO_CHANGE_ST4ORDER time has been elapsed
+	public static final int MINUTES_TO_CHANGE_ST4ORDER = 30; // When shold start time of the order be delayed..
+	public static final int MINUTES_TO_DELAY_ST = 30; //means ST should be delayed with MINUTES_TO_DELAY_ST if MINUTES_TO_CHANGE_ST4ORDER time has been elapsed
 							//after each change of ST. I should make it in such a way that if this is 0, then actually there is no ST_DELAY
 	public static final int MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED = 60;
 	public static final int DISCHARGE_RATE_PERHOUR = 10000; //Constant for all orders

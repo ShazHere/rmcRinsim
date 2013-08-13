@@ -135,16 +135,24 @@ public class IntAnt extends Ant {
 //			return true;
 //	}
 	//TODO test this method, may use test cases
-	public boolean isConsiderable(final ArrayList<TruckScheduleUnit> existingSchedule) {
+	public boolean hasNoREJECTTunit() {
 		checkArgument(this.communicateAbleSchedule.isEmpty() == false, true);
 		for (communicateAbleUnit newu: this.communicateAbleSchedule) {
-			if ((newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) && newu.isAddedInTruckSchedule() == false) {//if any reply REJECT, dnot consider schedule
+			if ((newu.getPsReply() == Reply.REJECT || newu.getOrderReply() == Reply.REJECT) ) {//&& newu.isAddedInTruckSchedule() == false) {//if any reply REJECT, dnot consider schedule
 				return false;
 			}
 			checkArgument((newu.getPsReply() == Reply.NO_REPLY || newu.getOrderReply() == Reply.NO_REPLY) == false, true);
-				//return false;
 		}
-		if (!existingSchedule.isEmpty()){ // to check if an already existing unit in truck schedule, also exists in iAnt?
+		return true; //if not returned due to any reason so far then probably its valid..
+	}
+
+	/**
+	 * @param existingSchedule
+	 */
+	public boolean isConsistentWithExistingSchedule(final ArrayList<TruckScheduleUnit> existingSchedule) {
+		if (existingSchedule.isEmpty())
+			return true;
+		//if (!existingSchedule.isEmpty()){ // to check if an already existing unit in truck schedule, also exists in iAnt?
 			boolean unitExist = false;
 			for (TruckScheduleUnit u : existingSchedule) {//for each of existing schedule in truck
 				unitExist = false;
@@ -158,15 +166,14 @@ public class IntAnt extends Ant {
 						break;
 					}
 				}
-				if (u instanceof TruckTravelUnit) //suppose it exists..
+				if (u instanceof TruckTravelUnit) //no need to check travel units..so if it is travel unit, then consider it exists
 					unitExist = true;
 				checkArgument(unitExist, true);
 				if (!unitExist) //means a previous unit doesn't exist...theoratically this should never be the case, because none deletes the existing units of an ant!
 					return false;
 			}
-			
-		}
-		return true; //if not returned due to any reason so far then probably its valid..
+			return true;
+		//}
 	}
 	@Override
 	public CommunicationUser getSender() {

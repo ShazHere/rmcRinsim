@@ -96,7 +96,7 @@ abstract class OrderAgentState {
 	 * @param d
 	 * @return
 	 */
-	protected boolean refreshBooking(OrderAgentPlan orderPlan, DateTime currTime, IntAnt iAnt,
+	protected boolean isRefreshBooking(OrderAgentPlan orderPlan, DateTime currTime, IntAnt iAnt,
 			Delivery d) {  //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
 		return d != null && orderPlan.getRefreshTimes().get(d).compareTo(currTime) < 0 
 				&& iAnt.getCurrentUnit().getPsReply() == Reply.WEEK_ACCEPT  //make it check argument

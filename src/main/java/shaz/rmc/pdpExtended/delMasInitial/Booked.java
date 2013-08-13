@@ -53,7 +53,7 @@ public class Booked extends OrderAgentState {
 			IntAnt iAnt = i.next();
 			 //order isn't interested, yet it could be refreshing of a previous booking
 				Delivery d = deliveryExists(orderPlan, iAnt.getCurrentUnit().getDelivery());
-				if (refreshBooking(orderPlan, currTime, iAnt, d)) {
+				if (isRefreshBooking(orderPlan, currTime, iAnt, d)) {
 					// we shouldn't touch order state
 					orderPlan.putInRefreshTimes(iAnt.getCurrentUnit().getDelivery(), currTime);
 					iAnt.getCurrentUnit().setOrderReply(Reply.ACCEPT); //order fully booked, so now reply full accept

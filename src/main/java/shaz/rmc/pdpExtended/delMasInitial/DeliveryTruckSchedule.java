@@ -6,6 +6,7 @@ package shaz.rmc.pdpExtended.delMasInitial;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.joda.time.Duration;
@@ -29,9 +30,11 @@ public class DeliveryTruckSchedule {
 	
 	protected final ArrayList<TruckScheduleUnit> schedule; //schedule that is used in truck agent as well as for intentions till 17June, 2013
 	protected ArrayList<TruckScheduleUnit> practicalSchedule; //should contain only ACCEPTED units and travelUnits (accordingly)
+	private final Map<Delivery, Reply> unitStatus;
 
 	DeliveryTruckSchedule(ArrayList<TruckScheduleUnit> pSch) {
 		this.schedule = pSch;
+		unitStatus = new LinkedHashMap<Delivery, Reply>();
 	}
 	/**
 	 * to check if newSch (explored by expAnt) still contains all the elements of b.schedule and is a valid schedule for truck
@@ -101,19 +104,30 @@ public class DeliveryTruckSchedule {
 		Utility.sortSchedule(schedule);
 	}
 	/**
+	 * @param newUnit
+	 * Add element in the schedule and sorts it as well.
+	 */
+	protected void add(TruckDeliveryUnit newUnit, Reply orderReply) {
+		unitStatus.put(newUnit.getDelivery(), orderReply);
+		this.add(newUnit);
+	}
+	/**
 	 * @param tdu
 	 * removes from schedule truckDeliveryUnit and associated TruckTravelUnits.
 	 * TODO: can write independent tests for it..
 	 */
 	protected void remove(TruckDeliveryUnit tdu) {
+		
 		if (schedule.size() == 1){
 			schedule.remove(getIndexOf(tdu));
+			unitStatus.remove(tdu.getDelivery());
 			checkArgument(schedule.isEmpty(), true);
 			return;
 		}
 		//means schedule.size>1
 		int unitIndex = getIndexOf(tdu);//
 		checkArgument(unitIndex != -1, true);
+		unitStatus.remove(tdu.getDelivery());
 		if (unitIndex == 0) {
 			checkArgument(schedule.get(1) instanceof TruckTravelUnit == true, true);
 			schedule.remove(1); //travel Unit after tdu.
@@ -251,7 +265,7 @@ public class DeliveryTruckSchedule {
 	 * according to the ACCEPTed truckDeliveryUnits.
 	 * TODO: can write independent tests for this method, since it doesn't depend on external stuff. 
 	 */
-	public void makePracticalSchedule(DeliveryTruckInitial rmcTruck, Map<Delivery, Reply> unitStatus) {
+	public void makePracticalSchedule(DeliveryTruckInitial rmcTruck) {
 		if (schedule.isEmpty() || !unitStatus.containsValue(Reply.ACCEPT)) {
 			practicalSchedule = new ArrayList<TruckScheduleUnit>();
 			return;
@@ -358,4 +372,6 @@ public class DeliveryTruckSchedule {
 		}
 		return true;
 	}
+	public void updateUnitStatus(TruckDeliveryUnit tdu, Reply orderReply) {
+		unitStatus.put(tdu.getDelivery(), orderReply);	}
 }

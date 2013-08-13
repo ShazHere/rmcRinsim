@@ -11,7 +11,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 
 import org.apache.commons.math3.random.RandomData;
@@ -67,7 +66,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private RoadModel roadModel;
 	private PDPModel pdpModel;
 	List<ProductionSiteInitial> sites;
-	private final Map<Delivery, Reply> unitStatus;
 	private final DeliveryTruckSchedule truckSchedule;
 	
 	private static int totalDeliveryTruck = 0;
@@ -86,7 +84,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		//System.out.println("Dephase no. is " + dePhaseByMin);
 		randomPCSelector = pRandomPCSelector; //this won't generate the exact random no. required by us..:(.
 		mailbox = new Mailbox();
-		unitStatus = new LinkedHashMap<Delivery, Reply>();
+		
 		b = new DeliveryTruckInitialBelief();
 		truckSchedule = new DeliveryTruckSchedule(new ArrayList<TruckScheduleUnit>());
 		i = new DeliveryTruckInitialIntention(this, b);
@@ -171,6 +169,10 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		printBestAnt(startTime);
 		b.explorationAnts.clear(); 
 	}
+	//TODO (11/08/2013): This is big method, which is currently working, but may create problems latter. It need to seperate parts related to:
+	// 1) Checking an iAnt, it gets Reply.REJECT for a new proposal unit => truck should consider whole iAnt unconsiderable
+	// 2) If its a previous refreshing schedule, still it has REPLY.REJECT, then probably truck needs to remove it from its own schedule
+	// The seperation is already done on a page...
 	private void processIntentionAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (!b.intentionAnts.isEmpty() ) { 
@@ -178,53 +180,18 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			Iterator<IntAnt> i = b.intentionAnts.iterator();
 			while (i.hasNext()) { //at the moment just select the first one
 				IntAnt iAnt = i.next();
-				if (iAnt.isConsiderable(truckSchedule.getSchedule())) 
+				checkArgument(iAnt.isConsistentWithExistingSchedule(truckSchedule.getSchedule()) == true, true);
+				if (iAnt.hasNoREJECTTunit() ) 
 				{
-					//logger.debug(this.getId()+"T Intention returned & considerable " + " currTime= " + currTime);
-					boolean newDeliveryUnitAdded = false;
-					final Cloner cl = Utility.getCloner();
-					for (communicateAbleUnit u : iAnt.getSchedule()){
-						if (u.isAddedInTruckSchedule() == false) {
-							checkArgument(truckSchedule.isOverlapped(u.getTunit()) == false, true);
-							checkArgument(u.getTunit().getDelivery().getDeliveryTime().minus(u.getTunit().getDelivery().getStationToCYTravelTime()).minusMinutes(GlobalParameters.LOADING_MINUTES).isEqual(u.getTunit().getTimeSlot().getStartTime()), true);
-							checkArgument(u.getTunit().getTimeSlot().getEndTime().compareTo(b.getTotalTimeRange().getEndTime()) <= 0 , true);
-							checkArgument(u.getTunit().getTimeSlot().getStartTime().compareTo(b.getTotalTimeRange().getStartTime()) >= 0 , true);
-							TruckDeliveryUnit tu = cl.deepClone(u.getTunit());
-							checkArgument(truckSchedule.alreadyExist(tu) == false, true);
-							truckSchedule.add(tu);
-							unitStatus.put(tu.getDelivery(), u.getOrderReply());
-							newDeliveryUnitAdded = true;
-							logger.debug(this.getId()+"T Schedule unit added in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
-						}
-						else//the unit already exists in the truck's schedule, check its status
-						{
-							if (u.getOrderReply() == Reply.REJECT){ //means proably orderPlan changed
-								unitStatus.remove(u.getTunit().getDelivery());
-								truckSchedule.remove(u.getTunit());
-								if (truckSchedule.isEmpty())
-									b.adjustAvailableSlotInBeginning();
-								else
-									truckSchedule.adjustTruckSchedule(this);
-								logger.debug(this.getId()+"T Schedule unit removed in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
-							}
-							else
-								unitStatus.put(u.getTunit().getDelivery(), u.getOrderReply()); //update status, either it could be WEEK_ACCEPT, or STRONG_ACCEPT
-						}
-					}
- 					if (newDeliveryUnitAdded) {
-						for(TruckScheduleUnit tsu: iAnt.getFullSchedule()) {
-							if (tsu instanceof TruckTravelUnit){
-								if (truckSchedule.alreadyExist(tsu) == false){
-									TruckTravelUnit tu = cl.deepClone((TruckTravelUnit)tsu);
-									truckSchedule.add(tu);
-									logger.debug(this.getId()+"T Travel unit added: " + tu.toString());
-								}
-							}
-						}
-					}
-					scheduleDone = true;
-					truckSchedule.makePracticalSchedule(this, unitStatus);
+//							else
+//								truckSchedule.updateUnitStatus(u.getTunit(), u.getOrderReply());
+
+					scheduleDone = addOrUpdateTUnits(iAnt);;
+					truckSchedule.makePracticalSchedule(this);
 				} //no need of else,coz it will be removed any way..
+				else {
+					handleREJECTEDTunits(iAnt);
+				}
 				i.remove();
 				if (scheduleDone)
 					break;
@@ -232,7 +199,51 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			b.intentionAnts.clear();  //remove all remaining ants if any..
 		}
 	}
-	
+	private boolean addOrUpdateTUnits(IntAnt iAnt){
+		boolean newDeliveryUnitAdded = false;
+		final Cloner cl = Utility.getCloner();
+		for (communicateAbleUnit u : iAnt.getSchedule()){
+			if (u.isAddedInTruckSchedule() == false) {
+				checkArgument(truckSchedule.isOverlapped(u.getTunit()) == false, true);
+				checkArgument(u.getTunit().getDelivery().getDeliveryTime().minus(u.getTunit().getDelivery().getStationToCYTravelTime()).minusMinutes(GlobalParameters.LOADING_MINUTES).isEqual(u.getTunit().getTimeSlot().getStartTime()), true);
+				checkArgument(u.getTunit().getTimeSlot().getEndTime().compareTo(b.getTotalTimeRange().getEndTime()) <= 0 , true);
+				checkArgument(u.getTunit().getTimeSlot().getStartTime().compareTo(b.getTotalTimeRange().getStartTime()) >= 0 , true);
+				TruckDeliveryUnit tu = cl.deepClone(u.getTunit());
+				checkArgument(truckSchedule.alreadyExist(tu) == false, true);
+				truckSchedule.add(tu, u.getOrderReply());
+				logger.debug(this.getId()+"T Schedule unit added in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
+				
+				for(TruckScheduleUnit tsu: iAnt.getFullSchedule()) {
+					if (tsu instanceof TruckTravelUnit){
+						if (truckSchedule.alreadyExist(tsu) == false){
+							TruckTravelUnit ttu = cl.deepClone((TruckTravelUnit)tsu);
+							truckSchedule.add(ttu);
+							logger.debug(this.getId()+"T Travel unit added: " + ttu.toString());
+						}
+					}
+				}
+				newDeliveryUnitAdded =true;
+			}
+			else //update already existing unit
+			{
+				truckSchedule.updateUnitStatus(u.getTunit(), u.getOrderReply());
+				
+			}
+		}
+		return newDeliveryUnitAdded;
+	}
+	private void handleREJECTEDTunits(IntAnt iAnt) {
+		for (communicateAbleUnit u : iAnt.getSchedule()){
+			if (u.getOrderReply() == Reply.REJECT && u.isAddedInTruckSchedule() == true){ //means proably orderPlan changed
+				truckSchedule.remove(u.getTunit());
+				if (truckSchedule.isEmpty())
+					b.adjustAvailableSlotInBeginning();
+				else
+					truckSchedule.adjustTruckSchedule(this);
+				logger.debug(this.getId()+"T Schedule unit removed in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
+			}
+		}
+	}
 	private void sendExpAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		//check  exp ants to be sent after particular interval only

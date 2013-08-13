@@ -169,7 +169,7 @@ public class InProcess extends OrderAgentState {
 			}
 			else { //order isn't interested, yet it could be refreshing of a previous booking
 				Delivery d = deliveryExists(orderPlan, iAnt.getCurrentUnit().getDelivery());
-				if (refreshBooking(orderPlan, currTime, iAnt, d)) { //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
+				if (isRefreshBooking(orderPlan, currTime, iAnt, d)) { //so its not just recently added delivery. second condition is added since there could be 2 intention ants from same truck
 					//else we shouldn't touch order state
 					orderPlan.putInRefreshTimes(iAnt.getCurrentUnit().getDelivery(), currTime);
 					iAnt.getCurrentUnit().setOrderReply(Reply.WEEK_ACCEPT); //So earlier it could be UnderProcess, but once confirmed, its Weekly accepted
@@ -221,6 +221,5 @@ public class InProcess extends OrderAgentState {
 			else
 				orderAgent.setOrderState(OrderAgentState.UNDELIVERABLE);
 		}
-		// 		return currTime.minusMinutes(orderAgent.getTimeForLastFeaAntInMin()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN;
 	}
 }
