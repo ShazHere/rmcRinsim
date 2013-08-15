@@ -49,18 +49,26 @@ public class OrderAgentPlan {
 	
 	protected OrderAgentPlan(Duration pDelayStartTime, OrderAgentInitial pOrderAgent, DateTime pCurrTime){
 		logger = Logger.getLogger(OrderAgentInitial.class);
+		orderAgent = pOrderAgent;
+		timeForLastIntention = pCurrTime;
 		deliveries = new ArrayList<Delivery>();
-		interestedTime = pOrderAgent.getOrder().getStartTime().plus(pDelayStartTime); 
+		interestedTime = pOrderAgent.getOrder().getStartTime().plus(pDelayStartTime);
+		if (pCurrTime.compareTo(interestedTime) >= 0) { // this could be the case when after a delivery failure, OrderPlan was re-initialized.
+			interestedTime = pCurrTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED);
+			delayStartTime = new Duration(orderAgent.getOrder().getStartTime(), interestedTime);
+		}
+		else
+			delayStartTime = pDelayStartTime;
+		checkArgument (pCurrTime.compareTo(interestedTime) < 0, true); 
 		interestedDeliveryNo = 0;
-		delayStartTime = pDelayStartTime;
+		
 		remainingToBookVolume = pOrderAgent.getOrder().getRequiredTotalVolume();
 		totalConcreteRequired = pOrderAgent.getOrder().getRequiredTotalVolume();
 		
 		refreshTimes = new LinkedHashMap<Delivery, DateTime>();
 		isConfirmed =new LinkedHashMap<Delivery, Boolean>();
 		isPhysicallyCreated = new LinkedHashMap<Delivery, Boolean>();
-		orderAgent = pOrderAgent;
-		timeForLastIntention = pCurrTime;
+	
 	}
 	/**
 	 * should not be called for refresh deliveries, rather it should be called for the deliveries for which order was really interested.
@@ -79,8 +87,9 @@ public class OrderAgentPlan {
 	/**
 	 * @param iAnt te ant under process
 	 */ 
-	protected void setOrderInterests() {
-		checkArgument(orderAgent.getOrderState() == OrderAgentState.IN_PROCESS);
+	protected void setOrderInterests(DateTime currTime) {
+		checkArgument(orderAgent.getOrderState() == OrderAgentState.IN_PROCESS);//Actually I will be called from Waiting.processIntentionAnts, 
+		//but before calling this method, orderState object should have been changed
 		remainingToBookVolume = calculateRemainingVolume();
 		if (!deliveries.isEmpty()) {
 			Delivery lastDelivery = deliveries.get(deliveries.size()-1);
@@ -95,6 +104,8 @@ public class OrderAgentPlan {
 			orderAgent.setOrderState(OrderAgentState.BOOKED);
 			logger.info(orderAgent.getOrder().getId() + "O fully BOOKED");
 		}
+			
+		
 	}
 	private int calculateRemainingVolume() {
 		int remainingVolume = totalConcreteRequired;
@@ -187,6 +198,53 @@ public class OrderAgentPlan {
 	protected void putInIsConfirmed(Delivery d, boolean isConfirm) {
 		isConfirmed.put(d, isConfirm);
 	}
+	/**
+	 * @param currTime
+	 * @return true if refresh rates of all deliveries are less than intention_evaporation rate. 
+	 * else false
+	 */
+	protected boolean areDeliveriesRefreshing(long startTime) {
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		for (Delivery d : deliveries) {
+			long currMilli = currTime.getMillis() - refreshTimes.get(d).getMillis();
+			if (new Duration (currMilli).getStandardMinutes() >= GlobalParameters.INTENTION_EVAPORATION_MIN) 
+				return false;
+		}
+		return true;
+	}
+	/**
+	 * @param currTime
+	 * @return the smallest deliveryno, whose refresh rate wasn't according to INTENTION_EVAPORATION rate.
+	 * Must only be called after areDeliveriesRefreshing(long currTime) returns false;
+	 */
+	protected Delivery getFailedDelivery(long startTime) {
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		for (Delivery d : deliveries) {
+			long currMilli = currTime.getMillis() - refreshTimes.get(d).getMillis();
+			if (new Duration (currMilli).getStandardMinutes() >= GlobalParameters.INTENTION_EVAPORATION_MIN) 
+				return d;
+		}
+		return null;
+	}
 
-
+	protected void removeDeliveriesAccordingTofFailedDeliveryAndCurrentTime(Delivery failedDel, DateTime currTime) {
+		ArrayList<Delivery> removableDel = new ArrayList<Delivery>();
+		for (Delivery d : deliveries) {
+			if (deliveries.indexOf(d) > deliveries.indexOf(failedDel) || d.getLoadingTime().compareTo(currTime) <= 0)// || loadingTime of d is < currTime then delete too
+				removableDel.add(d);
+		}
+		removableDel.add(failedDel);
+		checkArgument(removableDel.isEmpty() == false, true);
+		for (Delivery del: removableDel)
+			deliveries.remove(del);
+		checkArgument(isDeliveryOrderCorrect() == true, true);
+	}
+	private boolean isDeliveryOrderCorrect() {
+		for (int i = 0; i< deliveries.size()-1; i ++){
+			if (deliveries.get(i).getDeliveryNo() >= deliveries.get(i+1).getDeliveryNo())
+				return false;
+		}
+		return true;
+	}
+	
 }

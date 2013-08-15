@@ -6,6 +6,7 @@ package shaz.rmc.pdpExtended.delMasInitial;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -27,6 +28,8 @@ import rinde.sim.core.model.communication.Mailbox;
 import rinde.sim.core.model.communication.Message;
 import rinde.sim.core.model.pdp.Depot;
 import rinde.sim.core.model.pdp.PDPModel;
+import rinde.sim.core.model.pdp.PDPModel.ParcelState;
+import rinde.sim.core.model.pdp.Parcel;
 import rinde.sim.core.model.road.RoadModel;
 import rinde.sim.ui.SimulationViewer;
 import shaz.rmc.core.Agent;
@@ -112,10 +115,23 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		orderPlan.generateParcelDeliveries(this, timeLapse.getStartTime()); 
 		state.sendFeasibilityInfo(orderPlan, timeLapse.getStartTime());
 		state.changeOrderPlan(orderPlan, timeLapse.getStartTime());
+		state.checkDeliveryStatuses(orderPlan, timeLapse.getStartTime());
 //		if (GlobalParameters.ENABLE_JI)
 //			processBreakAnts(timeLapse);
 //		else //means JI isn't enabled so DelMAS should handle it independently
 //			processBreakAntDelMAS(timeLapse);
+		if (parcelDeliveries.isEmpty() == false && !(state instanceof Served)) {
+			Collection<Parcel> deliveredDeliveries = pdpModel.getParcels(ParcelState.DELIVERED);
+			ArrayList<DeliveryInitial> orderDeliveries = new ArrayList<DeliveryInitial>();
+			for(Parcel pd: deliveredDeliveries) {
+				if (((DeliveryInitial)pd).getOrder().getOrder().getId().equals(this.getOrder().getId()))
+					orderDeliveries.add((DeliveryInitial)pd);
+			}
+			if (orderDeliveries.size() == parcelDeliveries.size()) {
+				logger.info(order.getId() + "O FULLY SERVED  and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + timeLapse.getStartTime())  );
+				setOrderState(OrderAgentState.SERVED); 
+			}
+		}
 	}
 
 	@Override
@@ -137,7 +153,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	 * makes new orderPlan, by changing ST delay
 	 * @param currTime 
 	 */
-	protected void makeNewOrderPlan(DateTime currTime) {
+	protected void makeNewOrderPlan(DateTime currTime) { 
 		Duration dur = new Duration(GlobalParameters.MINUTES_TO_DELAY_ST * 60 * 1000);
 		orderPlan = new OrderAgentPlan(orderPlan.getDelayStartTime().plus(dur), this, currTime);
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
@@ -333,94 +349,5 @@ public class OrderAgentInitial  extends Depot implements Agent {
 				+ parcelDeliveries + ", orderState="
 				+ getOrderState() + "]";
 	}
-//	private void processBreakAnts(TimeLapse timeLapse) {
-//	if (breakAnts.isEmpty())
-//		return;
-//	DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-//	//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
-//	//make state = TEAM_NEEDED
-//	//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
-//	Iterator<BreakAnt> i = breakAnts.iterator();
-//	while (i.hasNext()) { 
-//		BreakAnt bAnt = i.next();
-//		checkArgument (refreshTimes.containsKey(bAnt.getFailedDelivery()) == true, true); 	
-//		for (Delivery d: deliveries) {
-//			if (d.getTruck().getId() != bAnt.getOriginator().getId()) { //donot send to the broken truck
-//				CommitmentAnt cAnt = new CommitmentAnt(this, currTime, bAnt.getFailedDelivery(), this.possibleSites);
-//				cApi.send(d.getTruck(), cAnt);
-//			}
-//		}
-//		Iterator<Delivery> j = deliveries.iterator();
-//		while (j.hasNext()) {
-//			Delivery d = j.next();
-//			if (bAnt.getFailedDelivery().equals(d)) {
-//				//this.state = ORDER_STATE.IN_PROCESS;
-//				this.refreshTimes.remove(d);
-//				this.isConfirmed.remove(d);
-//				this.isPhysicallyCreated.remove(d);
-//				j.remove(); //delivery is removed
-//				break;
-//			}
-//		}
-//	}
-//	breakAnts.clear();
-//}
-	
-
-///**handle the breakdown events when JI is not enabled 
-// * @param timeLapse
-// */
-//private void processBreakAntDelMAS(TimeLapse timeLapse) {
-//	if (breakAnts.isEmpty())
-//		return;
-//	DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-//	//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
-//	//make state = TEAM_NEEDED
-//	//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
-//	Iterator<BreakAnt> i = breakAnts.iterator();
-//	while (i.hasNext()) { 
-//		BreakAnt bAnt = i.next();
-//		checkArgument (refreshTimes.containsKey(bAnt.getFailedDelivery()) == true, true); 
-//		checkArgument (this.state == ORDER_STATE.BOOKED, true);
-//		Iterator<Delivery> j = deliveries.iterator();
-//		while (j.hasNext()) {
-//			Delivery d = j.next();
-//			if (bAnt.getFailedDelivery().equals(d)) {
-//				this.state = ORDER_STATE.IN_PROCESS;
-//				this.refreshTimes.remove(d);
-//				this.isConfirmed.remove(d);
-//				this.isPhysicallyCreated.remove(d);
-//				j.remove(); //delivery is removed
-//				break;
-//			}
-//		}
-//		setOrderInterests();
-//		i.remove();
-//	}
-//}
-//	private void processCommitmentAnts(TimeLapse timeLapse) {
-//	if (commitmentAnts.isEmpty())
-//		return;
-//	DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-//	//checkArgument(this.state == ORDER_STATE.IN_PROCESS || this.state == ORDER_STATE.TEAM_NEED, true);
-//	//make state = TEAM_NEEDED
-//	//checkArgument(this.breakAnts.size() == 1, true); //for keeping an eye that at the moment there should be only one ant
-//	Iterator<CommitmentAnt> i = commitmentAnts.iterator();
-//	while (i.hasNext()) { 
-//		CommitmentAnt cAnt = i.next();
-//		checkArgument (refreshTimes.containsKey(cAnt.getFailedDelivery()) == true, true); 	
-////		if (cAnt.getTruckReply() == Reply.UNDER_PROCESS) {// means truck can make the delivery
-////			ExpAnt eAnt = new ExpAnt(this, Utility.getAvailableSlots(b.schedule, b.availableSlots, 
-////					new TimeSlot(new DateTime(currTime), b.getTotalTimeRange().getEndTime())), b.schedule, currTime);
-////			if (b.availableSlots.size()>0) {
-////				checkArgument(b.availableSlots.get(0).getProductionSiteAtStartTime() != null, true);
-////				cApi.send(b.availableSlots.get(0).getProductionSiteAtStartTime(), eAnt); 				
-////			}
-////		}
-//	}
-//	breakAnts.clear();
-//} 
-
-	
 	
 }

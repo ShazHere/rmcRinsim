@@ -48,7 +48,7 @@ public class InProcess extends OrderAgentState {
 			ExpAnt exp = i.next(); //i guess once reached to order, it shud just include order in its list, since order was in general ok
 			long psToCyDur = (long)((Point.distance(exp.getSender().getPosition(), orderAgent.getPosition())/exp.getTruckSpeed())*60*60*1000); //hours to milli
 			if (exp.getCurrentInterestedTime().minus(exp.getCurrentLagTime()).equals(orderPlan.getInterestedTime().minus(psToCyDur).minusMinutes(GlobalParameters.LOADING_MINUTES)) ) {
-				logger.debug(orderAgent.getOrder().getId() + "O expStarTim = " + exp.getCurrentInterestedTime() + " & interestedTim = " + orderPlan.getInterestedTime() + " loadingTime = " + orderPlan.getInterestedTime().minus(psToCyDur).minusMinutes(GlobalParameters.LOADING_MINUTES));	
+				//logger.debug(orderAgent.getOrder().getId() + "O expStarTim = " + exp.getCurrentInterestedTime() + " & interestedTim = " + orderPlan.getInterestedTime() + " loadingTime = " + orderPlan.getInterestedTime().minus(psToCyDur).minusMinutes(GlobalParameters.LOADING_MINUTES));	
 				Delivery del = prepareNewDelivery(orderAgent, orderPlan, exp, psToCyDur);
 				sendToPs(orderAgent, exp, del);
 			}
@@ -111,7 +111,7 @@ public class InProcess extends OrderAgentState {
 	private void sendToPs(OrderAgentInitial pOrderAgent,ExpAnt exp, Delivery del) {
 		ExpAnt newExp = (ExpAnt)exp.clone(pOrderAgent);
 		if (newExp.makeCurrentUnit(del)) {
-			logger.debug(pOrderAgent.getOrder().getId() + "O delivery added in expAnts schedule, orginator = " + newExp.getOriginator().getId());
+			//logger.debug(pOrderAgent.getOrder().getId() + "O delivery added in expAnts schedule, orginator = " + newExp.getOriginator().getId());
 			ProductionSiteInitial selectedPs; //For selecting the return PS
 			selectedPs = selectPsToSend(pOrderAgent, newExp);
 			pOrderAgent.getcApi().send(selectedPs, newExp);
@@ -205,7 +205,6 @@ public class InProcess extends OrderAgentState {
 				orderPlan.acceptIntentionArangementInOrder(iAnt, currTime);
 				orderAgent.setOrderState(OrderAgentState.WAITING);
 				return Reply.UNDER_PROCESS;
-				
 			}
 		} 
 			return Reply.REJECT;
@@ -221,5 +220,12 @@ public class InProcess extends OrderAgentState {
 			else
 				orderAgent.setOrderState(OrderAgentState.UNDELIVERABLE);
 		}
+	}
+
+	@Override
+	protected void checkDeliveryStatuses(OrderAgentPlan orderPlan,	long startTime) {
+		if (!orderPlan.areDeliveriesRefreshing(startTime)){
+			if (!makeOrderPlanAdjustment(orderPlan, startTime))
+				orderAgent.setOrderState(OrderAgentState.UNDELIVERABLE);		}
 	}
 }

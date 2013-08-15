@@ -168,7 +168,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 			}
 			else if (exp.getNewScheduleSize() > 0) { //send an exp back any way
 					ExpAnt newExp = (ExpAnt)exp.clone(this);
-					logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back with schedule size = " + newExp.getSchedule().size());
+					//logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ " is being sent back with schedule size = " + newExp.getSchedule().size());
 					cApi.send(newExp.getOriginator(), newExp);
 				}
 		//let exp further explore
@@ -184,11 +184,11 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 	 * @param timeLapse
 	 */
 	private void sendToOrders(ExpAnt exp, DateTime currTime) {
-		if (exp.getSender().getClass() == DeliveryTruckInitial.class)  //this if-else is just for logging purpose
-			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((DeliveryTruckInitial)exp.getSender()).getId() +"T expScheduleSize = " + exp.getSchedule().size());
-		else if (exp.getSender().getClass() == OrderAgentInitial.class)
-			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((OrderAgentInitial)exp.getSender()).getOrder().getId() +"O expScheduleSize = " + exp.getSchedule().size());
-		
+//		if (exp.getSender().getClass() == DeliveryTruckInitial.class)  //this if-else is just for logging purpose
+//			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((DeliveryTruckInitial)exp.getSender()).getId() +"T expScheduleSize = " + exp.getSchedule().size());
+//		else if (exp.getSender().getClass() == OrderAgentInitial.class)
+//			logger.debug(station.getId() +"P Exp-" +exp.getOriginator().getId()+ ", sender= "+ ((OrderAgentInitial)exp.getSender()).getOrder().getId() +"O expScheduleSize = " + exp.getSchedule().size());
+//		
 		for (OrderAgentInitial or : interestedTime.keySet()) { //check all order pheromones..
 			if(exp.isInterested(interestedTime.get(or), travelDistanceToOrder.get(or), currTime, this, or)) {
 				//	&& noOfExplorations.get(or) <= GlobalParameters.MAX_NO_OF_EXPLORATION_FOR_ORDER) { //if interested, and order in't explored too much

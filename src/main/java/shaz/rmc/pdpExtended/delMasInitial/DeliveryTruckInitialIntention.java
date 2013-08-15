@@ -121,7 +121,8 @@ public class DeliveryTruckInitialIntention {
 						if (rmcTruck.getPdpModel().getVehicleState(rmcTruck) == VehicleState.IDLE  
 								&& doneCurrentUnit == false) { 
 							checkArgument( rmcTruck.getPdpModel().getContentsSize(rmcTruck) == 0, true);
-							logger.info(rmcTruck.getId()+ "T: Done Deliverying and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
+							logger.info(rmcTruck.getId()+ "T: Done Deliverying O" +((OrderAgentInitial)currentDelivery.getOrder()).getOrder().getId() + "d"+ currentDelivery.getDeliveryNo() 
+									+" and CURRENT TIME is = "  +  new DateTime(GlobalParameters.START_DATETIME.getMillis() + time.getStartTime()) );
 							doneCurrentUnit = true;
 						} //else passing delivery time
 					}

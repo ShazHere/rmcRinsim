@@ -144,8 +144,9 @@ final public class Delivery {
 		StringBuilder sb = new StringBuilder();
 		
 		sb.append("Delivery[");
-		sb.append("\n  order=").append(order.getId());
+		//sb.append("\n  order=").append(order.getId());
 		//sb.append("\n  truck=").append(truck.getId());
+		sb.append("Delivery no =").append(deliveryNo);
 		sb.append("\n  loading time1=").append(deliveryTime.minus(loadingDuration).minus(stationToCYTravelTime));
 		sb.append("\n  from Station=" + loadingStation);
 		sb.append("\n  departs at station=").append(deliveryTime.minus(stationToCYTravelTime));
@@ -156,6 +157,9 @@ final public class Delivery {
 		return sb.toString();
 	}
 	
+	public DateTime getLoadingTime() {
+		return deliveryTime.minus(loadingDuration).minus(stationToCYTravelTime);
+	}
 	public DateTime getDeliveryTime() {
 		return deliveryTime;
 	}

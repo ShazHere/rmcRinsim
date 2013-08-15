@@ -28,6 +28,7 @@ import rinde.sim.core.model.communication.CommunicationAPI;
 import rinde.sim.core.model.communication.Mailbox;
 import rinde.sim.core.model.communication.Message;
 import rinde.sim.core.model.pdp.PDPModel;
+import rinde.sim.core.model.pdp.PDPModel.VehicleState;
 import rinde.sim.core.model.road.MovingRoadUser;
 import rinde.sim.core.model.road.RoadModel;
 import shaz.rmc.core.Agent;
@@ -76,11 +77,13 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private final DeliveryTruckInitialIntention i;
 	private ExpAnt bestAnt;
 	private TRUCK_STATE state;
+	private final TruckAgentFailureManager truckFailureManager;
 	//private boolean truckBroke;
 	
-	public DeliveryTruckInitial( Vehicle pTruck, int pDePhaseByMin, RandomGenerator pRandomPCSelector) {
+	public DeliveryTruckInitial( Vehicle pTruck, int pDePhaseByMin, RandomGenerator pRandomPCSelector, TruckAgentFailureManager pTruckAgentFailureManager) {
 		setCapacity(pTruck.getNormalVolume());
 		dePhaseByMin = pDePhaseByMin;
+		truckFailureManager = pTruckAgentFailureManager;
 		//System.out.println("Dephase no. is " + dePhaseByMin);
 		randomPCSelector = pRandomPCSelector; //this won't generate the exact random no. required by us..:(.
 		mailbox = new Mailbox();
@@ -101,7 +104,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	@Override
 	protected void tickImpl(TimeLapse timeLapse) {
 		checkMsgs(timeLapse.getStartTime());		
-		if (this.state == TRUCK_STATE.BROKEN)
+		if (this.state == TRUCK_STATE.BROKEN) //TODO: it should empty empty the schedule Units comming after the truck broken time.
 			return;
 		processIntentionAnts(timeLapse.getStartTime());
 		sendExpAnts(timeLapse.getStartTime());
@@ -115,10 +118,16 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 //			sendBreakDownEvent(timeLapse.getStartTime());
 //		if (GlobalParameters.ENABLE_JI)
 //			processCommitmentAnts(timeLapse.getStartTime());
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == true &&  pdpModel.getVehicleState(this) == VehicleState.IDLE
+				&& truckFailureManager.canIBreakAt(currTime, this.getId())){
+			this.state = TRUCK_STATE.BROKEN;
+			logger.debug(this.getId()+"T BROKE currTime= " + currTime);
+		}
 	}
 //	
 	private void processExplorationAnts(long startTime) {
-		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		//final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (b.explorationAnts.isEmpty())
 			return;
 	
@@ -176,27 +185,18 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private void processIntentionAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (!b.intentionAnts.isEmpty() ) { 
-			boolean scheduleDone = false;
-			Iterator<IntAnt> i = b.intentionAnts.iterator();
-			while (i.hasNext()) { //at the moment just select the first one
-				IntAnt iAnt = i.next();
-				checkArgument(iAnt.isConsistentWithExistingSchedule(truckSchedule.getSchedule()) == true, true);
-				if (iAnt.hasNoREJECTTunit() ) 
-				{
-//							else
-//								truckSchedule.updateUnitStatus(u.getTunit(), u.getOrderReply());
-
-					scheduleDone = addOrUpdateTUnits(iAnt);;
-					truckSchedule.makePracticalSchedule(this);
-				} //no need of else,coz it will be removed any way..
-				else {
-					handleREJECTEDTunits(iAnt);
-				}
-				i.remove();
-				if (scheduleDone)
-					break;
+			checkArgument(b.intentionAnts.size() == 1, true); //since only one intention is send out at one time!
+			IntAnt iAnt = b.intentionAnts.get(0);
+			checkArgument(iAnt.isConsistentWithExistingSchedule(truckSchedule.getSchedule()) == true, true);
+			if (iAnt.hasNoREJECTTunit() ) 
+			{
+				addOrUpdateTUnits(iAnt);;
+				truckSchedule.makePracticalSchedule(this);
+			} //no need of else,coz it will be removed any way..
+			else {
+				handleREJECTEDTunits(iAnt);
 			}
-			b.intentionAnts.clear();  //remove all remaining ants if any..
+			b.intentionAnts.clear();  //remove the ant
 		}
 	}
 	private boolean addOrUpdateTUnits(IntAnt iAnt){
@@ -227,7 +227,6 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 			else //update already existing unit
 			{
 				truckSchedule.updateUnitStatus(u.getTunit(), u.getOrderReply());
-				
 			}
 		}
 		return newDeliveryUnitAdded;

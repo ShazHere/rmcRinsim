@@ -56,7 +56,7 @@ public final class GlobalParameters {
 	public static final int LOADING_MINUTES = 5;
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
 	public static final long AVAILABLE_SLOT_SIZE_HOURS = 3;
-	public static final boolean ENABLE_TRUCK_BREAKDOWN = false;
+	public static final boolean ENABLE_TRUCK_BREAKDOWN = true;
 	public static final boolean ENABLE_JI = false;
 	
 	public static final boolean EXP_RANKING_WITH_SCORE_ENABLE = true; //should exploration ants be ranked accoridng their score by Truck agent

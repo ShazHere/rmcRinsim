@@ -48,10 +48,10 @@ public class Waiting extends OrderAgentState{
 	}
 	/**
 	 * Called when order is WAITING	for the confirmation from the Truck Agent. If the WAIT gets too long, the interestedTime, 
-	 * and interested DeliveryNo need to be reconsidered. So this method checks all the deliveries, if any of t hem isn't refreshed,
-	 * then it will Re-set order.
+	 * and interested DeliveryNo need to be reconsidered. So this method checks all the deliveries, if any of them isn't refreshed,
+	 * then it will Re-set delivery of order.
 	 * @param currMilli current time
-	 * @return The delivery which caused the Re-set of order
+	 * @return The delivery which caused order to Re-plan
 	 */
 	private Delivery checkOrderStatus(OrderAgentPlan orderPlan, long currMilli) {
 		long currMilliInterval;
@@ -79,7 +79,7 @@ public class Waiting extends OrderAgentState{
 					if (orderPlan.getIsConfirmed().get(iAnt.getCurrentUnit().getDelivery()) == false ){
 						orderPlan.putInIsConfirmed(iAnt.getCurrentUnit().getDelivery(), true);
 						orderAgent.setOrderState(OrderAgentState.IN_PROCESS);
-						orderPlan.setOrderInterests();
+						orderPlan.setOrderInterests(currTime);
 					} //else we shouldn't touch order state
 					orderPlan.putInRefreshTimes(iAnt.getCurrentUnit().getDelivery(), currTime);
 					iAnt.getCurrentUnit().setOrderReply(Reply.WEEK_ACCEPT); //So earlier it could be UnderProcess, but once confirmed, its Weekly accepted
@@ -93,7 +93,11 @@ public class Waiting extends OrderAgentState{
 	}
 	@Override
 	protected void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
-		// TODO Auto-generated method stub
-		
+		//Doesn't change starttimeDelay in WAITING state.
+	}
+	@Override
+	protected void checkDeliveryStatuses(OrderAgentPlan orderPlan,long startTime) {
+		// no need to do any thing. Rather we will prefer that order gets to IN_PROCESS or BOOKED state to get delivered
+		///also WAITING state is very less amount of time as compared to order's overall life cycle
 	}
 }

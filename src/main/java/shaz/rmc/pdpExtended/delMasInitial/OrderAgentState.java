@@ -3,9 +3,12 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -51,6 +54,7 @@ abstract class OrderAgentState {
 	 */
 	protected abstract void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime);
 	protected abstract void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) ;
+	
 	/**
 	 * @param orderPlan
 	 * @param startTime
@@ -59,6 +63,13 @@ abstract class OrderAgentState {
 	 */
 	protected abstract void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) ;
 
+	/**
+	 * @param orderPlan
+	 * @param startTime
+	 * Checks, if all the deliveries properly get refreshed? Otherwise, order will assume delivery failure and make adjustments accordingly. (10/08/2013)
+	 * 
+	 */
+	protected abstract void checkDeliveryStatuses(OrderAgentPlan orderPlan, long startTime);
 	
 	static OrderAgentState newState(int newState, OrderAgentInitial orderAgent) {
 		switch(newState) {
@@ -70,6 +81,8 @@ abstract class OrderAgentState {
 			return new Booked(orderAgent);
 		case UNDELIVERABLE:
 			return new Undeliverable(orderAgent);
+		case SERVED:
+			return new Served(orderAgent);
 			default:
 				throw new IllegalArgumentException( "Illegal order  Agent State");
 		}
@@ -155,11 +168,64 @@ abstract class OrderAgentState {
 		intentionAnts.add(iAnt);
 	}
 	
-//	protected enum ORDER_STATE {
+/**
+	 * @param orderPlan
+	 * @param startTime
+	 * return true if orderPlanAdjustments made succesfully, and order was Deliverable
+	 */
+	protected boolean makeOrderPlanAdjustment(OrderAgentPlan orderPlan, long startTime) {
+		Delivery d = orderPlan.getFailedDelivery(startTime);
+		checkArgument(d != null, true);
+		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+		logger.debug(orderAgent.getOrder().getId() + "O Delivery Failure detected; DeliveryNO = " + d.getDeliveryNo());
+		//return orderPlan.adjustOrderPlanAfterFailedDelivery(d, currTime);
+		 orderPlan.removeDeliveriesAccordingTofFailedDeliveryAndCurrentTime(d, currTime);
+		 if (orderAgent.isOrderDeliverable(currTime)) {
+			orderPlan.setOrderInterests(currTime);
+			if (currTime.compareTo(orderPlan.getInterestedTime()) >= 0) 
+				orderAgent.makeNewOrderPlan(currTime);
+			return true;
+		 }
+		 else
+			return false;
+	}
+
+		/**
+ * @param orderPlan
+ * @param timeLapse
+ */
+protected void refreshDeliveryBookings(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
+	DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
+	if ( intentionAnts.isEmpty()) 
+		return;
+	sortIntentionArts(); 
+	Iterator<IntAnt> i = intentionAnts.iterator();
+	while (i.hasNext()) { //at the moment just select the first one
+		IntAnt iAnt = i.next();
+		 //order isn't interested, yet it could be refreshing of a previous booking
+			Delivery d = deliveryExists(orderPlan, iAnt.getCurrentUnit().getDelivery());
+			if (isRefreshBooking(orderPlan, currTime, iAnt, d)) {
+				// we shouldn't touch order state
+				orderPlan.putInRefreshTimes(iAnt.getCurrentUnit().getDelivery(), currTime);
+				iAnt.getCurrentUnit().setOrderReply(Reply.ACCEPT); //order fully booked, so now reply full accept
+				logger.debug(orderAgent.getOrder().getId() + "O int-" + iAnt.getOriginator().getId()+" booking refreshed");
+			}
+			else //now its sure order isn't interested!
+				iAnt.getCurrentUnit().setOrderReply(Reply.REJECT);
+		sendAccordingToNextUnit(currTime, iAnt);
+		i.remove();
+	}
+}
+
+		//	protected enum ORDER_STATE {
 		static final int IN_PROCESS = 0; // The normal and general state
 		static final int WAITING = 1; // order is waiting for a delivery's confirmation from TruckAgent
 		static final int BOOKED = 2; //whole concrete of order is booked.
 		static final int UNDELIVERABLE = 3; //order cannot be delivered in current day. 
+		static final int SERVED = 4; //means no need to do anything. No effect of truck breakdown since order is completely served
+		//Actually SERVED is only conceptually different from  UNDELIVERABLE. Served means every ting done and results should be including this order's results as well, but 
+		// UNDELIVERABLE menas nothing is done..and not possible to be done. 
+		
 		//TEAM_NEED //order was fully booked, but then one of the team members broke, so rest of the team has to
 					// fullfill the order as they committed 
 	//}

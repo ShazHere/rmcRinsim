@@ -54,10 +54,16 @@ public class RmcSimulation {
 			 communicationModel = new CommunicationModel(new MersenneTwister(), true);
 		final PDPModel pdpModel = new PDPModel();
 		OrderManagerInitial omi;
-		if (randomSeed == 0)
+		TruckAgentFailureManager tfm;
+		final int noOfTruckToBeFailed = 1;
+		if (randomSeed == 0){
 			omi = new OrderManagerInitial(sim, new MersenneTwister(), prm);
-		else 
-			omi = new OrderManagerInitial(sim, rng, prm); 
+			tfm = new TruckAgentFailureManager(new MersenneTwister(), noOfTruckToBeFailed);
+		}
+		else { 
+			omi = new OrderManagerInitial(sim, rng, prm);
+			tfm = new TruckAgentFailureManager(rng, noOfTruckToBeFailed);
+		}
 		// Statistic Tracker
 		final StatisticTracker stTracker = new StatisticTracker(sim , pdpModel, omi, prm);
 		sim.getEventAPI().addListener(stTracker, SimulatorEventType.values());
@@ -71,7 +77,7 @@ public class RmcSimulation {
 		
 		//adding order manager	
 		sim.register(omi);
-
+		
 		
 		//Adding prodcuction Sites
 		for (int j = 0; j<3 ; j++) {
@@ -93,9 +99,9 @@ public class RmcSimulation {
 		for (int j = 0; j< GlobalParameters.TOTAL_TRUCKS ; j ++){
 			if (randomSeed == 0)
 				sim.register(new DeliveryTruckInitial(rmSim.getTruck(j), 
-						new MersenneTwister().nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN), randomPCSelector));
+						new MersenneTwister().nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN), randomPCSelector, tfm));
 			else sim.register(new DeliveryTruckInitial(rmSim.getTruck(j), 
-					rng.nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN), randomPCSelector));
+					rng.nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN), randomPCSelector, tfm));
 		}
 		
 		sim.register(new TickListener() {
