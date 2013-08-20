@@ -217,7 +217,6 @@ protected void refreshDeliveryBookings(OrderAgentPlan orderPlan, TimeLapse timeL
 	}
 }
 
-		//	protected enum ORDER_STATE {
 		static final int IN_PROCESS = 0; // The normal and general state
 		static final int WAITING = 1; // order is waiting for a delivery's confirmation from TruckAgent
 		static final int BOOKED = 2; //whole concrete of order is booked.
@@ -228,7 +227,6 @@ protected void refreshDeliveryBookings(OrderAgentPlan orderPlan, TimeLapse timeL
 		
 		//TEAM_NEED //order was fully booked, but then one of the team members broke, so rest of the team has to
 					// fullfill the order as they committed 
-	//}
 
 		
 }

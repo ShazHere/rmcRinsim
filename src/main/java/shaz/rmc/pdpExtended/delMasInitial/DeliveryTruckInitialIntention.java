@@ -34,7 +34,7 @@ import shaz.rmc.core.domain.Station;
  */
 public class DeliveryTruckInitialIntention {
 	private DeliveryTruckInitial rmcTruck;
-	private DeliveryTruckInitialBelief b;
+	//private DeliveryTruckInitialBelief b;
 	//private ArrayList<TruckScheduleUnit> schedule;
 	
 		
@@ -47,9 +47,9 @@ public class DeliveryTruckInitialIntention {
 	
 	private final Logger logger; //for logging
 	
-	public DeliveryTruckInitialIntention(DeliveryTruckInitial a, DeliveryTruckInitialBelief b) {
+	public DeliveryTruckInitialIntention(DeliveryTruckInitial a) {
 		this.rmcTruck = a;
-		this.b = b;
+		//this.b = b;
 		//this.schedule = sch;
 		
 		currentUnitNo = 0; //contains  the schedule unit the truck is currently executing from its schedule, it starts at 0.
@@ -83,7 +83,7 @@ public class DeliveryTruckInitialIntention {
 	private void newFollowSchedule(TimeLapse time, ArrayList<TruckScheduleUnit> practicalSchedule) {
 		long currentTime = GlobalParameters.START_DATETIME.getMillis() + (time.getStartTime()); //currentTime contains value in millis
 		if (currentUnitNo >= practicalSchedule.size())
-			return;
+			return; 
 		
 		if (isInCurrentUnitTime(currentTime, practicalSchedule)) { //remain in current unit		
 				if (practicalSchedule.get(currentUnitNo) instanceof TruckDeliveryUnit) {

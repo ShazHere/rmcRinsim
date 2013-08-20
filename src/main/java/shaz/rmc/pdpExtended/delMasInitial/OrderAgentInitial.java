@@ -120,6 +120,12 @@ public class OrderAgentInitial  extends Depot implements Agent {
 //			processBreakAnts(timeLapse);
 //		else //means JI isn't enabled so DelMAS should handle it independently
 //			processBreakAntDelMAS(timeLapse);
+		checkIfOrderServed(timeLapse);
+	}
+	/**
+	 * @param timeLapse
+	 */
+	protected void checkIfOrderServed(TimeLapse timeLapse) {
 		if (parcelDeliveries.isEmpty() == false && !(state instanceof Served)) {
 			Collection<Parcel> deliveredDeliveries = pdpModel.getParcels(ParcelState.DELIVERED);
 			ArrayList<DeliveryInitial> orderDeliveries = new ArrayList<DeliveryInitial>();

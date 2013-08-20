@@ -15,7 +15,7 @@ import shaz.rmc.core.domain.DeliveryS.Builder;
  * made major changes at 11/07/2013
  */
 
-final public class Delivery { 
+ public class Delivery { 
 	final private ProductionSite loadingStation;
 	//final private DateTime loadingTime, unloadingTime; //Start time
 	final private Duration loadingDuration, unloadingDuration;

@@ -40,7 +40,7 @@ public class DeliveryTruckSchedule {
 	 * to check if newSch (explored by expAnt) still contains all the elements of b.schedule and is a valid schedule for truck
 	 * @param newSch to be compared with actual b.schedule of truck
 	 * @return true if all b.schedule units are still in newSch, and false if not.
-	 */ //TODO check do i need to compare sizes of newSch and b.schedule? to validate that newSch also contains new explored stuff
+	 */ 
 	protected boolean scheduleStillValid( ArrayList<TruckScheduleUnit> newSch) {
 		ArrayList<TruckScheduleUnit> oldSch = this.schedule;
 		//if (isNewScheduleConsistent(newSch) == false)
@@ -114,7 +114,6 @@ public class DeliveryTruckSchedule {
 	/**
 	 * @param tdu
 	 * removes from schedule truckDeliveryUnit and associated TruckTravelUnits.
-	 * TODO: can write independent tests for it..
 	 */
 	protected void remove(TruckDeliveryUnit tdu) {
 		
@@ -263,7 +262,6 @@ public class DeliveryTruckSchedule {
 	 * @param unitStatus
 	 * @return the practical schedule containing truckDeliveryUnit with status of ACCEPT only. The travel units are modified/added 
 	 * according to the ACCEPTed truckDeliveryUnits.
-	 * TODO: can write independent tests for this method, since it doesn't depend on external stuff. 
 	 */
 	public void makePracticalSchedule(DeliveryTruckInitial rmcTruck) {
 		if (schedule.isEmpty() || !unitStatus.containsValue(Reply.ACCEPT)) {
@@ -283,16 +281,19 @@ public class DeliveryTruckSchedule {
 					pracSchedule.add(cl.deepClone(tsu));
 		}
 		//fill the travelUnits between ACCEPTED DeliveryUNits
-		for (int i =0;i < pracSchedule.size()-1; i+=2) { //TODO This chunk is buggy for large PracSchedule. Since by addeing travel unitsl in pracSchedule, its size would change. 
-			// but for smaller schedules, things seem to work
+		ArrayList<TruckTravelUnit> toBeAddedTTU = new ArrayList<TruckTravelUnit>();//partially save in this arrayList, otherwise index of Practical schedule gets distrubed during For loop
+		for (int i =0;i < pracSchedule.size()-1; i+=1) { 
 			if (getTravelUnitIfExists(schedule, pracSchedule.get(i), pracSchedule.get(i+1)) != null)
-				pracSchedule.add(cl.deepClone(getTravelUnitIfExists(schedule, pracSchedule.get(i), pracSchedule.get(i+1))));
+				toBeAddedTTU.add(cl.deepClone(getTravelUnitIfExists(schedule, pracSchedule.get(i), pracSchedule.get(i+1))));
 			else{
 				TruckTravelUnit reqUnit = makeTravelUnitAfterI(rmcTruck,pracSchedule, i);
-				pracSchedule.add(reqUnit);
+				toBeAddedTTU.add(reqUnit);
 			}
-					
 		}
+		for (TruckTravelUnit ttu: toBeAddedTTU) {
+			pracSchedule.add(ttu);
+		}
+		
 		Utility.sortSchedule(pracSchedule);
 		this.practicalSchedule = pracSchedule;
 	}
