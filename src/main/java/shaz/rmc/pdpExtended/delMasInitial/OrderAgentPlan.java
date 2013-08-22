@@ -88,7 +88,7 @@ public class OrderAgentPlan {
 	 * @param iAnt te ant under process
 	 */ 
 	protected void setOrderInterests(DateTime currTime) {
-		checkArgument(orderAgent.getOrderState() == OrderAgentState.IN_PROCESS);//Actually I will be called from Waiting.processIntentionAnts, 
+		checkArgument(orderAgent.getOrderState() == OrderAgentState.IN_PROCESS);//Actually I will be called from OrderStateWaiting.processIntentionAnts, 
 		//but before calling this method, orderState object should have been changed
 		remainingToBookVolume = calculateRemainingVolume();
 		if (!deliveries.isEmpty()) {

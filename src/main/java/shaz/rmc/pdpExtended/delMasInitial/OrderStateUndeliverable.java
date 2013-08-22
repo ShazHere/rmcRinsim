@@ -9,24 +9,25 @@ import rinde.sim.core.TimeLapse;
  * @author Shaza
  *
  */
-public class Served  extends OrderAgentState {
+public class OrderStateUndeliverable extends OrderAgentState {
 
 	/**
 	 * @param orderAgent
 	 */
-	public Served(OrderAgentInitial orderAgent) {
+	public OrderStateUndeliverable(OrderAgentInitial orderAgent) {
 		super(orderAgent);
 	}
 
 
 	@Override
 	int getStateCode() {
-		return OrderAgentState.SERVED;
+		return OrderAgentState.UNDELIVERABLE;
 	}
 
 
 	@Override
-	protected void processExplorationAnts(OrderAgentPlan orderPlan, long startTime) {
+	protected void processExplorationAnts(OrderAgentPlan orderPlan,
+			long startTime) {
 		explorationAnts.clear();
 	}
 
@@ -38,13 +39,14 @@ public class Served  extends OrderAgentState {
 
 	
 	@Override
-	protected void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
-		refreshDeliveryBookings(orderPlan, timeLapse);	}
+	protected void processIntentionAnts(OrderAgentPlan orderPlan,
+			TimeLapse timeLapse) {
+		intentionAnts.clear();
+	}
 
 
 	@Override
 	protected void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
-		
 	}
 
 

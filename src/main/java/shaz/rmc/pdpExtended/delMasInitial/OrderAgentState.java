@@ -74,15 +74,15 @@ abstract class OrderAgentState {
 	static OrderAgentState newState(int newState, OrderAgentInitial orderAgent) {
 		switch(newState) {
 		case IN_PROCESS:
-			return new InProcess(orderAgent);
+			return new OrderStateInProcess(orderAgent);
 		case WAITING:
-			return new Waiting(orderAgent);
+			return new OrderStateWaiting(orderAgent);
 		case BOOKED:
-			return new Booked(orderAgent);
+			return new OrderStateBooked(orderAgent);
 		case UNDELIVERABLE:
-			return new Undeliverable(orderAgent);
+			return new OrderStateUndeliverable(orderAgent);
 		case SERVED:
-			return new Served(orderAgent);
+			return new OrderStateServed(orderAgent);
 			default:
 				throw new IllegalArgumentException( "Illegal order  Agent State");
 		}
@@ -222,7 +222,7 @@ protected void refreshDeliveryBookings(OrderAgentPlan orderPlan, TimeLapse timeL
 		static final int BOOKED = 2; //whole concrete of order is booked.
 		static final int UNDELIVERABLE = 3; //order cannot be delivered in current day. 
 		static final int SERVED = 4; //means no need to do anything. No effect of truck breakdown since order is completely served
-		//Actually SERVED is only conceptually different from  UNDELIVERABLE. Served means every ting done and results should be including this order's results as well, but 
+		//Actually SERVED is only conceptually different from  UNDELIVERABLE. OrderStateServed means every ting done and results should be including this order's results as well, but 
 		// UNDELIVERABLE menas nothing is done..and not possible to be done. 
 		
 		//TEAM_NEED //order was fully booked, but then one of the team members broke, so rest of the team has to

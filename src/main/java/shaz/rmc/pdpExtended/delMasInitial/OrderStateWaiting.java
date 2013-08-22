@@ -20,8 +20,8 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
  * @author Shaza
  *
  */
-public class Waiting extends OrderAgentState{
-	public Waiting(OrderAgentInitial orderAgent) {
+public class OrderStateWaiting extends OrderAgentState{
+	public OrderStateWaiting(OrderAgentInitial orderAgent) {
 		super(orderAgent);
 	}
 	@Override

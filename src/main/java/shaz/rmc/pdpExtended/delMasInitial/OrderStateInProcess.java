@@ -26,10 +26,10 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
  * @author Shaza
  *
  */
-public class InProcess extends OrderAgentState {
+public class OrderStateInProcess extends OrderAgentState {
 
 
-	public InProcess(OrderAgentInitial orderAgent) {
+	public OrderStateInProcess(OrderAgentInitial orderAgent) {
 		super(orderAgent);
 	}
 

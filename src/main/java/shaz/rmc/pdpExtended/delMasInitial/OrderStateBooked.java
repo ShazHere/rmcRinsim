@@ -16,9 +16,9 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
  * @author Shaza
  *
  */
-public class Booked extends OrderAgentState {
+public class OrderStateBooked extends OrderAgentState {
 
-	public Booked(OrderAgentInitial orderAgent) {
+	public OrderStateBooked(OrderAgentInitial orderAgent) {
 		super(orderAgent);
 	}
 	@Override

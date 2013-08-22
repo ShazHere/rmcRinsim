@@ -126,7 +126,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	 * @param timeLapse
 	 */
 	protected void checkIfOrderServed(TimeLapse timeLapse) {
-		if (parcelDeliveries.isEmpty() == false && !(state instanceof Served)) {
+		if (parcelDeliveries.isEmpty() == false && !(state instanceof OrderStateServed)) {
 			Collection<Parcel> deliveredDeliveries = pdpModel.getParcels(ParcelState.DELIVERED);
 			ArrayList<DeliveryInitial> orderDeliveries = new ArrayList<DeliveryInitial>();
 			for(Parcel pd: deliveredDeliveries) {
