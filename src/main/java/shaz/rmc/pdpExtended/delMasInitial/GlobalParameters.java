@@ -52,6 +52,7 @@ public final class GlobalParameters {
 	public static final int MINUTES_TO_DELAY_ST = 30; //means ST should be delayed with MINUTES_TO_DELAY_ST if MINUTES_TO_CHANGE_ST4ORDER time has been elapsed
 							//after each change of ST. I should make it in such a way that if this is 0, then actually there is no ST_DELAY
 	public static final int MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED = 60;
+	public static final int MINUTES_BEFOR_DELIVERY_CREATED = 5; //mintues before pickup time, when delivery(physically) should be created. 
 	public static final int DISCHARGE_RATE_PERHOUR = 10000; //Constant for all orders
 	public static final int LOADING_MINUTES = 5;
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring

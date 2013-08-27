@@ -20,37 +20,45 @@ public class OrderStateServed  extends OrderAgentState {
 
 
 	@Override
+	public
 	int getStateCode() {
 		return OrderAgentState.SERVED;
 	}
 
 
 	@Override
-	protected void processExplorationAnts(OrderAgentPlan orderPlan, long startTime) {
+	public void processExplorationAnts(OrderAgentPlan orderPlan, long startTime) {
 		explorationAnts.clear();
 	}
 
 	
 	@Override
-	protected void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime) {
+	public void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime) {
 		return;
 	}
 
 	
 	@Override
-	protected void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
+	public void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
 		refreshDeliveryBookings(orderPlan, timeLapse);	}
 
 
 	@Override
-	protected void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
+	public void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
 		
 	}
 
 
 	@Override
-	protected void checkDeliveryStatuses(OrderAgentPlan orderPlan,long startTime) {
+	public void checkDeliveryStatuses(OrderAgentPlan orderPlan,long startTime) {
 		// Nothing needed, order already undeliverable!
+		
+	}
+
+
+	@Override
+	public void doSpecial(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
+		// TODO Auto-generated method stub
 		
 	}
 

@@ -34,12 +34,13 @@ public class OrderStateInProcess extends OrderAgentState {
 	}
 
 	@Override
+	public
 	int getStateCode() {
 		return OrderAgentState.IN_PROCESS;
 	}
 	
 	@Override
-	protected void processExplorationAnts(OrderAgentPlan orderPlan, long startTime) {
+	public void processExplorationAnts(OrderAgentPlan orderPlan, long startTime) {
 		if (explorationAnts.isEmpty()) //if no exploration has been sent by trucks, then return
 			return;
 		Iterator<ExpAnt> i = explorationAnts.iterator();
@@ -71,8 +72,9 @@ public class OrderStateInProcess extends OrderAgentState {
 		delBuilder.setOrder(pOrderAgent);
 		delBuilder.setDeliveryNo(pOrderPlan.getInterestedDeliveryNo());
 		delBuilder.setTruck(exp.getOriginator());
-		delBuilder.setDeliveredVolume((int)(exp.getOriginator().getCapacity())); //Shouldn't it be accoriding to remainig volume..?
-	
+		delBuilder.setDeliveredVolume((int)(exp.getOriginator().getCapacity())); //TODO: Shouldn't it be accoriding to remainig volume..?
+		//int deliveredVolume = pOrderPlan.getRemainingToBookVolume() > (int)(exp.getOriginator().getCapacity()) ? (int)(exp.getOriginator().getCapacity()) :  pOrderPlan.getRemainingToBookVolume()
+		//delBuilder.setDeliveredVolume(deliveredVolume);
 		Duration unLoadingDuration; //SET LOADIing and unloading durations
 		if (pOrderPlan.getRemainingToBookVolume() < (int)(exp.getOriginator().getCapacity())) { //if remaining volume is less but truck capacity is higher
 			int wastedVolume = (int)(exp.getOriginator().getCapacity() - pOrderPlan.getRemainingToBookVolume());
@@ -144,7 +146,7 @@ public class OrderStateInProcess extends OrderAgentState {
 	
 	
 	@Override
-	protected void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime) {
+	public void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (isFeasibilityIntervalPassed(currTime) ){
 			//setOrderInterests();
@@ -156,7 +158,7 @@ public class OrderStateInProcess extends OrderAgentState {
 	
 	
 	@Override
-	protected void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
+	public void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
 		if ( intentionAnts.isEmpty()) 
 			return;
@@ -211,7 +213,7 @@ public class OrderStateInProcess extends OrderAgentState {
 	}
 
 	@Override
-	protected void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
+	public void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (currTime.minusMinutes(orderPlan.getTimeForLastIntention().getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.MINUTES_TO_CHANGE_ST4ORDER ){
 			//add code to check if orderdeliverable? yest then proceed else change state = undeliverable
@@ -223,9 +225,15 @@ public class OrderStateInProcess extends OrderAgentState {
 	}
 
 	@Override
-	protected void checkDeliveryStatuses(OrderAgentPlan orderPlan,	long startTime) {
+	public void checkDeliveryStatuses(OrderAgentPlan orderPlan,	long startTime) {
 		if (!orderPlan.areDeliveriesRefreshing(startTime)){
 			if (!makeOrderPlanAdjustment(orderPlan, startTime))
 				orderAgent.setOrderState(OrderAgentState.UNDELIVERABLE);		}
+	}
+
+	@Override
+	public void doSpecial(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -35,6 +35,7 @@ public class TruckStateBroken extends TruckAgentState {
 
 
 	@Override
+	public
 	void processIntentionAnts(long startTime) {
 		// TODO Auto-generated method stub
 		
@@ -42,6 +43,7 @@ public class TruckStateBroken extends TruckAgentState {
 
 
 	@Override
+	public
 	void sendExpAnts(long startTime) {
 		// TODO Auto-generated method stub
 		
@@ -49,6 +51,7 @@ public class TruckStateBroken extends TruckAgentState {
 
 
 	@Override
+	public
 	void sendIntAnts(long startTime) {
 		// TODO Auto-generated method stub
 		
@@ -56,6 +59,7 @@ public class TruckStateBroken extends TruckAgentState {
 
 
 	@Override
+	public
 	void followPracticalSchedule(TimeLapse timeLapse) {
 		//TODO: it should empty the schedule Units comming after the truck broken time.		
 		//if this method is called, means truck has already broken
@@ -75,7 +79,15 @@ public class TruckStateBroken extends TruckAgentState {
 
 
 	@Override
+	public
 	void letMeBreak(long startTime) {
+		// TODO Auto-generated method stub
+		
+	}
+
+
+	@Override
+	public void processGeneralAnts(long startTime) {
 		// TODO Auto-generated method stub
 		
 	}

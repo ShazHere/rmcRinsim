@@ -6,21 +6,13 @@ package shaz.rmc.pdpExtended.delMasInitial;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Queue;
 
-import org.apache.commons.math3.random.RandomData;
-import org.apache.commons.math3.random.RandomDataImpl;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
-
-import com.rits.cloning.Cloner;
 
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.graph.Point;
@@ -28,27 +20,22 @@ import rinde.sim.core.model.communication.CommunicationAPI;
 import rinde.sim.core.model.communication.Mailbox;
 import rinde.sim.core.model.communication.Message;
 import rinde.sim.core.model.pdp.PDPModel;
-import rinde.sim.core.model.pdp.PDPModel.VehicleState;
 import rinde.sim.core.model.road.MovingRoadUser;
 import rinde.sim.core.model.road.RoadModel;
 import shaz.rmc.core.Agent;
-import shaz.rmc.core.AvailableSlot;
 import shaz.rmc.core.ProductionSite;
-import shaz.rmc.core.Reply;
 import shaz.rmc.core.ResultElementsTruck;
 import shaz.rmc.core.TimeSlot;
+import shaz.rmc.core.TruckCostForDelivery;
 import shaz.rmc.core.TruckDeliveryUnit;
 import shaz.rmc.core.TruckTravelUnit;
-import shaz.rmc.core.Utility;
-import shaz.rmc.core.communicateAbleUnit;
 
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.core.domain.Vehicle;
-import shaz.rmc.pdpExtended.delMasInitial.communication.BreakAnt;
-import shaz.rmc.pdpExtended.delMasInitial.communication.CommitmentAnt;
-import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
-import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
+import shaz.rmc.pdpExtended.delMasInitial.communication.TruckCommunicationStrategy;
+import shaz.rmc.pdpExtended.delMasInitial.communication.TruckStrategyCoalition;
+import shaz.rmc.pdpExtended.delMasInitial.communication.TruckStrategyDelMAS;
 
 /**
  * @author Shaza
@@ -77,7 +64,8 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	private final int dePhaseByMin;
 	private final shaz.rmc.core.domain.Vehicle truck;
 	private final DeliveryTruckInitialIntention i;
-	private TruckAgentState state;
+//	private TruckAgentState state;
+	private final TruckCommunicationStrategy strategy;
 	private final TruckAgentFailureManager truckFailureManager;
 	
 	public DeliveryTruckInitial( Vehicle pTruck, int pDePhaseByMin, RandomGenerator pRandomPCSelector, TruckAgentFailureManager pTruckAgentFailureManager) {
@@ -96,24 +84,25 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 
 		truck = pTruck;
 		id = ++totalDeliveryTruck;
+		if (GlobalParameters.ENABLE_JI)
+			strategy = new TruckStrategyCoalition(this);
+		else
+			strategy = new TruckStrategyDelMAS(this);
 		setTruckState(TruckAgentState.IN_PROCESS);
+	
 	}
 	@Override
 	protected void tickImpl(TimeLapse timeLapse) {
-		checkMsgs(timeLapse.getStartTime());		
+		strategy.handleMessages(timeLapse);
+		strategy.executeStrategy(timeLapse);
 
-		state.processIntentionAnts(timeLapse.getStartTime());
-		state.sendExpAnts(timeLapse.getStartTime());
-		state.sendIntAnts(timeLapse.getStartTime());
-		state.followPracticalSchedule(timeLapse);
-		state.letMeBreak(timeLapse.getStartTime());
 	}
 
 	/**
 	 * @param timeLapse
 	 */
 	protected void followSchedule(TimeLapse timeLapse) {
-		checkArgument(this.state instanceof TruckStateInProcess);
+		checkArgument(strategy.getState() instanceof TruckStateInProcess);
 		//acting on intentions
 		if (!truckSchedule.isEmpty()) {
 			i.followSchedule(timeLapse);
@@ -121,7 +110,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 	
 	protected boolean canIBreakAt(DateTime currTime, int id2) {
-		checkArgument(this.state instanceof TruckStateInProcess);
+		checkArgument(strategy.getState() instanceof TruckStateInProcess);
 		return truckFailureManager.canIBreakAt(currTime, id2);
 	}
 	
@@ -129,22 +118,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		truckSchedule.remove(tdu);
 	}
 
-	private void checkMsgs(long currentTime) {
-		Queue<Message> messages = mailbox.getMessages();
-		if (messages.size() > 0) {
-			for (Message m : messages) {
-				if (m.getClass() == ExpAnt.class) {
-					state.addExpAnt((ExpAnt)m);
-				}
-				else if (m.getClass() == IntAnt.class) {
-					state.addIntAnt((IntAnt)m);
-				}
-//				else if (m.getClass() == CommitmentAnt.class) {
-//					b.commitmentAnts.add((CommitmentAnt)m);
-//				}
-			}
-		}
-	}
+	
 	@Override
 	public void initRoadPDP(RoadModel pRoadModel, PDPModel pPdpModel) {
 		roadModel = pRoadModel;
@@ -158,8 +132,9 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		roadModel.addObjectAt(this, getStartLocation());
 		logger.info(this.getId()+"T capacity is = " + this.truck.getNormalVolume() + " & startLocation = " + sites.get(rand).getStation().getId());
 	}
-	protected void setTruckState (int newState) {
-		this.state = TruckAgentState.newState(newState, this);
+	public void setTruckState (int newState) {
+		//this.state = TruckAgentState.newState(newState, this);
+		strategy.setState(TruckAgentState.newState(newState, this));
 	}
 	/**
 	 * @return the dePhaseByMin
@@ -211,7 +186,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 
 	public TimeSlot getTotalTimeRange() {
-		return state.getTotalTimeRange();
+		return strategy.getState().getTotalTimeRange();
 	}
 	public shaz.rmc.core.domain.Vehicle getTruck() {
 		return truck;
@@ -222,6 +197,11 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 	protected ArrayList<TruckScheduleUnit> getPracticalSchedule() {
 		return truckSchedule.getPracticalSchedule();
+	}
+	
+	public TruckCostForDelivery getCostForMakingDelivery (Delivery del, TimeSlot timeWindow, DateTime currTime)
+	{
+		return truckSchedule.getCostForMakingDelivery(del, timeWindow, this, currTime);
 	}
 	public int getId() {
 		return id;
@@ -253,6 +233,10 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		return GlobalParameters.TRUCK_SPEED;
 	}// As per my exploration, this speed is in units per hour. So the truck will travel x/hour. 
 	
+	
+	public Queue<Message> receiveMessages() {
+		return mailbox.getMessages();
+	}
 	@Override
 	public double getReliability() {
 		return 1; //completelly reliable trucks

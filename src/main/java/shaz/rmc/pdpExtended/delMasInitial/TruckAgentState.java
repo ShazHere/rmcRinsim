@@ -10,9 +10,9 @@ import org.joda.time.DateTime;
 
 import rinde.sim.core.TimeLapse;
 import rinde.sim.core.model.pdp.PDPModel.VehicleState;
+import shaz.rmc.core.Ant;
 import shaz.rmc.core.AvailableSlot;
 import shaz.rmc.core.TimeSlot;
-import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 
@@ -22,7 +22,7 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
  * 
  * Abstract class to represent States of Truck. State pattern from GoF is followed
  */
-abstract class TruckAgentState {
+public abstract class TruckAgentState {
 
 	protected final Logger logger; //for logging
 	protected DeliveryTruckInitial truckAgent;
@@ -30,6 +30,7 @@ abstract class TruckAgentState {
 		//But if in future some other states handle them, then I need to change this.
 	protected final ArrayList<ExpAnt> explorationAnts;
 	protected final ArrayList<IntAnt> intentionAnts;
+	protected final ArrayList<Ant> generalAnts;
 
 	private final TimeSlot totalTimeRange; //for storing the actual period of activity of truck. i.e when trucks start its day, and ends it
 	//only start and endTime will be used
@@ -43,15 +44,17 @@ abstract class TruckAgentState {
 		
 		explorationAnts = new ArrayList<ExpAnt>();
 		intentionAnts = new ArrayList<IntAnt>();
+		generalAnts = new ArrayList<Ant>();
 		availableSlots = new ArrayList<AvailableSlot>();
 		adjustAvailableSlotInBeginning();
 	}
 
-	abstract void processIntentionAnts(long startTime);
-	abstract void sendExpAnts(long startTime);
-	abstract void sendIntAnts(long startTime);
-	abstract void followPracticalSchedule(TimeLapse timeLapse);
-	abstract void letMeBreak(long startTime);
+	public abstract void processIntentionAnts(long startTime);
+	public abstract void sendExpAnts(long startTime);
+	public abstract void sendIntAnts(long startTime);
+	public abstract void followPracticalSchedule(TimeLapse timeLapse);
+	public abstract void letMeBreak(long startTime);
+	public abstract void processGeneralAnts(long startTime);
 	
 	/**
 	 * Just to avoid that AvailableSlot is 1 if truck schedule is empty.
@@ -61,11 +64,14 @@ abstract class TruckAgentState {
 		availableSlots.add(new AvailableSlot(new TimeSlot(GlobalParameters.START_DATETIME, GlobalParameters.END_DATETIME), null, null));
 	}
 	
-	protected void addExpAnt(ExpAnt eAnt) {
+	public void addExpAnt(ExpAnt eAnt) {
 		explorationAnts.add(eAnt);
 	}
-	protected void addIntAnt(IntAnt iAnt) {
+	public void addIntAnt(IntAnt iAnt) {
 		intentionAnts.add(iAnt);
+	}
+	public void addGeneralAnt(Ant gAnt) {
+		generalAnts.add(gAnt);
 	}
 
 	public TimeSlot getTotalTimeRange() {
@@ -89,13 +95,16 @@ abstract class TruckAgentState {
 			return new TruckStateInProcess(truckAgent);
 		case BROKEN:
 			return new TruckStateBroken(truckAgent);
+		case TEAM_COMMITMENT:
+			return new TruckStateTeamCommitment(truckAgent);
 			default:
 				throw new IllegalArgumentException( "Illegal truck Agent State");
 		}
 	}
 	
 	
-	static final int IN_PROCESS = 0; // The normal and general state
-	static final int BROKEN = 1;
-	//static final int TEAM_NEED = 0; //Truck is in a transition state w.r.t team. shouldn't send exp or int ants, neither process them. 
+	public static final int IN_PROCESS = 0; // The normal and general state
+	public static final int BROKEN = 1;
+	public static final int TEAM_COMMITMENT = 2;  //Truck is in a transition state w.r.t team. shouldn't send exp or int ants, neither process them.
+	 
 }

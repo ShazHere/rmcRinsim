@@ -25,17 +25,18 @@ public class OrderStateWaiting extends OrderAgentState{
 		super(orderAgent);
 	}
 	@Override
+	public
 	int getStateCode() {
 		return OrderAgentState.WAITING;
 	}
 	@Override
-	protected void processExplorationAnts(OrderAgentPlan orderPlan, long startTime) {
+	public void processExplorationAnts(OrderAgentPlan orderPlan, long startTime) {
 	//If order is in wait state, but still explorations are there then ignore 
 		explorationAnts.clear();
 	}
 	
 	@Override
-	protected void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime) {
+	public void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (isFeasibilityIntervalPassed(currTime) ){
 			Delivery d = checkOrderStatus(orderPlan, startTime);
@@ -65,7 +66,7 @@ public class OrderStateWaiting extends OrderAgentState{
 		return null;
 	} 
 	@Override
-	protected void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
+	public void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
 		if ( intentionAnts.isEmpty()) 
 			return;
@@ -92,12 +93,17 @@ public class OrderStateWaiting extends OrderAgentState{
 		}
 	}
 	@Override
-	protected void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
+	public void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
 		//Doesn't change starttimeDelay in WAITING state.
 	}
 	@Override
-	protected void checkDeliveryStatuses(OrderAgentPlan orderPlan,long startTime) {
+	public void checkDeliveryStatuses(OrderAgentPlan orderPlan,long startTime) {
 		// no need to do any thing. Rather we will prefer that order gets to IN_PROCESS or BOOKED state to get delivered
 		///also WAITING state is very less amount of time as compared to order's overall life cycle
+	}
+	@Override
+	public void doSpecial(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
+		// TODO Auto-generated method stub
+		
 	}
 }

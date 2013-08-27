@@ -7,7 +7,7 @@ import rinde.sim.core.model.communication.CommunicationUser;
 import rinde.sim.core.model.communication.Message;
 /**
  * @author Shaza
- * @description Interface to be implemented by delegate MAs ants in RMC
+ * @description Abstract Class to be implemented by delegate MAs ants in RMC
  *
  */
 public abstract class Ant extends Message {

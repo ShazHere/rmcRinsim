@@ -9,13 +9,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+
 import java.util.Queue;
 
-import org.apache.commons.math3.random.RandomDataImpl;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
@@ -31,23 +27,17 @@ import rinde.sim.core.model.pdp.PDPModel;
 import rinde.sim.core.model.pdp.PDPModel.ParcelState;
 import rinde.sim.core.model.pdp.Parcel;
 import rinde.sim.core.model.road.RoadModel;
-import rinde.sim.ui.SimulationViewer;
 import shaz.rmc.core.Agent;
-import shaz.rmc.core.ProductionSite;
-import shaz.rmc.core.Reply;
 import shaz.rmc.core.ResultElementsOrder;
-import shaz.rmc.core.ResultElementsTruck;
-import shaz.rmc.core.TimeSlot;
-import shaz.rmc.core.TruckScheduleUnit;
-import shaz.rmc.core.Utility;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.core.domain.Order;
-import shaz.rmc.core.domain.Station.StationBookingUnit;
-import shaz.rmc.pdpExtended.delMasInitial.communication.BreakAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.CommitmentAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.FeaAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
+import shaz.rmc.pdpExtended.delMasInitial.communication.OrderCommunicationStrategy;
+import shaz.rmc.pdpExtended.delMasInitial.communication.OrderStrategyCoalition;
+import shaz.rmc.pdpExtended.delMasInitial.communication.OrderStrategyDelMAS;
 
 /**
  * @author Shaza
@@ -66,8 +56,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	
 	private final Logger logger; //for logging
 	private OrderAgentPlan orderPlan;
+	private final OrderCommunicationStrategy strategy;
 
-	private ArrayList<BreakAnt> breakAnts;
 	private ArrayList<CommitmentAnt> commitmentAnts;
 	private final Mailbox mailbox;
 	private CommunicationAPI cApi;
@@ -80,7 +70,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	
 	private ArrayList<ProductionSiteInitial> possibleSites; //sites from which this order could receive delivery according to PERISH time
 	
-	private OrderAgentState state;
+	//private OrderAgentState state;
 	public OrderAgentInitial(Simulator pSim, Point pLocation, Order pOrder ) {
 		super();
 		Location = pLocation;
@@ -89,17 +79,19 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		sim = pSim;
 		logger = Logger.getLogger(OrderAgentInitial.class);
 		
-		setOrderState(OrderAgentState.IN_PROCESS);
 		mailbox = new Mailbox();
 		timeForLastFeaAnt = new DateTime(0);
 		
-		breakAnts = new ArrayList<BreakAnt>();
 		commitmentAnts = new ArrayList<CommitmentAnt>();
 		//deliveries = new ArrayList<Delivery>();
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
 		orderPlan = new OrderAgentPlan(new Duration(0), this, GlobalParameters.START_DATETIME);
 		maximumPossibleStartTime = makeMaximumPossibleStartTime();
-
+		if (GlobalParameters.ENABLE_JI)
+			strategy = new OrderStrategyCoalition(this);
+		else //means JI isn't enabled so DelMAS should handle it independently
+			strategy = new OrderStrategyDelMAS(this);
+		setOrderState(OrderAgentState.IN_PROCESS);
 	}
 	private DateTime makeMaximumPossibleStartTime() {
 		int possibleDeliveries =  (int)Math.ceil(((double)order.getRequiredTotalVolume()) / GlobalParameters.FIXED_CAPACITY);
@@ -109,24 +101,23 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	}
 	@Override
 	public void tick(TimeLapse timeLapse) {
-		checkMsgs(timeLapse.getStartTime());
-		state.processExplorationAnts(orderPlan, timeLapse.getStartTime()); 
-		state.processIntentionAnts(orderPlan, timeLapse);
+		//checkMsgs(timeLapse.getStartTime());
+		strategy.handleMessages(timeLapse);
+		strategy.executeStrategy(timeLapse, orderPlan);
+//		state.processExplorationAnts(orderPlan, timeLapse.getStartTime()); 
+//		state.processIntentionAnts(orderPlan, timeLapse);
 		orderPlan.generateParcelDeliveries(this, timeLapse.getStartTime()); 
-		state.sendFeasibilityInfo(orderPlan, timeLapse.getStartTime());
-		state.changeOrderPlan(orderPlan, timeLapse.getStartTime());
-		state.checkDeliveryStatuses(orderPlan, timeLapse.getStartTime());
-//		if (GlobalParameters.ENABLE_JI)
-//			processBreakAnts(timeLapse);
-//		else //means JI isn't enabled so DelMAS should handle it independently
-//			processBreakAntDelMAS(timeLapse);
+//		state.sendFeasibilityInfo(orderPlan, timeLapse.getStartTime());
+//		state.changeOrderPlan(orderPlan, timeLapse.getStartTime());
+//		state.checkDeliveryStatuses(orderPlan, timeLapse.getStartTime());
+
 		checkIfOrderServed(timeLapse);
 	}
 	/**
 	 * @param timeLapse
 	 */
 	protected void checkIfOrderServed(TimeLapse timeLapse) {
-		if (parcelDeliveries.isEmpty() == false && !(state instanceof OrderStateServed)) {
+		if (parcelDeliveries.isEmpty() == false && !(strategy.getState() instanceof OrderStateServed)) {
 			Collection<Parcel> deliveredDeliveries = pdpModel.getParcels(ParcelState.DELIVERED);
 			ArrayList<DeliveryInitial> orderDeliveries = new ArrayList<DeliveryInitial>();
 			for(Parcel pd: deliveredDeliveries) {
@@ -208,25 +199,24 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 	}
 	private void checkMsgs(long currentTime) {
-		Queue<Message> messages = mailbox.getMessages();
-		if (messages.size() > 0) {
-			for (Message m : messages) {
-				if (m.getClass() == ExpAnt.class) {
-					state.addExpAnt((ExpAnt)m);
-				}
-				else if (m.getClass() == IntAnt.class) {
-					state.addIntAnt((IntAnt)m);
-				}		
-				else if (m.getClass() == BreakAnt.class) {
-					logger.info(order.getId() + "O BREAKDOWN signal received");
-					this.breakAnts.add((BreakAnt)m);
-				}
-				else if (m.getClass() == CommitmentAnt.class) {
-					logger.info(order.getId() + "O COMMITMENT reply received");
-					this.commitmentAnts.add((CommitmentAnt)m);
-				}
-			}
-		}
+//		Queue<Message> messages = mailbox.getMessages();
+//		if (messages.size() > 0) {
+//			for (Message m : messages) {
+//				if (m.getClass() == ExpAnt.class) {
+//					state.addExpAnt((ExpAnt)m);
+//				}
+//				else if (m.getClass() == IntAnt.class) {
+//					state.addIntAnt((IntAnt)m);
+//				}
+//				else if (m.getClass() == CommitmentAnt.class) {
+//					logger.info(order.getId() + "O COMMITMENT reply received");
+//					this.commitmentAnts.add((CommitmentAnt)m);
+//				}
+//			}
+//		}
+	}
+	public Queue<Message> receiveMessages() {
+		return mailbox.getMessages();
 	}
 	
 	public ResultElementsOrder getOrderResult(ArrayList<Integer> truckCapacities) { //truck capacities
@@ -326,10 +316,19 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	}
 	
 	protected int getOrderState() {
-		return this.state.getStateCode();
+		return strategy.getState().getStateCode();
+	}
+	/**
+	 * @return the strategy
+	 */
+	public OrderCommunicationStrategy getStrategy() {
+		return strategy;
 	}
 	protected void setOrderState (int newState) {
-		this.state = OrderAgentState.newState(newState, this);
+		strategy.setState(OrderAgentState.newState(newState, this));
+	}
+	public ArrayList<ProductionSiteInitial> getPossibleSites() {
+		return possibleSites;
 	}
 	protected boolean registerParcel (DeliveryInitial pDel) {
 		sim.register(pDel);
@@ -346,7 +345,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		return "OrderAgentInitial [ "
 				+ "order=" + order.toString() + "\ndeliveries=" + orderPlan.getDeliveries().size()
 	//			+ ", timeForLastFeaAnt=" + timeForLastFeaAnt
-				+ ", state=" + state
+				+ ", state=" + strategy.getState()
 				+ ",\ninterestedTime=" + orderPlan.getInterestedTime()
 				+ ", interestedDeliveryNo=" + orderPlan.getInterestedDeliveryNo()
 				+ ", delayFromStartTime="

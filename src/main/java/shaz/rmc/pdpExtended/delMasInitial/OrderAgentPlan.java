@@ -15,6 +15,7 @@ import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
+import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 
@@ -128,7 +129,7 @@ public class OrderAgentPlan {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (!deliveries.isEmpty()) {
 			int dNo = 0;
-			int cushionMinutes = 5; //mintues before pickup time, when delivery should be created.
+			int cushionMinutes = GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED; 
 			for (Delivery d : deliveries) { //5 min cushion time, 5min for PS fillling time
 				DateTime createTime = d.getDeliveryTime().minus(d.getStationToCYTravelTime()).minusMinutes(cushionMinutes).minusMinutes(GlobalParameters.LOADING_MINUTES); 
 				if (currTime.compareTo(createTime) >= 0) {
@@ -198,6 +199,15 @@ public class OrderAgentPlan {
 	protected void putInIsConfirmed(Delivery d, boolean isConfirm) {
 		isConfirmed.put(d, isConfirm);
 	}
+	
+	protected ArrayList<DeliveryTruckInitial> getDeliveryTrucks() {
+		checkArgument(orderAgent.getOrderState() == OrderAgentState.BOOKED );
+		ArrayList<DeliveryTruckInitial> truckList = new ArrayList<DeliveryTruckInitial>();
+		for (Delivery d : this.deliveries) {
+			truckList.add((DeliveryTruckInitial)d.getTruck());
+		}
+		return truckList;
+	}
 	/**
 	 * @param currTime
 	 * @return true if refresh rates of all deliveries are less than intention_evaporation rate. 
@@ -227,6 +237,22 @@ public class OrderAgentPlan {
 		return null;
 	}
 
+	public TimeSlot getTimeWindowFailedDelivery(Delivery d) {
+		int index = deliveries.indexOf(d);
+		DateTime delStartTime;
+		DateTime delEndTime;
+		//if-else below are made considereing if there was some lagtime between deliveries
+		if (index>0)
+			delStartTime = deliveries.get(index-1).getUnloadingFinishTime().plusMinutes(1);
+		else
+			delStartTime = d.getDeliveryTime().plusMinutes(1);
+		if (index < deliveries.size()-1)
+			delEndTime = deliveries.get(index+1).getDeliveryTime().minusMinutes(1);
+		else
+			delEndTime = d.getUnloadingFinishTime();
+		return new TimeSlot(delStartTime, delEndTime);
+	}
+	
 	protected void removeDeliveriesAccordingTofFailedDeliveryAndCurrentTime(Delivery failedDel, DateTime currTime) {
 		ArrayList<Delivery> removableDel = new ArrayList<Delivery>();
 		for (Delivery d : deliveries) {
@@ -246,5 +272,14 @@ public class OrderAgentPlan {
 		}
 		return true;
 	}
+	public boolean isOrderDeliveryingStarted(DateTime currTime) {
+		if (deliveries.size() == 0)
+			return false;
+		if (currTime.compareTo(deliveries.get(0).getDeliveryTime()) >= 0)
+			return true;
+		else
+			return false;
+	}
+	
 	
 }

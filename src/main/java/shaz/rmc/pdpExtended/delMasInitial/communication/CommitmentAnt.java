@@ -3,7 +3,7 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial.communication;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import org.joda.time.DateTime;
 
@@ -12,11 +12,11 @@ import com.rits.cloning.Cloner;
 import rinde.sim.core.model.communication.CommunicationUser;
 import shaz.rmc.core.Ant;
 import shaz.rmc.core.Reply;
+import shaz.rmc.core.TruckDeliveryUnit;
+import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
-import shaz.rmc.core.domain.Delivery;
-import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
+import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
-import shaz.rmc.pdpExtended.delMasInitial.ProductionSiteInitial;
 
 /**
  * @author Shaza
@@ -24,18 +24,17 @@ import shaz.rmc.pdpExtended.delMasInitial.ProductionSiteInitial;
  */
 public class CommitmentAnt extends Ant {
 	private final DateTime creationTime;
-	private final OrderAgentInitial originator; //the actual truck agent which initialized the intAnt
-	private final Delivery failedDelivery;
-	private Reply truckReply; 
-	private final List<ProductionSiteInitial> possibleSites; //to send which are the sites, from where current order can be fulfilled
+	private final communicateAbleUnit commUnit;
+	private final OrderAgentInitial originator;
+	//private final ArrayList<TruckScheduleUnit> scheduleToBeAdded; TODO what about relavent travel units? 
 	
-	public CommitmentAnt(CommunicationUser sender, DateTime pCreateTime, Delivery pDelivery, List<ProductionSiteInitial> pPossibleSites) {
+	
+	public CommitmentAnt(CommunicationUser sender, DateTime pCreateTime, TruckDeliveryUnit tdu) {
 		super(sender);
 		originator = (OrderAgentInitial)sender;
 		creationTime = pCreateTime;
-		failedDelivery = pDelivery;
-		possibleSites = pPossibleSites;
-		truckReply = Reply.NO_REPLY;
+		commUnit = new communicateAbleUnit(tdu, Reply.NO_REPLY, Reply.ACCEPT, false); //TODO: should order reply with reply.accept?
+		
 	}
 
 	/**
@@ -48,13 +47,11 @@ public class CommitmentAnt extends Ant {
 	 * @param possibleSites
 	 */
 	private CommitmentAnt( OrderAgentInitial originator, CommunicationUser sender, DateTime creationTime,
-			 Delivery failedDelivery, Reply truckReply, List<ProductionSiteInitial> possibleSites) {
+			communicateAbleUnit pCommunicationUnit) {
 		super(sender);
 		this.creationTime = creationTime;
 		this.originator = originator;
-		this.failedDelivery = failedDelivery;
-		this.truckReply = truckReply;
-		this.possibleSites = possibleSites;
+		this.commUnit = pCommunicationUnit;
 	}
 
 	public DateTime getCreationTime() {
@@ -65,26 +62,15 @@ public class CommitmentAnt extends Ant {
 		return originator;
 	}
 
-	public Delivery getFailedDelivery() {
-		return failedDelivery;
-	}
-	public void setTruckReply(Reply pReply) {
-		this.truckReply = pReply;
+	public communicateAbleUnit getCommUnit() {
+		return commUnit;
 	}
 	
-	public Reply getTruckReply() {
-		return truckReply;
-	}
-
-	public List<ProductionSiteInitial> getPossibleSites() {
-		return possibleSites;
-	}
 
 	@Override
 	public CommitmentAnt clone(CommunicationUser currentSender) {
 		final Cloner cl = Utility.getCloner();
-		CommitmentAnt cAnt = new CommitmentAnt(this.originator, currentSender, this.creationTime, this.failedDelivery, this.truckReply, this.possibleSites); 
-				//(currentSender, cl.deepClone(this.communicateAbleSchedule), this.creationTime, this.originator );
+		CommitmentAnt cAnt = new CommitmentAnt(this.originator, currentSender, this.creationTime, this.commUnit); 
 		return cAnt;
 	}
 

@@ -28,7 +28,7 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
  * and data members that do not requiring permenance similar to the permenance required by members of OrderAgentInitial class. 
  * State transition is handled by the concrete states.  
  */
-abstract class OrderAgentState {
+public abstract class OrderAgentState {
 	protected final Logger logger; //for logging
 	
 	protected OrderAgentInitial orderAgent;
@@ -46,14 +46,11 @@ abstract class OrderAgentState {
 	}
 
 
-	abstract int getStateCode();
-	protected abstract void processExplorationAnts(OrderAgentPlan orderPlan, long startTime);
-	/**
-	 * manages to send feasibility ants to PS
-	 * @param startTime
-	 */
-	protected abstract void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime);
-	protected abstract void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse) ;
+	public abstract int getStateCode();
+	public abstract void processExplorationAnts(OrderAgentPlan orderPlan, long startTime);
+	public abstract void sendFeasibilityInfo(OrderAgentPlan orderPlan, long startTime);
+	public abstract void processIntentionAnts(OrderAgentPlan orderPlan, TimeLapse timeLapse);
+	public abstract void doSpecial(OrderAgentPlan orderPlan, TimeLapse timeLapse);
 	
 	/**
 	 * @param orderPlan
@@ -61,7 +58,7 @@ abstract class OrderAgentState {
 	 * 
 	 * Identifies if Order should change is start time and start a new plan? if yes then it starts with new plan
 	 */
-	protected abstract void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) ;
+	public abstract void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) ;
 
 	/**
 	 * @param orderPlan
@@ -69,20 +66,27 @@ abstract class OrderAgentState {
 	 * Checks, if all the deliveries properly get refreshed? Otherwise, order will assume delivery failure and make adjustments accordingly. (10/08/2013)
 	 * 
 	 */
-	protected abstract void checkDeliveryStatuses(OrderAgentPlan orderPlan, long startTime);
+	public abstract void checkDeliveryStatuses(OrderAgentPlan orderPlan, long startTime);
 	
-	static OrderAgentState newState(int newState, OrderAgentInitial orderAgent) {
+	public static OrderAgentState newState(int newState, OrderAgentInitial orderAgent) {
 		switch(newState) {
 		case IN_PROCESS:
 			return new OrderStateInProcess(orderAgent);
 		case WAITING:
 			return new OrderStateWaiting(orderAgent);
 		case BOOKED:
-			return new OrderStateBooked(orderAgent);
+			{
+				if (GlobalParameters.ENABLE_JI)
+					return new OrderStateJointBooked(orderAgent);
+				else
+					return new OrderStateBooked(orderAgent);
+			}
 		case UNDELIVERABLE:
 			return new OrderStateUndeliverable(orderAgent);
 		case SERVED:
 			return new OrderStateServed(orderAgent);
+		case TEAM_NEED:
+			return new OrderStateTeamNeed(orderAgent);
 			default:
 				throw new IllegalArgumentException( "Illegal order  Agent State");
 		}
@@ -161,10 +165,10 @@ abstract class OrderAgentState {
 		return currTime.minusMinutes(orderAgent.getTimeForLastFeaAntInMin()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN;
 	}
 	
-	protected void addExpAnt(ExpAnt eAnt) {
+	public void addExpAnt(ExpAnt eAnt) {
 		explorationAnts.add(eAnt);
 	}
-	protected void addIntAnt(IntAnt iAnt) {
+	public void addIntAnt(IntAnt iAnt) {
 		intentionAnts.add(iAnt);
 	}
 	
@@ -219,13 +223,13 @@ protected void refreshDeliveryBookings(OrderAgentPlan orderPlan, TimeLapse timeL
 
 		static final int IN_PROCESS = 0; // The normal and general state
 		static final int WAITING = 1; // order is waiting for a delivery's confirmation from TruckAgent
-		static final int BOOKED = 2; //whole concrete of order is booked.
+		static final int BOOKED = 2; //whole concrete of order is booked. TODO: what about code for JointBooked?
 		static final int UNDELIVERABLE = 3; //order cannot be delivered in current day. 
 		static final int SERVED = 4; //means no need to do anything. No effect of truck breakdown since order is completely served
 		//Actually SERVED is only conceptually different from  UNDELIVERABLE. OrderStateServed means every ting done and results should be including this order's results as well, but 
 		// UNDELIVERABLE menas nothing is done..and not possible to be done. 
 		
-		//TEAM_NEED //order was fully booked, but then one of the team members broke, so rest of the team has to
+		static final int TEAM_NEED = 5; //order was fully booked, but then one of the team members broke, so rest of the team has to
 					// fullfill the order as they committed 
 
 		

@@ -51,6 +51,7 @@ public class TruckStateInProcess extends TruckAgentState {
 
 
 	@Override
+	public
 	void processIntentionAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (!intentionAnts.isEmpty() ) { 
@@ -174,6 +175,7 @@ public class TruckStateInProcess extends TruckAgentState {
 //		//which is'nt seem desirable at the moment
 	}
 	@Override
+	public
 	void sendExpAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		//check  exp ants to be sent after particular interval only
@@ -188,6 +190,7 @@ public class TruckStateInProcess extends TruckAgentState {
 	}
 
 	@Override
+	public
 	void sendIntAnts(long startTime) { 
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);//send int ants to book again the whole schedule..
 		if (currTime.compareTo(timeForLastIntAnt) > 0) {
@@ -199,8 +202,8 @@ public class TruckStateInProcess extends TruckAgentState {
 					ArrayList<TruckScheduleUnit> originalfullSchedule = truckAgent.getTruckSchedule().makeOriginalSchedule(bestAnt.getSchedule());
 					IntAnt iAnt = new IntAnt(truckAgent, tmp,originalfullSchedule, currTime);
 					logger.debug(truckAgent.getId()+"T int sent by Truck");
-					//checkArgument(bestAnt.getSchedule().get(0).getTimeSlot().getProductionSiteAtStartTime() != null, true);
-					checkArgument(bestAnt.getSchedule().get(0) instanceof TruckDeliveryUnit, true); //truck should start from its start PS
+					//checkArgument(bestAnt.getSchedule().get(0) instanceof TruckDeliveryUnit, true); //truck should start from its start PS
+					checkArgument(bestAnt.getSchedule().get(0).getStartLocation().equals(truckAgent.getStartLocation()));
 					truckAgent.getcApi().send(((TruckDeliveryUnit)bestAnt.getSchedule().get(0)).getDelivery().getLoadingStation(), iAnt); 
 					timeForLastIntAnt = currTime;
 					bestAnt = null;
@@ -212,9 +215,15 @@ public class TruckStateInProcess extends TruckAgentState {
 				ArrayList<TruckScheduleUnit> originalfullSchedule = truckAgent.getTruckSchedule().makeOriginalSchedule(truckAgent.getTruckSchedule().getSchedule());
 				IntAnt iAnt = new IntAnt(truckAgent, tmp,originalfullSchedule, currTime);
 				logger.debug(truckAgent.getId()+"T int sent by Truck with Old schedule");
-				truckAgent.getcApi().send(((TruckDeliveryUnit)truckAgent.getTruckSchedule().getSchedule().get(0)).getDelivery().getLoadingStation(), iAnt);  
+				TruckDeliveryUnit sendToTdu;
+				if (truckAgent.getTruckSchedule().getSchedule().get(0) instanceof TruckDeliveryUnit)
+					sendToTdu = (TruckDeliveryUnit)truckAgent.getTruckSchedule().getSchedule().get(0);
+				else
+					sendToTdu = (TruckDeliveryUnit)truckAgent.getTruckSchedule().getSchedule().get(1);
+				truckAgent.getcApi().send(sendToTdu.getDelivery().getLoadingStation(), iAnt);  
 				timeForLastIntAnt = currTime; //here no need to make bestAnt = null, since it coud compete with future explorations
 			}
+			//checkArgument(bestAnt.getSchedule().get(0).getStartLocation().equals(truckAgent.getStartLocation()));
 		}
 		}
 	}
@@ -228,6 +237,7 @@ public class TruckStateInProcess extends TruckAgentState {
 	}
 
 	@Override
+	public
 	void followPracticalSchedule(TimeLapse timeLapse) {
 		if (!truckAgent.getTruckSchedule().isEmpty()) {
 			truckAgent.followSchedule(timeLapse);
@@ -236,8 +246,16 @@ public class TruckStateInProcess extends TruckAgentState {
 
 
 	@Override
+	public
 	void letMeBreak(long startTime) {
 		shouldIBreak(startTime);		
+	}
+
+
+	@Override
+	public void processGeneralAnts(long startTime) {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

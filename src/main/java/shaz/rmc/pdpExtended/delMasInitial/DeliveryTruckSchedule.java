@@ -9,12 +9,19 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.joda.time.DateTime;
 import org.joda.time.Duration;
 
 import com.rits.cloning.Cloner;
 
 import rinde.sim.core.graph.Point;
+import shaz.rmc.core.Agent;
+import shaz.rmc.core.AvailableSlot;
+import shaz.rmc.core.ProductionSite;
 import shaz.rmc.core.Reply;
+import shaz.rmc.core.ScheduleHelper;
+import shaz.rmc.core.TimeSlot;
+import shaz.rmc.core.TruckCostForDelivery;
 import shaz.rmc.core.TruckDeliveryUnit;
 import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.TruckTravelUnit;
@@ -280,6 +287,17 @@ public class DeliveryTruckSchedule {
 				if (unitStatus.get(((TruckDeliveryUnit) tsu).getDelivery()) == Reply.ACCEPT)
 					pracSchedule.add(cl.deepClone(tsu));
 		}
+		pracSchedule = fillTravelUnitsInSchedule(rmcTruck, pracSchedule, cl);
+		
+		Utility.sortSchedule(pracSchedule);
+		this.practicalSchedule = pracSchedule;
+	}
+	/**
+	 * @param rmcTruck
+	 * @param pracSchedule
+	 * @param cl
+	 */
+	private ArrayList<TruckScheduleUnit> fillTravelUnitsInSchedule(DeliveryTruckInitial rmcTruck, ArrayList<TruckScheduleUnit> pracSchedule, final Cloner cl) {
 		//fill the travelUnits between ACCEPTED DeliveryUNits
 		ArrayList<TruckTravelUnit> toBeAddedTTU = new ArrayList<TruckTravelUnit>();//partially save in this arrayList, otherwise index of Practical schedule gets distrubed during For loop
 		for (int i =0;i < pracSchedule.size()-1; i+=1) { 
@@ -290,13 +308,15 @@ public class DeliveryTruckSchedule {
 				toBeAddedTTU.add(reqUnit);
 			}
 		}
+		if (schedule.get(0) instanceof TruckTravelUnit)
+			toBeAddedTTU.add((TruckTravelUnit) cl.deepClone(schedule.get(0)));
 		for (TruckTravelUnit ttu: toBeAddedTTU) {
 			pracSchedule.add(ttu);
 		}
-		
-		Utility.sortSchedule(pracSchedule);
-		this.practicalSchedule = pracSchedule;
+		return pracSchedule;
 	}
+	
+	
 	/**
 	 * @param rmcTruck for getting speed
 	 * @param pracSchedule
@@ -311,7 +331,27 @@ public class DeliveryTruckSchedule {
 				pracSchedule.get(i).getEndLocation(), pracSchedule.get(i+1).getStartLocation(), travelDist) ; //createNewTravelUnit
 		return reqUnit;
 	}
+	/**
+	 * @param rmcTruck for getting speed
+	 * @param pracSchedule
+	 * @param i
+	 * @return travelUnit before the i^th DeliveryUnit in pracSchedule of rmcTruck using truck's start location as starting point
+	 */
+	private TruckTravelUnit makeTravelUnitBeforeI(DeliveryTruckInitial rmcTruck,
+			final ArrayList<TruckScheduleUnit> schedule, int i) {
+		Double distance = Point.distance(rmcTruck.getStartLocation(), schedule.get(i).getStartLocation()); //TODO replace by getPStoOrDuration method
+		Duration travelDist = new Duration((long)((distance/rmcTruck.getSpeed())*60*60*1000));
+		TruckTravelUnit reqUnit = new TruckTravelUnit(rmcTruck, Utility.getTravelUnitTimeSlot(travelDist, schedule.get(i).getTimeSlot().getStartTime(), true),
+				rmcTruck.getStartLocation(), schedule.get(i).getStartLocation(), travelDist) ; //createNewTravelUnit
+		return reqUnit;
+	}
 
+	/**
+	 * @param schedule
+	 * @param first
+	 * @param second
+	 * @return the travelUnit form schedule that exists between first and second. Else return null.
+	 */
 	private TruckTravelUnit getTravelUnitIfExists(ArrayList<TruckScheduleUnit> schedule,
 			TruckScheduleUnit first,TruckScheduleUnit second) {
 		for (TruckScheduleUnit tsu : schedule) {
@@ -330,13 +370,24 @@ public class DeliveryTruckSchedule {
 	protected void adjustTruckSchedule(DeliveryTruckInitial rmcTruck) {
 		if (schedule.isEmpty())
 			return;
-		for (int i = 0 ; i< schedule.size()-1; i = i +2) {
+		int i; //as index for the for loop
+		if (schedule.get(0) instanceof TruckDeliveryUnit){
+			if (!(schedule.get(0).getStartLocation().equals(rmcTruck.getStartLocation()))) {//seems travel Unit required
+				schedule.add(makeTravelUnitBeforeI(rmcTruck, schedule, 0));
+				Utility.sortSchedule(schedule);
+				i = 1;
+			}
+			else i=0;
+		}
+		else i = 1;
+		while (i< schedule.size()-1) {
 			if (schedule.get(i) instanceof TruckDeliveryUnit && schedule.get(i+1) instanceof TruckTravelUnit)
 				; // 
 			else if (schedule.get(i) instanceof TruckDeliveryUnit && schedule.get(i+1) instanceof TruckDeliveryUnit) { //means a travel unit is required b/w them
 				TruckTravelUnit reqUnit = makeTravelUnitAfterI(rmcTruck, schedule, i);
 				schedule.add(reqUnit);
 			}
+			i = i +2;
 		}
 		Utility.sortSchedule(schedule);
 	}
@@ -367,12 +418,241 @@ public class DeliveryTruckSchedule {
 			else
 				return false;
 		}
-		for (int i = 0 ; i< schedule.size()-1; i = i +2) {
+		int i; //as index for the for loop
+		if (schedule.get(0) instanceof TruckDeliveryUnit)
+			i=0;
+		else i = 1;
+		while (i< schedule.size()-1) { 
 			if (!(schedule.get(i) instanceof TruckDeliveryUnit && schedule.get(i+1) instanceof TruckTravelUnit))
 				return false;
+			i = i +2;
 		}
 		return true;
 	}
 	public void updateUnitStatus(TruckDeliveryUnit tdu, Reply orderReply) {
 		unitStatus.put(tdu.getDelivery(), orderReply);	}
+	
+	/**
+	 * @param del
+	 * @param timeWindow
+	 * @param truck
+	 * @param currTime
+	 * @return cost that could occur if truck takes to make a delivery in actual interested time.
+	 * Basic idea is that when a truck fails in a team, other truck try to take the delivery by estimating 
+	 * costs of that delivey. They can leave their UNDER_PROCESS & WEAK_ACCEPT. If still can't find then truk could drop
+	 * BOOKED delivery if there is time before loading of the BOOKED delivery. 
+	 * Cost is found using following mechanism
+	 * At actualInterested Time, 
+	 * 		if schedule if free then cost = 0
+	 * 		if tsu with delivery-> UNDERPROCESS then cost = 1
+	 * 		if tsu with delivery-> WEAK_ACCEPT then cost = 2
+	 * 		if tsu with delivery-> ACCEPT  then 
+	 * 			if minutes before deliveryTime > GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED 
+	 * 				&& deliveryNo-> 0 then cost = 3
+	 * 			else if minutes before deliveryTime < GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED
+	 * 				then cost = 4 //but actual delivery didnt' started
+	 * 		else cost = 5
+	 * 		 
+	 *	TODO: multiply cost with no. of disturbed units, coz may be two deliveries are disturbed. 25/08/2013 
+	 *	TODO: add cost for capacity match/missmatch for hetrogenious truck. 26/08/2013
+	 */
+	public TruckCostForDelivery getCostForMakingDelivery(Delivery del, TimeSlot timeWindow, DeliveryTruckInitial truck, DateTime currTime) {
+		OrderAgentInitial or = (OrderAgentInitial)del.getOrder();
+		ProductionSiteInitial ps= getSelectedPS(or);
+		
+		DateTime actualInterestedTime = ScheduleHelper.getActualInterestedTime(timeWindow.getStartTime(), getPsToOrderDuration(ps, or, truck));
+		
+		// now check for each cost value starting form least, which ever found return
+		for (int cost = 0; cost < 5; cost++) {
+			AvailableSlot currentSlot = getCurrentSlot(cost, actualInterestedTime, currTime, truck);
+			if (currentSlot == null)
+				continue;
+			TruckCostForDelivery tcfd = getDelCostIfPossible(cost, actualInterestedTime, timeWindow.getStartTime(), currentSlot, timeWindow.getStartTime(), ps, or, truck, del);
+			if (tcfd != null)
+				return tcfd;
+		}
+		return null;
+	}
+	/**
+	 * @param actualInterestedTime
+	 * @param currentSlot
+	 * @param startTime
+	 * @param ps
+	 * @param or
+	 * @param truck
+	 * @return the TruckCostForDelivery object. This method is structured similar to ExpAnt.isInterested(). so if some change is made there, changes should be made here as well.
+	 */
+	private TruckCostForDelivery getDelCostIfPossible(int deliveryCost, DateTime actualInterestedTime, DateTime deliveryTimeAtOrder, AvailableSlot currentSlot,
+			DateTime interestedTime, ProductionSiteInitial ps, OrderAgentInitial or,DeliveryTruckInitial truck, Delivery previousDel) {
+		if (ScheduleHelper.isInterestedAtExactTime(truck, interestedTime, getPsToOrderDuration(ps, or, truck), currentSlot,actualInterestedTime, ps, or)) {
+				return getTcfdWhenInterested(deliveryCost, actualInterestedTime, deliveryTimeAtOrder, currentSlot, ps, or, truck, new Duration(0), previousDel);
+		}
+		else if (GlobalParameters.LAG_TIME_ENABLE) {//estimate with lag time
+			if (ScheduleHelper.isInterestedWithLagTime(truck, interestedTime, getPsToOrderDuration(ps, or, truck), currentSlot,actualInterestedTime, ps, or)) {
+				checkArgument( ((new Duration(currentSlot.getStartTime(), currentSlot.getEndTime())).getStandardMinutes() >= (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()), true);						
+					Duration currentLagTime = ScheduleHelper.makeLagTime(currentSlot, actualInterestedTime, ps);//TODO: check this, it should be duraton b/w actualInterestedTime and the induced lag time! should calculate with seperate method..17/07/2013
+					DateTime currentInterestedTime = actualInterestedTime.plus(currentLagTime);
+					return getTcfdWhenInterested(deliveryCost, currentInterestedTime,deliveryTimeAtOrder, currentSlot, ps, or, truck, currentLagTime, previousDel);
+			}
+		}
+		
+		return null;
+	}
+	/**
+	 * @param deliveryCost
+	 * @param actualInterestedTime
+	 * @param deliveryTimeAtOrder 
+	 * @param currentSlot
+	 * @param ps
+	 * @param or
+	 * @param truck
+	 * @return
+	 */
+	private TruckCostForDelivery getTcfdWhenInterested(int deliveryCost, DateTime actualInterestedTime,
+			DateTime deliveryTimeAtOrder, AvailableSlot currentSlot, ProductionSiteInitial ps, OrderAgentInitial or, DeliveryTruckInitial truck, 
+			Duration currentLagTime, Delivery previousDel) {
+		
+		Delivery.Builder delBuilder = new Delivery.Builder();
+		delBuilder.setOrder(or);
+		delBuilder.setDeliveryNo(previousDel.getDeliveryNo());
+		delBuilder.setTruck(truck);
+		delBuilder.setDeliveredVolume(previousDel.getDeliveredVolume()); //TODO: Shouldn't it be accoriding to remainig volume..?
+		//int deliveredVolume = pOrderPlan.getRemainingToBookVolume() > (int)(exp.getOriginator().getCapacity()) ? (int)(exp.getOriginator().getCapacity()) :  pOrderPlan.getRemainingToBookVolume()
+		//delBuilder.setDeliveredVolume(deliveredVolume);
+	
+		delBuilder.setWastedVolume(previousDel.getWastedVolume()); //TODO: may hve to change after hetrogenious trucks
+		delBuilder.setUnloadingDuration(previousDel.getUnloadingDuration());
+		delBuilder.setLoadingDuration(previousDel.getLoadingDuration());
+		
+		delBuilder.setStationToCYTravelTime(new Duration (getPsToOrderDuration(ps, or, truck)));
+
+		delBuilder.setDeliveryTime(deliveryTimeAtOrder.plus(currentLagTime));
+////			if (this.deliveries.size() == 0 ) //means at the moment decesions are for first delivery so ST shud b included
+////				{ 
+////					//checkArgument(pDeliveryNo == 0, true);
+////					delBuilder.setLagTime(this.delayFromActualInterestedTime.plus(this.delayStartTime));
+////				}
+////			else
+////				delBuilder.setLagTime(this.delayFromActualInterestedTime); //no ST added this time
+////	
+//		delBuilder.setLagTime(exp.getCurrentLagTime());
+		
+		delBuilder.setLoadingStation((ProductionSite)ps);
+		Delivery del = delBuilder.build();
+		TimeSlot ts = new TimeSlot(actualInterestedTime, del.getUnloadingFinishTime());
+		TruckDeliveryUnit tdu = new TruckDeliveryUnit(truck, ts, del, del.getWastedVolume(), currentLagTime);
+		
+		TruckTravelUnit lastOrderTravelUnit = ScheduleHelper.makeLastOrderTravelUnit(truck, actualInterestedTime, currentSlot, ps);
+		TruckTravelUnit pS4NextOrderVisited = ScheduleHelper.makeNextOrderTravelUnit(truck, actualInterestedTime, currentSlot, or);
+		
+		int travelCost = lastOrderTravelUnit == null ? 0 : (int)lastOrderTravelUnit.getTravelTime().getStandardMinutes();
+		travelCost +=  pS4NextOrderVisited == null ? 0 : (int)pS4NextOrderVisited.getTravelTime().getStandardMinutes();
+		
+		return new TruckCostForDelivery(deliveryCost, travelCost, tdu);
+	}
+	/**
+	 * @param possibleCost
+	 * @param actualInterestedTime
+	 * @param currTime
+	 * @return 
+	 * 				
+	 */
+	private AvailableSlot getCurrentSlot(int possibleCost, DateTime actualInterestedTime, DateTime currTime, DeliveryTruckInitial truck) {
+		ArrayList<AvailableSlot> availableSlots = new ArrayList<AvailableSlot>();
+		ArrayList<TruckScheduleUnit> usableSchedule = new ArrayList<TruckScheduleUnit>();
+		
+		usableSchedule = putInScheduleAccordingToCostValue(possibleCost, currTime, schedule, truck);
+		
+		availableSlots = Utility.getAvailableSlots(usableSchedule, availableSlots, new TimeSlot (new DateTime(currTime), truck.getTotalTimeRange().getEndTime()));
+		//TODO check about when availableSlot == empty but usableSchedule isn't!
+		if (availableSlots.size() == 0)
+			return null;
+		else {
+			for (AvailableSlot av : availableSlots) {
+				if (av.getStartTime().compareTo(actualInterestedTime)< 0 && av.getEndTime().compareTo(actualInterestedTime) > 0)
+					return av;
+			}
+			return null;
+		}
+	}
+	private ArrayList<TruckScheduleUnit> putInScheduleAccordingToCostValue(int cost, DateTime currTime, 
+			ArrayList<TruckScheduleUnit> truckSchedule, DeliveryTruckInitial truck ) {
+		ArrayList<TruckScheduleUnit> usableSchedule = new ArrayList<TruckScheduleUnit>();
+		switch (cost) {
+			case 0:// for checking if schedule is free at interested time
+			{
+				for(TruckScheduleUnit tsu : truckSchedule) {
+					usableSchedule.add(tsu);
+				}
+			}
+			case 1: //if found available slot in case1, but didn't found in case0, then it means an UNDER_PROCESS delivery will be compromised
+			{
+				for(TruckScheduleUnit tsu : truckSchedule) {
+					if (tsu instanceof TruckDeliveryUnit) {
+						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
+						if ( unitStatus.get(del) == Reply.ACCEPT || unitStatus.get(del) == Reply.WEEK_ACCEPT ) 
+							usableSchedule.add(tsu);
+					}
+				}
+			}
+			case 2: // if found available slot in case2 but not in earlier cases then means a WEEK_ACCEPTED	delivery would be compromised 
+			{
+				for(TruckScheduleUnit tsu : truckSchedule) {
+					if (tsu instanceof TruckDeliveryUnit) {
+						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
+						if ( unitStatus.get(del) == Reply.ACCEPT ) 
+							usableSchedule.add(tsu);
+					}
+				}
+			}
+			case 3: //if found
+			{
+				for(TruckScheduleUnit tsu : truckSchedule) {
+					if (tsu instanceof TruckDeliveryUnit) {
+						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
+						if ( unitStatus.get(del) == Reply.ACCEPT && !( del.getDeliveryNo() == 0 
+								&& currTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED).compareTo(del.getDeliveryTime()) <= 0))
+							//if it is an accept but not like above deliery
+							usableSchedule.add(tsu);
+					}
+				}
+			}
+			case 4:
+			{
+				for(TruckScheduleUnit tsu : truckSchedule) {
+					if (tsu instanceof TruckDeliveryUnit) {
+						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
+						if ( unitStatus.get(del) == Reply.ACCEPT &&
+								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*3).compareTo(del.getDeliveryTime()) <= 0))
+							usableSchedule.add(tsu);
+					}
+				}
+			}
+			case 5:;//TODO  check what should be next criteria..may be think of delivery 2?
+			{
+				
+			}
+		}
+		usableSchedule = fillTravelUnitsInSchedule(truck, usableSchedule, Utility.getCloner());//Well means TTU wold be cloned but TDU wound't. 
+		//But doesnt matter since usable schedule is at the end would only be used to get available slots!
+		return null;
+		
+	}
+	private Duration getPsToOrderDuration(ProductionSiteInitial ps, OrderAgentInitial or, DeliveryTruckInitial truck) {
+		Double psToOrderDistance = Point.distance(ps.getLocation(), or.getPosition());
+		Duration psToOrderTravelTime = new Duration((long)((psToOrderDistance/truck.getSpeed())*60*60*1000)); //travel time required to reach order from specific PS
+		return psToOrderTravelTime;
+	}
+	private ProductionSiteInitial getSelectedPS(OrderAgentInitial order) {
+		return order.getPossibleSites().get(0); //TODO: after first checking, i should check for all possible prodcution sites, 
+		//coz currently they aren't ordered at all.
+	}
+	public void getClashingTSUWith(TruckDeliveryUnit tunit) {
+//		for (TruckScheduleUnit tsu : schedule) {
+//			if (tsu instanceof TruckDeliveryUnit) {
+//				if (((TruckDeliveryUnit) tsu).)
+//			}
+//		}
+//		
+	}
 }
