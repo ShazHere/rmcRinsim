@@ -105,7 +105,7 @@ public class OrderAgentPlan {
 			orderAgent.setOrderState(OrderAgentState.BOOKED);
 			logger.info(orderAgent.getOrder().getId() + "O fully BOOKED");
 		}
-			
+		this.timeForLastIntention = currTime;
 		
 	}
 	private int calculateRemainingVolume() {
@@ -256,13 +256,15 @@ public class OrderAgentPlan {
 	protected void removeDeliveriesAccordingTofFailedDeliveryAndCurrentTime(Delivery failedDel, DateTime currTime) {
 		ArrayList<Delivery> removableDel = new ArrayList<Delivery>();
 		for (Delivery d : deliveries) {
-			if (deliveries.indexOf(d) > deliveries.indexOf(failedDel) || d.getLoadingTime().compareTo(currTime) <= 0)// || loadingTime of d is < currTime then delete too
+			if (deliveries.indexOf(d) > deliveries.indexOf(failedDel))// || d.getLoadingTime().compareTo(currTime) <= 0)// || loadingTime of d is < currTime then delete too
 				removableDel.add(d);
 		}
 		removableDel.add(failedDel);
 		checkArgument(removableDel.isEmpty() == false, true);
-		for (Delivery del: removableDel)
+		for (Delivery del: removableDel) {
 			deliveries.remove(del);
+			orderAgent.sendOrderPlanInformerAnt(del);
+		}
 		checkArgument(isDeliveryOrderCorrect() == true, true);
 	}
 	private boolean isDeliveryOrderCorrect() {

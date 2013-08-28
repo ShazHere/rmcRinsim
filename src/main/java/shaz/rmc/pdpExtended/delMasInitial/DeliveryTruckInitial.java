@@ -206,6 +206,9 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	public int getId() {
 		return id;
 	}
+	public TruckCommunicationStrategy getStrategy() {
+		return strategy;
+	}
 	@Override
 	public void afterTick(TimeLapse timeLapse) {
 		}

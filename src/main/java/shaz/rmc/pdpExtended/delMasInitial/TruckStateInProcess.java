@@ -14,7 +14,6 @@ import com.rits.cloning.Cloner;
 
 import rinde.sim.core.TimeLapse;
 import shaz.rmc.core.AvailableSlot;
-import shaz.rmc.core.Reply;
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.TruckDeliveryUnit;
 import shaz.rmc.core.TruckScheduleUnit;
@@ -23,6 +22,7 @@ import shaz.rmc.core.Utility;
 import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
+import shaz.rmc.pdpExtended.delMasInitial.communication.OrderPlanInformerAnt;
 
 /**
  * @author Shaza
@@ -73,7 +73,6 @@ public class TruckStateInProcess extends TruckAgentState {
 	private void processExplorationAnts(long startTime) {
 		if (explorationAnts.isEmpty())
 			return;
-	
 		//first remove invalid schedules, and get whats the maxScore size
 		int maxSizeFound = 0;
 		Iterator<ExpAnt> i = explorationAnts.iterator();
@@ -109,7 +108,6 @@ public class TruckStateInProcess extends TruckAgentState {
 		}
 		else {
 			bestAnt = explorationAnts.get(truckAgent.getRandomPCSelector().nextInt(explorationAnts.size()));
-	
 		} //soem condition if bestAnt == b.shedule..than better bestAnt = null.
 		printBestAnt(startTime);
 		explorationAnts.clear(); 
@@ -149,17 +147,10 @@ public class TruckStateInProcess extends TruckAgentState {
 	}
 	private void handleREJECTEDTunits(IntAnt iAnt) {
 		for (communicateAbleUnit u : iAnt.getSchedule()){
-			if (u.getOrderReply() == Reply.REJECT && u.isAddedInTruckSchedule() == true){ //means proably orderPlan changed
-				truckAgent.getTruckSchedule().remove(u.getTunit());
-				if (truckAgent.getTruckSchedule().isEmpty())
-					adjustAvailableSlotInBeginning();
-				else
-					truckAgent.getTruckSchedule().adjustTruckSchedule(truckAgent);
-				logger.debug(truckAgent.getId()+"T Schedule unit removed in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
-			}
+			removeRejectedUnitFromSchedule(u);
 		}
 	}
-	
+
 	private void sentToPS(ExpAnt eAnt, ArrayList<AvailableSlot> pAvSlots) {
 		checkArgument(pAvSlots.isEmpty() == false, true);
 		if (truckAgent.getTruckSchedule().size() > 0) {
@@ -244,18 +235,21 @@ public class TruckStateInProcess extends TruckAgentState {
 		}		
 	}
 
-
 	@Override
 	public
 	void letMeBreak(long startTime) {
 		shouldIBreak(startTime);		
 	}
 
-
 	@Override
 	public void processGeneralAnts(long startTime) {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public void processOrderPlanInformerAnts(long startTime) {
+		super.processOrderPlanInformerAnt();
 	}
 
 }

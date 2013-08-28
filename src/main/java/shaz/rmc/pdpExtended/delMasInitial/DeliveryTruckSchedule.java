@@ -28,6 +28,7 @@ import shaz.rmc.core.TruckTravelUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.core.domain.Delivery;
+import shaz.rmc.pdpExtended.delMasInitial.communication.TruckStrategyCoalition;
 
 /**
  * @author Shaza
@@ -457,6 +458,7 @@ public class DeliveryTruckSchedule {
 	 *	TODO: add cost for capacity match/missmatch for hetrogenious truck. 26/08/2013
 	 */
 	public TruckCostForDelivery getCostForMakingDelivery(Delivery del, TimeSlot timeWindow, DeliveryTruckInitial truck, DateTime currTime) {
+		checkArgument(truck.getStrategy() instanceof TruckStrategyCoalition,true);
 		OrderAgentInitial or = (OrderAgentInitial)del.getOrder();
 		ProductionSiteInitial ps= getSelectedPS(or);
 		
@@ -484,6 +486,7 @@ public class DeliveryTruckSchedule {
 	 */
 	private TruckCostForDelivery getDelCostIfPossible(int deliveryCost, DateTime actualInterestedTime, DateTime deliveryTimeAtOrder, AvailableSlot currentSlot,
 			DateTime interestedTime, ProductionSiteInitial ps, OrderAgentInitial or,DeliveryTruckInitial truck, Delivery previousDel) {
+		checkArgument(truck.getStrategy() instanceof TruckStrategyCoalition,true);
 		if (ScheduleHelper.isInterestedAtExactTime(truck, interestedTime, getPsToOrderDuration(ps, or, truck), currentSlot,actualInterestedTime, ps, or)) {
 				return getTcfdWhenInterested(deliveryCost, actualInterestedTime, deliveryTimeAtOrder, currentSlot, ps, or, truck, new Duration(0), previousDel);
 		}
@@ -511,7 +514,7 @@ public class DeliveryTruckSchedule {
 	private TruckCostForDelivery getTcfdWhenInterested(int deliveryCost, DateTime actualInterestedTime,
 			DateTime deliveryTimeAtOrder, AvailableSlot currentSlot, ProductionSiteInitial ps, OrderAgentInitial or, DeliveryTruckInitial truck, 
 			Duration currentLagTime, Delivery previousDel) {
-		
+		checkArgument(truck.getStrategy() instanceof TruckStrategyCoalition,true);
 		Delivery.Builder delBuilder = new Delivery.Builder();
 		delBuilder.setOrder(or);
 		delBuilder.setDeliveryNo(previousDel.getDeliveryNo());

@@ -3,7 +3,10 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -12,9 +15,12 @@ import rinde.sim.core.TimeLapse;
 import rinde.sim.core.model.pdp.PDPModel.VehicleState;
 import shaz.rmc.core.Ant;
 import shaz.rmc.core.AvailableSlot;
+import shaz.rmc.core.Reply;
 import shaz.rmc.core.TimeSlot;
+import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
+import shaz.rmc.pdpExtended.delMasInitial.communication.OrderPlanInformerAnt;
 
 /**
  * @author Shaza
@@ -30,6 +36,7 @@ public abstract class TruckAgentState {
 		//But if in future some other states handle them, then I need to change this.
 	protected final ArrayList<ExpAnt> explorationAnts;
 	protected final ArrayList<IntAnt> intentionAnts;
+	protected final ArrayList<OrderPlanInformerAnt> orderPlanInformerAnts;
 	protected final ArrayList<Ant> generalAnts;
 
 	private final TimeSlot totalTimeRange; //for storing the actual period of activity of truck. i.e when trucks start its day, and ends it
@@ -44,6 +51,7 @@ public abstract class TruckAgentState {
 		
 		explorationAnts = new ArrayList<ExpAnt>();
 		intentionAnts = new ArrayList<IntAnt>();
+		orderPlanInformerAnts = new ArrayList<OrderPlanInformerAnt>();
 		generalAnts = new ArrayList<Ant>();
 		availableSlots = new ArrayList<AvailableSlot>();
 		adjustAvailableSlotInBeginning();
@@ -55,6 +63,7 @@ public abstract class TruckAgentState {
 	public abstract void followPracticalSchedule(TimeLapse timeLapse);
 	public abstract void letMeBreak(long startTime);
 	public abstract void processGeneralAnts(long startTime);
+	public abstract void processOrderPlanInformerAnts(long startTime);
 	
 	/**
 	 * Just to avoid that AvailableSlot is 1 if truck schedule is empty.
@@ -69,6 +78,9 @@ public abstract class TruckAgentState {
 	}
 	public void addIntAnt(IntAnt iAnt) {
 		intentionAnts.add(iAnt);
+	}
+	public void addOrderPlanInformerAnt(OrderPlanInformerAnt opiAnt) {
+		orderPlanInformerAnts.add(opiAnt);
 	}
 	public void addGeneralAnt(Ant gAnt) {
 		generalAnts.add(gAnt);
@@ -102,7 +114,31 @@ public abstract class TruckAgentState {
 		}
 	}
 	
+	protected void processOrderPlanInformerAnt(){
+		if ( orderPlanInformerAnts.isEmpty()) 
+			return;
+		Iterator<OrderPlanInformerAnt> i = orderPlanInformerAnts.iterator();
+		while (i.hasNext()) { 
+			OrderPlanInformerAnt opiAnt = i.next();
+			checkArgument(opiAnt.getCommUnit().getOrderReply() == Reply.REJECT);
+			this.removeRejectedUnitFromSchedule(opiAnt.getCommUnit());
+		}
+	}
 	
+	/**
+	 * @param u
+	 */
+	protected void removeRejectedUnitFromSchedule(communicateAbleUnit u) {
+		if (u.getOrderReply() == Reply.REJECT && u.isAddedInTruckSchedule() == true){ //means proably orderPlan changed
+			truckAgent.getTruckSchedule().remove(u.getTunit());
+			if (truckAgent.getTruckSchedule().isEmpty())
+				adjustAvailableSlotInBeginning();
+			else
+				truckAgent.getTruckSchedule().adjustTruckSchedule(truckAgent);
+			logger.debug(truckAgent.getId()+"T Schedule unit removed in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
+		}
+	}
+
 	public static final int IN_PROCESS = 0; // The normal and general state
 	public static final int BROKEN = 1;
 	public static final int TEAM_COMMITMENT = 2;  //Truck is in a transition state w.r.t team. shouldn't send exp or int ants, neither process them.

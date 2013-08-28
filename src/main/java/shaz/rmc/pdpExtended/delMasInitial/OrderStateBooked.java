@@ -3,14 +3,8 @@
  */
 package shaz.rmc.pdpExtended.delMasInitial;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
-import java.util.ArrayList;
-
 
 import rinde.sim.core.TimeLapse;
-import rinde.sim.core.graph.Point;
-import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 
 /**
  * @author Shaza

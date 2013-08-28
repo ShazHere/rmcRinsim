@@ -36,6 +36,7 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.FeaAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.OrderCommunicationStrategy;
+import shaz.rmc.pdpExtended.delMasInitial.communication.OrderPlanInformerAnt;
 import shaz.rmc.pdpExtended.delMasInitial.communication.OrderStrategyCoalition;
 import shaz.rmc.pdpExtended.delMasInitial.communication.OrderStrategyDelMAS;
 
@@ -58,7 +59,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private OrderAgentPlan orderPlan;
 	private final OrderCommunicationStrategy strategy;
 
-	private ArrayList<CommitmentAnt> commitmentAnts;
 	private final Mailbox mailbox;
 	private CommunicationAPI cApi;
 	
@@ -82,7 +82,6 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		mailbox = new Mailbox();
 		timeForLastFeaAnt = new DateTime(0);
 		
-		commitmentAnts = new ArrayList<CommitmentAnt>();
 		//deliveries = new ArrayList<Delivery>();
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
 		orderPlan = new OrderAgentPlan(new Duration(0), this, GlobalParameters.START_DATETIME);
@@ -353,6 +352,10 @@ public class OrderAgentInitial  extends Depot implements Agent {
 				+ orderPlan.getRemainingToBookVolume() + ", parcelDeliveries="
 				+ parcelDeliveries + ", orderState="
 				+ getOrderState() + "]";
+	}
+	public void sendOrderPlanInformerAnt(Delivery del) {
+		OrderPlanInformerAnt opiAnt = new OrderPlanInformerAnt(this, del);
+		cApi.send(del.getTruck(), opiAnt);
 	}
 	
 }

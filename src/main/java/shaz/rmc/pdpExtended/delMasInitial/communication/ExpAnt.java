@@ -11,9 +11,7 @@ import org.joda.time.Duration;
 import com.rits.cloning.Cloner;
 import static com.google.common.base.Preconditions.checkArgument;
 
-import rinde.sim.core.graph.Point;
 import rinde.sim.core.model.communication.CommunicationUser;
-import shaz.rmc.core.Agent;
 import shaz.rmc.core.Ant;
 import shaz.rmc.core.AvailableSlot;
 import shaz.rmc.core.ScheduleHelper;
@@ -304,6 +302,7 @@ public class ExpAnt extends Ant {
 		exp.currentLagTime = this.currentLagTime;
 		exp.lastOrderTravelUnit = this.lastOrderTravelUnit;
 		exp.pS4NextOrderVisited = this.pS4NextOrderVisited;
+		exp.currentWastedConcrete = this.currentWastedConcrete;
 		return exp;
 	}
  

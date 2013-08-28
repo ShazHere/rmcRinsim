@@ -7,6 +7,7 @@ import org.joda.time.Duration;
 
 import shaz.rmc.core.domain.Delivery;
 import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * @author Shaza
@@ -28,7 +29,7 @@ public class TruckDeliveryUnit extends TruckScheduleUnit {
 		delivery = pDelivery;
 		this.wastedConcrete = pWastedConcrete;
 		this.lagTime = pLagTime;
-		
+		checkArgument(this.wastedConcrete == delivery.getWastedVolume());
 	}
 
 	public Delivery getDelivery() {
