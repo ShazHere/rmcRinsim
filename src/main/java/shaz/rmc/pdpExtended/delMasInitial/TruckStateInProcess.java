@@ -63,7 +63,7 @@ public class TruckStateInProcess extends TruckAgentState {
 				addOrUpdateTUnits(iAnt);;
 			} //no need of else,coz it will be removed any way..
 			else {
-				handleREJECTEDTunits(iAnt);
+				handleREJECTEDTunits(iAnt, currTime);
 			}
 			truckAgent.getTruckSchedule().makePracticalSchedule(truckAgent);
 			intentionAnts.clear();  //remove the ant
@@ -122,8 +122,7 @@ public class TruckStateInProcess extends TruckAgentState {
 				checkArgument(u.getTunit().getDelivery().getDeliveryTime().minus(u.getTunit().getDelivery().getStationToCYTravelTime()).minusMinutes(GlobalParameters.LOADING_MINUTES).isEqual(u.getTunit().getTimeSlot().getStartTime()), true);
 				checkArgument(u.getTunit().getTimeSlot().getEndTime().compareTo(getTotalTimeRange().getEndTime()) <= 0 , true);
 				checkArgument(u.getTunit().getTimeSlot().getStartTime().compareTo(getTotalTimeRange().getStartTime()) >= 0 , true);
-				TruckDeliveryUnit tu = cl.deepClone(u.getTunit());
-				checkArgument(truckAgent.getTruckSchedule().alreadyExist(tu) == false, true);
+				TruckDeliveryUnit tu = cl.deepClone(u.getTunit());				
 				truckAgent.getTruckSchedule().add(tu, u.getOrderReply());
 				logger.debug(truckAgent.getId()+"T Schedule unit added in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
 				
@@ -145,9 +144,9 @@ public class TruckStateInProcess extends TruckAgentState {
 		}
 		return newDeliveryUnitAdded;
 	}
-	private void handleREJECTEDTunits(IntAnt iAnt) {
+	private void handleREJECTEDTunits(IntAnt iAnt, DateTime currTime) {
 		for (communicateAbleUnit u : iAnt.getSchedule()){
-			removeRejectedUnitFromSchedule(u);
+			removeRejectedUnitFromSchedule(u, currTime);
 		}
 	}
 
@@ -172,7 +171,7 @@ public class TruckStateInProcess extends TruckAgentState {
 		//check  exp ants to be sent after particular interval only
 		if (currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN ) {
 			ExpAnt eAnt = new ExpAnt(truckAgent, Utility.getAvailableSlots(truckAgent.getTruckSchedule().getSchedule(), availableSlots,  
-					new TimeSlot(new DateTime(currTime), getTotalTimeRange().getEndTime())), truckAgent.getTruckSchedule().getSchedule(), currTime);
+					new TimeSlot(new DateTime(currTime), getTotalTimeRange().getEndTime()), GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l), truckAgent.getTruckSchedule().getSchedule(), currTime);
 			if (availableSlots.size()>0) {
 				sentToPS(eAnt, availableSlots );
 			}
@@ -249,7 +248,7 @@ public class TruckStateInProcess extends TruckAgentState {
 
 	@Override
 	public void processOrderPlanInformerAnts(long startTime) {
-		super.processOrderPlanInformerAnt();
+		super.processOrderPlanInformerAnt(startTime);
 	}
 
 }

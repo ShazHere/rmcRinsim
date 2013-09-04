@@ -131,7 +131,7 @@ public class ExpAnt extends Ant {
 	 */
 	public boolean isInterested(DateTime interestedTime, Double travelDistance,  final DateTime currTime, ProductionSiteInitial pS, OrderAgentInitial pOr) {
 		Duration currPSToCurrOrderTravelTime = new Duration((long)((travelDistance/truckSpeed)*60*60*1000)); //travel time required to reach order from specific PS
-		Utility.getAvailableSlots(this.schedule, this.availableSlots, new TimeSlot (new DateTime(currTime), this.truckTotalTimeRange.getEndTime()));
+		Utility.getAvailableSlots(this.schedule, this.availableSlots, new TimeSlot (new DateTime(currTime), this.truckTotalTimeRange.getEndTime()), GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l);
 		if (availableSlots.size() == 0)
 			return false;
 		AvailableSlot currentSlot = availableSlots.get(0);
@@ -388,7 +388,7 @@ public class ExpAnt extends Ant {
 			}
 			this.schedule.add(this.currentUnit);//Actual addition in schedule
 			scheduleUnitsAdded += 1; //keepint it one considering that the added delivery units is one only. .. 
-			Utility.getAvailableSlots(this.schedule, this.availableSlots, this.truckTotalTimeRange); //also sorts schedule
+			Utility.getAvailableSlots(this.schedule, this.availableSlots, this.truckTotalTimeRange, GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l); //also sorts schedule
 			return true;
 		} catch (Exception e) {
 			e.printStackTrace();

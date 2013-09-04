@@ -7,6 +7,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,6 @@ import org.joda.time.Duration;
 
 import shaz.rmc.core.TimeSlot;
 import shaz.rmc.core.domain.Delivery;
-import shaz.rmc.pdpExtended.delMasInitial.communication.IntAnt;
 
 /**
  * @author Shaza
@@ -69,20 +69,21 @@ public class OrderAgentPlan {
 		refreshTimes = new LinkedHashMap<Delivery, DateTime>();
 		isConfirmed =new LinkedHashMap<Delivery, Boolean>();
 		isPhysicallyCreated = new LinkedHashMap<Delivery, Boolean>();
-	
 	}
 	/**
 	 * should not be called for refresh deliveries, rather it should be called for the deliveries for which order was really interested.
-	 * @param iAnt the ant under process
+	 * @param Delivery
 	 * @param currTime
+	 * @param isConfirmedDelivery if delivery Reply is UNDER_PROCESS then isConfirmed = false, if Delivery Reply is WEEKACCEPT then isConfirmed = true.
 	 */ 
-	protected void acceptIntentionArangementInOrder(IntAnt iAnt, DateTime currTime) {
+	protected void acceptIntentionArangementInOrder(Delivery del, DateTime currTime, boolean isConfirmedDelivery) {
 		checkArgument(orderAgent.getOrderState() == OrderAgentState.IN_PROCESS, true);
-		refreshTimes.put(iAnt.getCurrentUnit().getDelivery(), currTime);
-		deliveries.add(iAnt.getCurrentUnit().getDelivery());
-		isPhysicallyCreated.put(iAnt.getCurrentUnit().getDelivery(), false);
-		isConfirmed.put(iAnt.getCurrentUnit().getDelivery(), false);
+		refreshTimes.put(del, currTime);
+		deliveries.add(del);
+		isPhysicallyCreated.put(del, false);
+		isConfirmed.put(del, isConfirmedDelivery);
 		timeForLastIntention = currTime;
+		sortDeliveries(deliveries);
 		//setOrderInterests();
 	}
 	/**
@@ -98,7 +99,7 @@ public class OrderAgentPlan {
 			interestedDeliveryNo = lastDelivery.getDeliveryNo() +1;
 		}
 		else{
-			interestedTime = orderAgent.getOrder().getStartTime(); 
+			interestedTime = orderAgent.getOrder().getStartTime(); //TODO there should be .plus(DelayStartTime)
 			interestedDeliveryNo = 0;
 		}			
 		if (remainingToBookVolume <= 0) {
@@ -108,7 +109,7 @@ public class OrderAgentPlan {
 		this.timeForLastIntention = currTime;
 		
 	}
-	private int calculateRemainingVolume() {
+	protected int calculateRemainingVolume() {
 		int remainingVolume = totalConcreteRequired;
 		if (!deliveries.isEmpty()){
 			for (Delivery d : deliveries) {
@@ -153,13 +154,17 @@ public class OrderAgentPlan {
 		checkArgument(orderAgent.getOrderState() == OrderAgentState.WAITING, true);
 		interestedTime = d.getDeliveryTime();
 		interestedDeliveryNo = d.getDeliveryNo();
+		removeDelivery(d);
+		orderAgent.setOrderState(OrderAgentState.IN_PROCESS);
+		logger.info(orderAgent.getOrder().getId() + "O Order Delivery Reset");
+	}
+	protected void removeDelivery(Delivery d) {
 		deliveries.remove(d);
 		refreshTimes.remove(d);
 		isConfirmed.remove(d); 
 		isPhysicallyCreated.remove(d);
-		orderAgent.setOrderState(OrderAgentState.IN_PROCESS);
-		logger.info(orderAgent.getOrder().getId() + "O Order Delivery Reset");
 	}
+	
 	public DateTime getInterestedTime() {
 		return interestedTime;
 	}
@@ -262,7 +267,7 @@ public class OrderAgentPlan {
 		removableDel.add(failedDel);
 		checkArgument(removableDel.isEmpty() == false, true);
 		for (Delivery del: removableDel) {
-			deliveries.remove(del);
+			this.removeDelivery(del);
 			orderAgent.sendOrderPlanInformerAnt(del);
 		}
 		checkArgument(isDeliveryOrderCorrect() == true, true);
@@ -283,5 +288,16 @@ public class OrderAgentPlan {
 			return false;
 	}
 	
-	
+	/**
+	 * @param pSchedule
+	 */
+	private void sortDeliveries(ArrayList<Delivery> deliveries) {
+		if (deliveries.size() <= 1)
+			return;
+		Collections.sort(deliveries, new Comparator<Delivery>(){
+		    public int compare( Delivery a, Delivery b ){
+		        return a.getDeliveryNo()- b.getDeliveryNo();
+		    }
+		});
+	} 
 }

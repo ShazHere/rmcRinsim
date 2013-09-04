@@ -276,7 +276,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		int deliveredConcrete =0;
 		int totalDeliveries = 0;
 		if (!truckSchedule.isEmpty()) {
-			for(TruckScheduleUnit u: truckSchedule.getSchedule()) {
+			for(TruckScheduleUnit u: truckSchedule.getPracticalSchedule()) {
 				if (u instanceof TruckTravelUnit) 
 					travelMin += ((TruckTravelUnit) u).getTravelTime().getStandardMinutes();
 				else {

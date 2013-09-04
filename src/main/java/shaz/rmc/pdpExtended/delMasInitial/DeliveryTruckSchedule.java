@@ -36,13 +36,15 @@ import shaz.rmc.pdpExtended.delMasInitial.communication.TruckStrategyCoalition;
  */
 public class DeliveryTruckSchedule {
 	
-	protected final ArrayList<TruckScheduleUnit> schedule; //schedule that is used in truck agent as well as for intentions till 17June, 2013
-	protected ArrayList<TruckScheduleUnit> practicalSchedule; //should contain only ACCEPTED units and travelUnits (accordingly)
+	private final ArrayList<TruckScheduleUnit> schedule; //schedule that is used in truck agent as well as for intentions till 17June, 2013
+	private ArrayList<TruckScheduleUnit> practicalSchedule; //should contain only ACCEPTED units and travelUnits (accordingly)
 	private final Map<Delivery, Reply> unitStatus;
+	private final ArrayList<TruckScheduleUnit> removedUnits;
 
 	DeliveryTruckSchedule(ArrayList<TruckScheduleUnit> pSch) {
 		this.schedule = pSch;
 		unitStatus = new LinkedHashMap<Delivery, Reply>();
+		removedUnits = new ArrayList<TruckScheduleUnit>();
 	}
 	/**
 	 * to check if newSch (explored by expAnt) still contains all the elements of b.schedule and is a valid schedule for truck
@@ -101,7 +103,10 @@ public class DeliveryTruckSchedule {
 	 * TODO: consider returning defensive copy?
 	 */
 	protected ArrayList<TruckScheduleUnit> getSchedule() {
-		return schedule;
+		ArrayList<TruckScheduleUnit> defensiveCopyArray = new ArrayList<TruckScheduleUnit>();  
+        defensiveCopyArray.addAll(schedule);  
+        return defensiveCopyArray;  
+		//return schedule;
 	}
 	/**
 	 * @param newUnit
@@ -116,35 +121,44 @@ public class DeliveryTruckSchedule {
 	 * Add element in the schedule and sorts it as well.
 	 */
 	protected void add(TruckDeliveryUnit newUnit, Reply orderReply) {
+		checkArgument(alreadyExist(newUnit) == false, true);
 		unitStatus.put(newUnit.getDelivery(), orderReply);
 		this.add(newUnit);
+		
 	}
 	/**
 	 * @param tdu
 	 * removes from schedule truckDeliveryUnit and associated TruckTravelUnits.
 	 */
 	protected void remove(TruckDeliveryUnit tdu) {
-		
+		checkArgument(getIndexOf(tdu, this.schedule)> -1 || (getIndexOf(tdu, this.schedule) == -1 && getIndexOf(tdu, removedUnits) > -1), true);
+		if (getIndexOf(tdu, removedUnits) > -1)
+			return;
 		if (schedule.size() == 1){
-			schedule.remove(getIndexOf(tdu));
+			schedule.remove(getIndexOf(tdu, this.schedule));
 			unitStatus.remove(tdu.getDelivery());
+			removedUnits.add(tdu);
 			checkArgument(schedule.isEmpty(), true);
 			return;
 		}
 		//means schedule.size>1
-		int unitIndex = getIndexOf(tdu);//
+		int unitIndex = getIndexOf(tdu, this.schedule);//
 		checkArgument(unitIndex != -1, true);
 		unitStatus.remove(tdu.getDelivery());
 		if (unitIndex == 0) {
 			checkArgument(schedule.get(1) instanceof TruckTravelUnit == true, true);
+			removedUnits.add(schedule.get(1));
+			removedUnits.add(schedule.get(getIndexOf(tdu, this.schedule)));
 			schedule.remove(1); //travel Unit after tdu.
-			schedule.remove(getIndexOf(tdu));
+			schedule.remove(getIndexOf(tdu, this.schedule));
 		}
 		else if (unitIndex > 0){
 			if (unitIndex == schedule.size()-1){
 				checkArgument(schedule.get(unitIndex-1) instanceof TruckTravelUnit == true, true);
+				removedUnits.add(schedule.get(unitIndex-1));
+				removedUnits.add(schedule.get(getIndexOf(tdu, this.schedule)));
 				schedule.remove(unitIndex-1); //travel Unit before tdu.
-				schedule.remove(getIndexOf(tdu));
+				schedule.remove(getIndexOf(tdu, this.schedule));
 				return;
 			}
 			else {
@@ -152,9 +166,12 @@ public class DeliveryTruckSchedule {
 				TruckTravelUnit beforeTdu = (TruckTravelUnit) schedule.get(unitIndex-1);
 				checkArgument(schedule.get(unitIndex+1) instanceof TruckTravelUnit == true, true);
 				TruckTravelUnit afterTdu = (TruckTravelUnit) schedule.get(unitIndex+1);
-				schedule.remove(getIndexOf(beforeTdu));
-				schedule.remove(getIndexOf(afterTdu));
-				schedule.remove(getIndexOf(tdu));
+				removedUnits.add(schedule.get(getIndexOf(beforeTdu, this.schedule)));
+				removedUnits.add(schedule.get(getIndexOf(afterTdu, this.schedule)));
+				removedUnits.add(schedule.get(getIndexOf(tdu, this.schedule)));
+				schedule.remove(getIndexOf(beforeTdu, this.schedule));
+				schedule.remove(getIndexOf(afterTdu, this.schedule));
+				schedule.remove(getIndexOf(tdu, this.schedule));
 			}	
 		}
 		Utility.sortSchedule(schedule);	
@@ -165,9 +182,9 @@ public class DeliveryTruckSchedule {
 	 * @return index of the tdu unit in this.schedule.
 	 * NOTE: initially used 'schedule.indexOf(tdu)' but the default indexOf was not behaving correctly
 	 */
-	private int getIndexOf(TruckDeliveryUnit tdu) {
+	private int getIndexOf(TruckDeliveryUnit tdu, ArrayList<TruckScheduleUnit> sch) {
 		int index = 0;
-		for (TruckScheduleUnit tsu : this.schedule) {
+		for (TruckScheduleUnit tsu : sch) {
 			if (tsu instanceof TruckDeliveryUnit) {
 				if (((TruckDeliveryUnit)tdu).getDelivery().equals(((TruckDeliveryUnit)tsu).getDelivery())
 						&& ((TruckDeliveryUnit)tdu).getLagTime().equals(((TruckDeliveryUnit)tsu).getLagTime())
@@ -183,9 +200,9 @@ public class DeliveryTruckSchedule {
 	 * @return index of the tdu unit in this.schedule.
 	 * NOTE: initially used 'schedule.indexOf(tdu)' but the default indexOf was not behaving correctly
 	 */
-	private int getIndexOf(TruckTravelUnit tdu) {
+	private int getIndexOf(TruckTravelUnit tdu, ArrayList<TruckScheduleUnit> sch) {
 		int index = 0;
-		for (TruckScheduleUnit tsu : this.schedule) {
+		for (TruckScheduleUnit tsu : sch) {
 			if (tsu instanceof TruckTravelUnit) {
 				if (((TruckTravelUnit)tdu).getTravelTime().equals(((TruckTravelUnit)tsu).getTravelTime())
 						&& tdu.getStartLocation().equals(tsu.getStartLocation())
@@ -295,26 +312,26 @@ public class DeliveryTruckSchedule {
 	}
 	/**
 	 * @param rmcTruck
-	 * @param pracSchedule
+	 * @param anySchedule
 	 * @param cl
 	 */
-	private ArrayList<TruckScheduleUnit> fillTravelUnitsInSchedule(DeliveryTruckInitial rmcTruck, ArrayList<TruckScheduleUnit> pracSchedule, final Cloner cl) {
-		//fill the travelUnits between ACCEPTED DeliveryUNits
+	private ArrayList<TruckScheduleUnit> fillTravelUnitsInSchedule(DeliveryTruckInitial rmcTruck, ArrayList<TruckScheduleUnit> anySchedule, final Cloner cl) {
+		//fill the travelUnits between  DeliveryUNits of anySchedule
 		ArrayList<TruckTravelUnit> toBeAddedTTU = new ArrayList<TruckTravelUnit>();//partially save in this arrayList, otherwise index of Practical schedule gets distrubed during For loop
-		for (int i =0;i < pracSchedule.size()-1; i+=1) { 
-			if (getTravelUnitIfExists(schedule, pracSchedule.get(i), pracSchedule.get(i+1)) != null)
-				toBeAddedTTU.add(cl.deepClone(getTravelUnitIfExists(schedule, pracSchedule.get(i), pracSchedule.get(i+1))));
+		for (int i =0;i < anySchedule.size()-1; i+=1) { 
+			if (getTravelUnitIfExists(schedule, anySchedule.get(i), anySchedule.get(i+1)) != null)
+				toBeAddedTTU.add(cl.deepClone(getTravelUnitIfExists(schedule, anySchedule.get(i), anySchedule.get(i+1))));
 			else{
-				TruckTravelUnit reqUnit = makeTravelUnitAfterI(rmcTruck,pracSchedule, i);
+				TruckTravelUnit reqUnit = makeTravelUnitAfterI(rmcTruck,anySchedule, i);
 				toBeAddedTTU.add(reqUnit);
 			}
 		}
 		if (schedule.get(0) instanceof TruckTravelUnit)
 			toBeAddedTTU.add((TruckTravelUnit) cl.deepClone(schedule.get(0)));
 		for (TruckTravelUnit ttu: toBeAddedTTU) {
-			pracSchedule.add(ttu);
+			anySchedule.add(ttu);
 		}
-		return pracSchedule;
+		return anySchedule;
 	}
 	
 	
@@ -431,7 +448,9 @@ public class DeliveryTruckSchedule {
 		return true;
 	}
 	public void updateUnitStatus(TruckDeliveryUnit tdu, Reply orderReply) {
-		unitStatus.put(tdu.getDelivery(), orderReply);	}
+		if (getIndexOf(tdu, schedule) >= 0)
+			unitStatus.put(tdu.getDelivery(), orderReply);	
+	}
 	
 	/**
 	 * @param del
@@ -466,7 +485,7 @@ public class DeliveryTruckSchedule {
 		
 		// now check for each cost value starting form least, which ever found return
 		for (int cost = 0; cost < 5; cost++) {
-			AvailableSlot currentSlot = getCurrentSlot(cost, actualInterestedTime, currTime, truck);
+			AvailableSlot currentSlot = getCurrentSlot(cost, actualInterestedTime, currTime, truck, timeWindow, or);
 			if (currentSlot == null)
 				continue;
 			TruckCostForDelivery tcfd = getDelCostIfPossible(cost, actualInterestedTime, timeWindow.getStartTime(), currentSlot, timeWindow.getStartTime(), ps, or, truck, del);
@@ -557,17 +576,19 @@ public class DeliveryTruckSchedule {
 	 * @param possibleCost
 	 * @param actualInterestedTime
 	 * @param currTime
-	 * @return 
+	 * @param timeWindow 
+	 * @param or 
+	 * @return the current available slot, in which the timeWindow fits. If not found then return Null.
 	 * 				
 	 */
-	private AvailableSlot getCurrentSlot(int possibleCost, DateTime actualInterestedTime, DateTime currTime, DeliveryTruckInitial truck) {
+	private AvailableSlot getCurrentSlot(int possibleCost, DateTime actualInterestedTime, DateTime currTime, DeliveryTruckInitial truck, TimeSlot timeWindow, OrderAgentInitial or) {
 		ArrayList<AvailableSlot> availableSlots = new ArrayList<AvailableSlot>();
 		ArrayList<TruckScheduleUnit> usableSchedule = new ArrayList<TruckScheduleUnit>();
 		
-		usableSchedule = putInScheduleAccordingToCostValue(possibleCost, currTime, schedule, truck);
-		
-		availableSlots = Utility.getAvailableSlots(usableSchedule, availableSlots, new TimeSlot (new DateTime(currTime), truck.getTotalTimeRange().getEndTime()));
-		//TODO check about when availableSlot == empty but usableSchedule isn't!
+		long slotSizeInMim =  new Duration (timeWindow.getStartTime(), timeWindow.getEndTime()).getStandardMinutes();
+		usableSchedule = putInScheduleAccordingToCostValue(possibleCost, currTime, schedule, truck, or);
+		Utility.adjustAvailableSlotInBeginning(currTime, availableSlots);
+		availableSlots = Utility.getAvailableSlots(usableSchedule, availableSlots, new TimeSlot (new DateTime(currTime), truck.getTotalTimeRange().getEndTime()), slotSizeInMim);
 		if (availableSlots.size() == 0)
 			return null;
 		else {
@@ -578,67 +599,118 @@ public class DeliveryTruckSchedule {
 			return null;
 		}
 	}
+	/**
+	 * @param cost
+	 * @param currTime
+	 * @param truckSchedule
+	 * @param truck
+	 * @param or 
+	 * @return Put the DSU in a returnSchedule, according to cost value given as parameter. So if this method is called with cost == 0,
+	 * then returnSchedule would have all the DSU's form original schedule. If cost is 1, then all DSU's would be in returnScehdule 
+	 * except 'UNDERPROCESS' ones. and so on
+	 */
 	private ArrayList<TruckScheduleUnit> putInScheduleAccordingToCostValue(int cost, DateTime currTime, 
-			ArrayList<TruckScheduleUnit> truckSchedule, DeliveryTruckInitial truck ) {
-		ArrayList<TruckScheduleUnit> usableSchedule = new ArrayList<TruckScheduleUnit>();
-		switch (cost) {
+			ArrayList<TruckScheduleUnit> truckSchedule, DeliveryTruckInitial truck, OrderAgentInitial or ) {
+		ArrayList<TruckScheduleUnit> returnSchedule = new ArrayList<TruckScheduleUnit>();
+		switch (cost) {//if same order delivery then never compromised
 			case 0:// for checking if schedule is free at interested time
 			{
 				for(TruckScheduleUnit tsu : truckSchedule) {
-					usableSchedule.add(tsu);
+					returnSchedule.add(tsu);
 				}
+				break;
 			}
 			case 1: //if found available slot in case1, but didn't found in case0, then it means an UNDER_PROCESS delivery will be compromised
-			{
+			{//if same order delivery then never compromised
 				for(TruckScheduleUnit tsu : truckSchedule) {
 					if (tsu instanceof TruckDeliveryUnit) {
 						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
-						if ( unitStatus.get(del) == Reply.ACCEPT || unitStatus.get(del) == Reply.WEEK_ACCEPT ) 
-							usableSchedule.add(tsu);
+						if (del.getOrder() == or)
+							returnSchedule.add(tsu);
+						else if ( unitStatus.get(del) == Reply.ACCEPT || unitStatus.get(del) == Reply.WEEK_ACCEPT ) 
+							returnSchedule.add(tsu);
 					}
 				}
+				break;
 			}
 			case 2: // if found available slot in case2 but not in earlier cases then means a WEEK_ACCEPTED	delivery would be compromised 
 			{
 				for(TruckScheduleUnit tsu : truckSchedule) {
 					if (tsu instanceof TruckDeliveryUnit) {
 						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
-						if ( unitStatus.get(del) == Reply.ACCEPT ) 
-							usableSchedule.add(tsu);
+						if (del.getOrder() == or)
+							returnSchedule.add(tsu);
+						else if ( unitStatus.get(del) == Reply.ACCEPT ) 
+							returnSchedule.add(tsu);
 					}
 				}
+				break;
 			}
-			case 3: //if found
+			case 3: //if found avalialbel slot in case3 but not earlier means ACCEPT deliveries with delNo==0 && 
+				//curTime+(MIMINUTES_BEFOR_DELIVERY_CREATED*3)< del.deliveryTime is compromised 
 			{
 				for(TruckScheduleUnit tsu : truckSchedule) {
 					if (tsu instanceof TruckDeliveryUnit) {
 						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
-						if ( unitStatus.get(del) == Reply.ACCEPT && !( del.getDeliveryNo() == 0 
-								&& currTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED).compareTo(del.getDeliveryTime()) <= 0))
+						if (del.getOrder() == or)
+							returnSchedule.add(tsu);
+						else if ( unitStatus.get(del) == Reply.ACCEPT && !( del.getDeliveryNo() == 0 
+								&& currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*3).compareTo(del.getDeliveryTime()) <= 0))
 							//if it is an accept but not like above deliery
-							usableSchedule.add(tsu);
+							returnSchedule.add(tsu);
 					}
 				}
+				break;
 			}
-			case 4:
+			case 4: //if found availableSlot in case4 and not earlier, means ACCEPT with (delNo==0 || delNo>0 &&
+				//curTime+MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED < del.deliveryTime)
 			{
 				for(TruckScheduleUnit tsu : truckSchedule) {
 					if (tsu instanceof TruckDeliveryUnit) {
 						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
-						if ( unitStatus.get(del) == Reply.ACCEPT &&
-								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*3).compareTo(del.getDeliveryTime()) <= 0))
-							usableSchedule.add(tsu);
+						if (del.getOrder() == or)
+							returnSchedule.add(tsu);
+						else if ( unitStatus.get(del) == Reply.ACCEPT &&
+								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED).compareTo(del.getDeliveryTime()) <= 0))
+							returnSchedule.add(tsu);
 					}
 				}
+				break;
 			}
-			case 5:;//TODO  check what should be next criteria..may be think of delivery 2?
+			case 5:
 			{
-				
+				for(TruckScheduleUnit tsu : truckSchedule) {
+					if (tsu instanceof TruckDeliveryUnit) {
+						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
+						if (del.getOrder() == or)
+							returnSchedule.add(tsu);
+						else if ( unitStatus.get(del) == Reply.ACCEPT &&
+								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*4).compareTo(del.getDeliveryTime()) <= 0))
+							returnSchedule.add(tsu);
+					}
+				}
+				break;
 			}
+			case 6:
+			{
+				for(TruckScheduleUnit tsu : truckSchedule) {
+					if (tsu instanceof TruckDeliveryUnit) {
+						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
+						if (del.getOrder() == or)
+							returnSchedule.add(tsu);
+						else if ( unitStatus.get(del) == Reply.ACCEPT &&
+								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*3).compareTo(del.getDeliveryTime()) <= 0))
+							returnSchedule.add(tsu);
+					}
+				}
+				break;
+			}
+			
 		}
-		usableSchedule = fillTravelUnitsInSchedule(truck, usableSchedule, Utility.getCloner());//Well means TTU wold be cloned but TDU wound't. 
+		returnSchedule = fillTravelUnitsInSchedule(truck, returnSchedule, Utility.getCloner());//Well means TTU wold be cloned but TDU wound't. 
 		//But doesnt matter since usable schedule is at the end would only be used to get available slots!
-		return null;
+		Utility.sortSchedule(returnSchedule);
+		return returnSchedule;
 		
 	}
 	private Duration getPsToOrderDuration(ProductionSiteInitial ps, OrderAgentInitial or, DeliveryTruckInitial truck) {
@@ -657,5 +729,47 @@ public class DeliveryTruckSchedule {
 //			}
 //		}
 //		
+	}
+	/**
+	 * @param tunit with respect to which overlapped has to be found in this.schedule
+	 * Should be called only if this.isOverlapped(TruckDeliveryUnit tunit) is true
+	 */
+	public void removeOverlappedUnit(TruckDeliveryUnit tunit) {
+		int indexOfOverlappingUnit = 0;
+		for (TruckScheduleUnit u : schedule) {
+			if (tunit.getTimeSlot().getStartTime().compareTo(u.getTimeSlot().getStartTime()) >= 0) {
+				if (tunit.getTimeSlot().getStartTime().compareTo(u.getTimeSlot().getEndTime()) <= 0){
+					indexOfOverlappingUnit = getIndexOfOverlappedUnit(u);
+					break;
+				}
+			}
+			else { //means startTime is less
+				if (tunit.getTimeSlot().getEndTime().compareTo(u.getTimeSlot().getStartTime()) >= 0){
+				 //means overlap exists 
+					indexOfOverlappingUnit = getIndexOfOverlappedUnit(u);
+					break;
+				}
+			}
+		}
+		checkArgument(schedule.get(indexOfOverlappingUnit) instanceof TruckDeliveryUnit, true);
+		TruckDeliveryUnit removableDelivery = (TruckDeliveryUnit) schedule.get(indexOfOverlappingUnit);
+		this.remove(removableDelivery);
+		
+	}
+	/**
+	 * @param u
+	 * @return
+	 */
+	private int getIndexOfOverlappedUnit(TruckScheduleUnit u) {
+		int indexOfOverlappingUnit;
+		if (u instanceof TruckDeliveryUnit)
+			indexOfOverlappingUnit = getIndexOf((TruckDeliveryUnit) u, schedule);
+		else //means u instance of TTU, so the TDU after it should be removed.
+			indexOfOverlappingUnit = getIndexOf((TruckTravelUnit)u,schedule) + 1;
+		return indexOfOverlappingUnit;
+	}
+	public void fillTravelUnitsInSchedule(DeliveryTruckInitial truckAgent) {
+		this.fillTravelUnitsInSchedule(truckAgent, schedule, Utility.getCloner());
+		Utility.sortSchedule(schedule);
 	}
 }

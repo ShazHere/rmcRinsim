@@ -57,8 +57,8 @@ public class TruckAgentFailureManager {
 	}
 
 	private void setSpecificTruckId() {
-		timeTruck.put(706, 3);
-		timeTruck.put(900, 5);
+		timeTruck.put(840, 1);
+		//timeTruck.put(900, 5);
 	}
 	
 	protected boolean canIBreakAt (DateTime currTime, int truckId) {

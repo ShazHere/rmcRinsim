@@ -41,7 +41,7 @@ public class Utility {
 	 * @return An array of available slots of more than GLOBALPARAMETERS.AVAILABLE_SLOT_SIZE found between the units of pSchedule. 
 	 * Also param availableSlot contains the same returning arrayList 
 	 */
-	 public static ArrayList<AvailableSlot> getAvailableSlots(ArrayList<TruckScheduleUnit> pSchedule , ArrayList<AvailableSlot> availableSlots, final TimeSlot truckTotalTimeRange) {
+	 public static ArrayList<AvailableSlot> getAvailableSlots(ArrayList<TruckScheduleUnit> pSchedule , ArrayList<AvailableSlot> availableSlots, final TimeSlot truckTotalTimeRange, long slotSizeInMinutes) {
 		if (pSchedule.isEmpty()) {
 			checkArgument(availableSlots.size() == 1 , true);
 			availableSlots.get(0).setStartTime(new DateTime(truckTotalTimeRange.getStartTime())); //start time fixed according to currrent time
@@ -60,7 +60,8 @@ public class Utility {
 			for (int i = 0; i< pSchedule.size(); i++) {
 				if (initialTime.compareTo(pSchedule.get(i).getTimeSlot().getStartTime()) < 0) {
 					Duration d = new Duration (initialTime, pSchedule.get(i).getTimeSlot().getStartTime());
-					if (d.compareTo(new Duration(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l*60l*1000l)) >= 0) {  //more than X hour slot
+					//if (d.compareTo(new Duration(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l*60l*1000l)) >= 0) {  //more than X hour slot
+					if (d.compareTo(new Duration(slotSizeInMinutes*60l*1000l)) >= 0) {  //more than X hour slot
 						av.setStartTime(initialTime);
 						av.setEndtime(pSchedule.get(i).getTimeSlot().getStartTime()); //chk start time or end time are inclusive or not
 //						if (i!=0) //if previous slot exists, then truck should start from the return station of previous slot
@@ -87,7 +88,7 @@ public class Utility {
 			//initialTime = pSchedule.get(pSchedule.size()-1).getTimeSlot().getEndTime();
 			if (initialTime.compareTo(truckTotalTimeRange.getEndTime()) < 0) {
 				Duration d = new Duration (initialTime, truckTotalTimeRange.getEndTime());
-				if (d.compareTo(new Duration(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l*60l*1000l)) >= 0) {
+				if (d.compareTo(new Duration(slotSizeInMinutes*60l*1000l)) >= 0) {
 //					if (!pSchedule.isEmpty()) { //if previous slot exists, then truck should start from the return station of previous slot
 //						av.setLocationAtStartTime(pSchedule.get(pSchedule.size()-1).getDelivery().getReturnStation().getLocation(), pSchedule.get(pSchedule.size()-1).getDelivery().getReturnStation());
 //					}
@@ -123,6 +124,15 @@ public class Utility {
 			return new TimeSlot(referenceTime.minus(travelDuration).minusMinutes(1), referenceTime.minusMinutes(1));
 		else
 			return new TimeSlot(referenceTime.plusMinutes(1), referenceTime.plus(travelDuration).plusMinutes(1));
+	}
+	
+	/**
+	 * Just to avoid that AvailableSlot is 1 if truck schedule is empty.
+	 * @param currTime 
+	 */
+	public static void adjustAvailableSlotInBeginning(DateTime currTime, ArrayList<AvailableSlot> availableSlots) {
+		availableSlots.clear();
+		availableSlots.add(new AvailableSlot(new TimeSlot(currTime, GlobalParameters.END_DATETIME), null, null));
 	}
 	public static boolean wrtieInFile( boolean isAppend, ResultElements resultElement) {
 		// PrintWriter out; //not using it any more because it swallows any exceptions and  

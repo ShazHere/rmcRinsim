@@ -27,7 +27,7 @@
 			
         			
 		<root> 
-    		<priority value ="DEBUG" /> 
+    		<priority value ="INFO" /> 
  		</root>
 			
 </log4j:configuration>

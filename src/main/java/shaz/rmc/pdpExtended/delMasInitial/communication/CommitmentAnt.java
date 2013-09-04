@@ -33,7 +33,7 @@ public class CommitmentAnt extends Ant {
 		super(sender);
 		originator = (OrderAgentInitial)sender;
 		creationTime = pCreateTime;
-		commUnit = new communicateAbleUnit(tdu, Reply.NO_REPLY, Reply.ACCEPT, false); //TODO: should order reply with reply.accept?
+		commUnit = new communicateAbleUnit(tdu, Reply.NO_REPLY, Reply.WEEK_ACCEPT, false); //TODO: should order reply with reply.accept?
 		
 	}
 

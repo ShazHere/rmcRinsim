@@ -220,7 +220,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	
 	public ResultElementsOrder getOrderResult(ArrayList<Integer> truckCapacities) { //truck capacities
 		int deliveredConcrete = 0;
-		if (orderPlan.getDeliveries().size() > 0) {
+		if (orderPlan.getDeliveries().size() > 0 
+				&& this.getOrderState() == OrderAgentState.SERVED ) {
 			for (Delivery d : orderPlan.getDeliveries()) { //there might b some error in this calculation.
 				DeliveryInitial di = this.getDeliveryForDomainDelivery(d);
 				if (di != null) {

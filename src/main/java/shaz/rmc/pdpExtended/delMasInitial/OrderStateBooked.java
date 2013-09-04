@@ -4,6 +4,10 @@
 package shaz.rmc.pdpExtended.delMasInitial;
 
 
+import org.joda.time.DateTime;
+import static com.google.common.base.Preconditions.checkArgument;
+
+
 import rinde.sim.core.TimeLapse;
 
 /**
@@ -11,6 +15,7 @@ import rinde.sim.core.TimeLapse;
  *
  */
 public class OrderStateBooked extends OrderAgentState {
+	boolean checkedCorrectlyBooked = false;
 
 	public OrderStateBooked(OrderAgentInitial orderAgent) {
 		super(orderAgent);
@@ -38,7 +43,11 @@ public class OrderStateBooked extends OrderAgentState {
 	}
 	@Override
 	public void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
-		// TODO Auto-generated method stub
+		if(checkedCorrectlyBooked == false) {
+			DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
+			checkArgument(currTime.compareTo(orderPlan.getDeliveries().get(0).getLoadingTime()) < 0,true);
+			checkedCorrectlyBooked = true;
+		}//if this check is caught too often then it means there is need to re-visit different iterval times and 'MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED' values.
 		
 	}
 	@Override
@@ -48,7 +57,6 @@ public class OrderStateBooked extends OrderAgentState {
 			if (!makeOrderPlanAdjustment(orderPlan, startTime))
 				orderAgent.setOrderState(OrderAgentState.UNDELIVERABLE);
 		}
-		
 	}
 	@Override
 	public void doSpecial(OrderAgentPlan orderPlan, TimeLapse timeLapse) {

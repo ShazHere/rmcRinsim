@@ -5,7 +5,6 @@ package shaz.rmc.pdpExtended.delMasInitial;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 
 import org.apache.commons.math3.random.RandomDataImpl;
@@ -204,7 +203,7 @@ public class OrderStateInProcess extends OrderAgentState {
 		if (orderPlan.getRefreshTimes().containsKey(iAnt.getCurrentUnit().getDelivery()) == false ) {//refreshTimes.get(iAnt.getCurrentUnit().getDelivery().getDeliveryNo()).equals(currTime) == false) {
 			if (iAnt.getCurrentUnit().getPsReply() == Reply.UNDER_PROCESS) { //PS is ok with this delivery
 				checkArgument(iAnt.getCurrentUnit().isAddedInTruckSchedule() == false, true);
-				orderPlan.acceptIntentionArangementInOrder(iAnt, currTime);
+				orderPlan.acceptIntentionArangementInOrder(iAnt.getCurrentUnit().getDelivery(), currTime, false);
 				orderAgent.setOrderState(OrderAgentState.WAITING);
 				return Reply.UNDER_PROCESS;
 			}
@@ -216,7 +215,6 @@ public class OrderStateInProcess extends OrderAgentState {
 	public void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (currTime.minusMinutes(orderPlan.getTimeForLastIntention().getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.MINUTES_TO_CHANGE_ST4ORDER ){
-			//add code to check if orderdeliverable? yest then proceed else change state = undeliverable
 			if (orderAgent.isOrderDeliverable(currTime))
 				orderAgent.makeNewOrderPlan(currTime);
 			else
@@ -228,7 +226,8 @@ public class OrderStateInProcess extends OrderAgentState {
 	public void checkDeliveryStatuses(OrderAgentPlan orderPlan,	long startTime) {
 		if (!orderPlan.areDeliveriesRefreshing(startTime)){
 			if (!makeOrderPlanAdjustment(orderPlan, startTime))
-				orderAgent.setOrderState(OrderAgentState.UNDELIVERABLE);		}
+				orderAgent.setOrderState(OrderAgentState.UNDELIVERABLE);		
+		}
 	}
 
 	@Override
