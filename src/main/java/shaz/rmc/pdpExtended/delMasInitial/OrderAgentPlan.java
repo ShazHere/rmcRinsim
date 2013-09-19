@@ -77,7 +77,8 @@ public class OrderAgentPlan {
 	 * @param isConfirmedDelivery if delivery Reply is UNDER_PROCESS then isConfirmed = false, if Delivery Reply is WEEKACCEPT then isConfirmed = true.
 	 */ 
 	protected void acceptIntentionArangementInOrder(Delivery del, DateTime currTime, boolean isConfirmedDelivery) {
-		checkArgument(orderAgent.getOrderState() == OrderAgentState.IN_PROCESS, true);
+		checkArgument(orderAgent.getOrderState() == OrderAgentState.IN_PROCESS ||
+				orderAgent.getOrderState() == OrderAgentState.TEAM_NEED , true);
 		refreshTimes.put(del, currTime);
 		deliveries.add(del);
 		isPhysicallyCreated.put(del, false);
@@ -99,7 +100,8 @@ public class OrderAgentPlan {
 			interestedDeliveryNo = lastDelivery.getDeliveryNo() +1;
 		}
 		else{
-			interestedTime = orderAgent.getOrder().getStartTime(); //TODO there should be .plus(DelayStartTime)
+			//interestedTime = orderAgent.getOrder().getStartTime(); //TODO there should be .plus(DelayStartTime)
+			interestedTime = orderAgent.getOrder().getStartTime().plus(delayStartTime);
 			interestedDeliveryNo = 0;
 		}			
 		if (remainingToBookVolume <= 0) {
@@ -163,6 +165,7 @@ public class OrderAgentPlan {
 		refreshTimes.remove(d);
 		isConfirmed.remove(d); 
 		isPhysicallyCreated.remove(d);
+		sortDeliveries(deliveries);
 	}
 	
 	public DateTime getInterestedTime() {

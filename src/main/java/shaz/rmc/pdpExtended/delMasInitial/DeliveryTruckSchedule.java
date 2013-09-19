@@ -484,7 +484,7 @@ public class DeliveryTruckSchedule {
 		DateTime actualInterestedTime = ScheduleHelper.getActualInterestedTime(timeWindow.getStartTime(), getPsToOrderDuration(ps, or, truck));
 		
 		// now check for each cost value starting form least, which ever found return
-		for (int cost = 0; cost < 5; cost++) {
+		for (int cost = 0; cost < 4; cost++) { // at the moment only cost till 3 is handled at Order side
 			AvailableSlot currentSlot = getCurrentSlot(cost, actualInterestedTime, currTime, truck, timeWindow, or);
 			if (currentSlot == null)
 				continue;
@@ -646,7 +646,7 @@ public class DeliveryTruckSchedule {
 				}
 				break;
 			}
-			case 3: //if found avalialbel slot in case3 but not earlier means ACCEPT deliveries with delNo==0 && 
+			case 3: //if found available slot in case3 but not earlier means ACCEPT deliveries with delNo==0 && 
 				//curTime+(MIMINUTES_BEFOR_DELIVERY_CREATED*3)< del.deliveryTime is compromised 
 			{
 				for(TruckScheduleUnit tsu : truckSchedule) {
@@ -662,49 +662,49 @@ public class DeliveryTruckSchedule {
 				}
 				break;
 			}
-			case 4: //if found availableSlot in case4 and not earlier, means ACCEPT with (delNo==0 || delNo>0 &&
-				//curTime+MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED < del.deliveryTime)
-			{
-				for(TruckScheduleUnit tsu : truckSchedule) {
-					if (tsu instanceof TruckDeliveryUnit) {
-						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
-						if (del.getOrder() == or)
-							returnSchedule.add(tsu);
-						else if ( unitStatus.get(del) == Reply.ACCEPT &&
-								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED).compareTo(del.getDeliveryTime()) <= 0))
-							returnSchedule.add(tsu);
-					}
-				}
-				break;
-			}
-			case 5:
-			{
-				for(TruckScheduleUnit tsu : truckSchedule) {
-					if (tsu instanceof TruckDeliveryUnit) {
-						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
-						if (del.getOrder() == or)
-							returnSchedule.add(tsu);
-						else if ( unitStatus.get(del) == Reply.ACCEPT &&
-								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*4).compareTo(del.getDeliveryTime()) <= 0))
-							returnSchedule.add(tsu);
-					}
-				}
-				break;
-			}
-			case 6:
-			{
-				for(TruckScheduleUnit tsu : truckSchedule) {
-					if (tsu instanceof TruckDeliveryUnit) {
-						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
-						if (del.getOrder() == or)
-							returnSchedule.add(tsu);
-						else if ( unitStatus.get(del) == Reply.ACCEPT &&
-								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*3).compareTo(del.getDeliveryTime()) <= 0))
-							returnSchedule.add(tsu);
-					}
-				}
-				break;
-			}
+//			case 4: //if found availableSlot in case4 and not earlier, means ACCEPT with (delNo==0 || delNo>0 &&
+//				//curTime+MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED < del.deliveryTime)
+//			{
+//				for(TruckScheduleUnit tsu : truckSchedule) {
+//					if (tsu instanceof TruckDeliveryUnit) {
+//						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
+//						if (del.getOrder() == or)
+//							returnSchedule.add(tsu);
+//						else if ( unitStatus.get(del) == Reply.ACCEPT &&
+//								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED).compareTo(del.getDeliveryTime()) <= 0))
+//							returnSchedule.add(tsu);
+//					}
+//				}
+//				break;
+//			}
+//			case 5:
+//			{
+//				for(TruckScheduleUnit tsu : truckSchedule) {
+//					if (tsu instanceof TruckDeliveryUnit) {
+//						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
+//						if (del.getOrder() == or)
+//							returnSchedule.add(tsu);
+//						else if ( unitStatus.get(del) == Reply.ACCEPT &&
+//								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*4).compareTo(del.getDeliveryTime()) <= 0))
+//							returnSchedule.add(tsu);
+//					}
+//				}
+//				break;
+//			}
+//			case 6:
+//			{
+//				for(TruckScheduleUnit tsu : truckSchedule) {
+//					if (tsu instanceof TruckDeliveryUnit) {
+//						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
+//						if (del.getOrder() == or)
+//							returnSchedule.add(tsu);
+//						else if ( unitStatus.get(del) == Reply.ACCEPT &&
+//								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*3).compareTo(del.getDeliveryTime()) <= 0))
+//							returnSchedule.add(tsu);
+//					}
+//				}
+//				break;
+//			}
 			
 		}
 		returnSchedule = fillTravelUnitsInSchedule(truck, returnSchedule, Utility.getCloner());//Well means TTU wold be cloned but TDU wound't. 

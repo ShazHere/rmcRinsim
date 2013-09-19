@@ -201,11 +201,19 @@ public class OrderStateInProcess extends OrderAgentState {
 	 */
 	private Reply getIAntReply(OrderAgentPlan orderPlan, DateTime currTime, IntAnt iAnt) {
 		if (orderPlan.getRefreshTimes().containsKey(iAnt.getCurrentUnit().getDelivery()) == false ) {//refreshTimes.get(iAnt.getCurrentUnit().getDelivery().getDeliveryNo()).equals(currTime) == false) {
-			if (iAnt.getCurrentUnit().getPsReply() == Reply.UNDER_PROCESS) { //PS is ok with this delivery
+			if (GlobalParameters.PS_ALWAYS_AVAILABLE){ //no need to chck PS reply
 				checkArgument(iAnt.getCurrentUnit().isAddedInTruckSchedule() == false, true);
 				orderPlan.acceptIntentionArangementInOrder(iAnt.getCurrentUnit().getDelivery(), currTime, false);
 				orderAgent.setOrderState(OrderAgentState.WAITING);
 				return Reply.UNDER_PROCESS;
+			}
+			else {
+				if (iAnt.getCurrentUnit().getPsReply() == Reply.UNDER_PROCESS) { //PS is ok with this delivery
+					checkArgument(iAnt.getCurrentUnit().isAddedInTruckSchedule() == false, true);
+					orderPlan.acceptIntentionArangementInOrder(iAnt.getCurrentUnit().getDelivery(), currTime, false);
+					orderAgent.setOrderState(OrderAgentState.WAITING);
+					return Reply.UNDER_PROCESS;
+				}
 			}
 		} 
 			return Reply.REJECT;

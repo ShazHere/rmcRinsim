@@ -175,14 +175,13 @@ public abstract class OrderAgentState {
 /**
 	 * @param orderPlan
 	 * @param startTime
-	 * return true if orderPlanAdjustments made succesfully, and order was Deliverable
+	 * return true if orderPlanAdjustments made successfully, and order was Deliverable
 	 */
 	protected boolean makeOrderPlanAdjustment(OrderAgentPlan orderPlan, long startTime) {
 		Delivery d = orderPlan.getFailedDelivery(startTime);
 		checkArgument(d != null, true);
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		logger.debug(orderAgent.getOrder().getId() + "O Delivery Failure detected; DeliveryNO = " + d.getDeliveryNo());
-		//return orderPlan.adjustOrderPlanAfterFailedDelivery(d, currTime);
 		 orderPlan.removeDeliveriesAccordingTofFailedDeliveryAndCurrentTime(d, currTime);
 		 if (orderAgent.isOrderDeliverable(currTime)) {
 			orderPlan.setOrderInterests(currTime);

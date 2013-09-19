@@ -132,18 +132,22 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 				i.remove();
 				continue;
 			}
-			DateTime stationReplyDate = station.makeBookingAt(iAnt.getCurrentUnit().getTimeSlot().getStartTime(), iAnt.getOriginator(), iAnt.getCurrentUnit().getDelivery(), currTime);
-			if (stationReplyDate != null) { //means station is booked or refreshed
-				if (stationReplyDate.equals(new DateTime(0))) { //means booking refrehe d
-					iAnt.getCurrentUnit().setPsReply(Reply.WEEK_ACCEPT);
+			if (!GlobalParameters.PS_ALWAYS_AVAILABLE) {
+				DateTime stationReplyDate = station.makeBookingAt(iAnt.getCurrentUnit().getTimeSlot().getStartTime(), iAnt.getOriginator(), iAnt.getCurrentUnit().getDelivery(), currTime);
+				if (stationReplyDate != null) { //means station is booked or refreshed
+					if (stationReplyDate.equals(new DateTime(0))) { //means booking refrehe d
+						iAnt.getCurrentUnit().setPsReply(Reply.WEEK_ACCEPT);
+					}
+					else { //the dateTime booked is returned
+						iAnt.getCurrentUnit().setPsReply(Reply.UNDER_PROCESS);
+					}
 				}
-				else { //the dateTime booked is returned
-					iAnt.getCurrentUnit().setPsReply(Reply.UNDER_PROCESS);
+				else {
+					iAnt.getCurrentUnit().setPsReply(Reply.REJECT);
 				}
 			}
-			else {
-				iAnt.getCurrentUnit().setPsReply(Reply.REJECT);
-			}
+			else //always available
+				iAnt.getCurrentUnit().setPsReply(Reply.WEEK_ACCEPT);
 			logger.debug(station.getId() +"P Int-" +iAnt.getOriginator().getId()+ " " + iAnt.getCurrentUnit().getPsReply() +" by PS" + " currTime= " + currTime);
 			IntAnt newAnt = iAnt.clone(this);
 			cApi.send(iAnt.getCurrentUnit().getDelivery().getOrder(), newAnt);
