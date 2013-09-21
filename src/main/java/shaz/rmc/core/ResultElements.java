@@ -12,6 +12,7 @@ import rinde.sim.core.model.pdp.Vehicle;
 import shaz.rmc.pdpExtended.delMasInitial.DeliveryTruckInitial;
 import shaz.rmc.pdpExtended.delMasInitial.OrderAgentInitial;
 import shaz.rmc.pdpExtended.delMasInitial.GlobalParameters.Weights;
+import shaz.rmc.pdpExtended.delMasInitial.TruckStateBroken;
 
 /**
  * General measurable statistic Elements for an RMC solution. It may have objects 
@@ -30,6 +31,8 @@ public class ResultElements {
 	private final int totalOrderGiven; // total orders at the moment, at the moment no track of serviced order,
 	//	because serviced concrte seems more important
 	private int totalOrderServed;
+	Set<OrderAgentInitial> orderSet;
+	Set<Vehicle> truckSet;
 	
 	private int totalValue = 0; // total cost of objective function
 
@@ -46,6 +49,8 @@ public class ResultElements {
 	public ResultElements(Set<OrderAgentInitial> orderSet,
 			Set<Vehicle> truckSet) {
 		super();
+		this.orderSet = orderSet;
+		this.truckSet = truckSet;
 		ArrayList<Integer> truckCapacities = new ArrayList<Integer>(); // to record total types of truck capacities to be sent to order
 		// for estimating expected wasted concrete
 		totalTrucksUsed = 0;
@@ -53,9 +58,11 @@ public class ResultElements {
 		ResultElementsTruck re;
 		ResultElementsTruck allResult = new ResultElementsTruck();
 		for (Vehicle v: truckSet){
-			re = ((DeliveryTruckInitial)v).getTruckResult();
+			DeliveryTruckInitial dti = (DeliveryTruckInitial)v;
+			re = (dti).getTruckResult();
 			if (re != null) {
-				totalTrucksUsed += 1;
+				if (((DeliveryTruckInitial)v).getState().equals((new TruckStateBroken(dti)).toString())  != true)
+					totalTrucksUsed += 1;
 				allResult.addLagTimeInMin(re.getLagTimeInMin());
 				allResult.addStartTimeDelay(re.getStartTimeDelay());
 				allResult.addTravelMin(re.getTravelMin());
@@ -268,6 +275,19 @@ public class ResultElements {
 		resultDetails.append(getOrderStartTimeDelay());
 		
 		return resultDetails.toString();
+	}
+	public void printSchedules() {
+		for (OrderAgentInitial order : orderSet) {
+			System.out.println("Deliveries of " + order.getOrder().getId() + "O with state = " + order.getStrategy().getState() + "\n");
+			System.out.println(order.getDeliveriesForPrint());
+		}
+		for (Vehicle truck :  truckSet) {
+			DeliveryTruckInitial dti = (DeliveryTruckInitial)truck;
+ 			System.out.println("Schedule of " + dti.getId() + 
+					"T with state= " + dti.getState() + "\n");
+			System.out.println(dti.getScheduleToPrint());
+		}
+		
 	}
 	
 }

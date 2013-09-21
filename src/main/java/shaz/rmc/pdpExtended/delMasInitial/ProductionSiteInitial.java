@@ -101,7 +101,7 @@ public class ProductionSiteInitial extends Depot implements ProductionSite, Agen
 		ArrayList<OrderAgentInitial> removeAbleOrd = new ArrayList<OrderAgentInitial>();
 		for (OrderAgentInitial or:pheromoneUpdateTime.keySet()) { 
 			currMilli = timeLapse.getStartTime() -  pheromoneUpdateTime.get(or);
-			if (new Duration(currMilli).getStandardMinutes() >= GlobalParameters.FEASIBILITY_EVAPORATION_INTERVAL_MIN ) {
+			if (new Duration(currMilli).getStandardSeconds() >= GlobalParameters.FEASIBILITY_EVAPORATION_INTERVAL_SEC ) {
 				removeAbleOrd.add(or); //FEASIBILITY_EVAPORATION_INTERVAL_MIN is used since this info is only feasiblity related
 			}
 		}		

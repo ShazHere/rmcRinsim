@@ -48,11 +48,21 @@ public class RmcSimulation {
 		 * */
 		final PlaneRoadModel prm = new PlaneRoadModel(new Point(0, 0), new Point(10, 10), true, 10);//10by10 km plane
 		CommunicationModel communicationModel;
+		
+		
 		if (randomSeed !=0)
 			 communicationModel = new CommunicationModel(rng, true);
 		else
 			 communicationModel = new CommunicationModel(new MersenneTwister(), true);
 		final PDPModel pdpModel = new PDPModel();
+		
+		sim.register(prm); 
+		sim.register(pdpModel);
+		sim.register(communicationModel);
+		
+		final RmcSimulation rmSim = new RmcSimulation(); 
+		rmSim.loadProblem();
+		//adding managers..
 		OrderManagerInitial omi;
 		TruckAgentFailureManager tfm;
 		final int noOfTruckToBeFailed = 1;
@@ -67,13 +77,10 @@ public class RmcSimulation {
 		// Statistic Tracker
 		final StatisticTracker stTracker = new StatisticTracker(sim , pdpModel, omi, prm);
 		sim.getEventAPI().addListener(stTracker, SimulatorEventType.values());
-		sim.register(prm); 
-		sim.register(pdpModel);
-		sim.register(communicationModel);
+		
 		
 		sim.configure();
-		final RmcSimulation rmSim = new RmcSimulation(); 
-		rmSim.loadProblem(sim);
+		
 		
 		//adding order manager	
 		sim.register(omi);
@@ -90,18 +97,19 @@ public class RmcSimulation {
 		//Adding orders
 		omi.addOrders();
 		
+		
 		//Adding Delivery Trucks
 		RandomGenerator randomPCSelector;
 		if (randomSeed == 0 )
 			randomPCSelector =   new MersenneTwister();
 		else
 			randomPCSelector =   new MersenneTwister(randomSeed+2);
-		for (int j = 0; j< GlobalParameters.TOTAL_TRUCKS ; j ++){
+		for (int j = 0; j< GlobalParameters.PROBLEM.getVehicles().size() ; j ++){
 			if (randomSeed == 0)
 				sim.register(new DeliveryTruckInitial(rmSim.getTruck(j), 
-						new MersenneTwister().nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN), randomPCSelector, tfm));
+						new MersenneTwister().nextInt(GlobalParameters.DEPHASE_INTERVAL_SEC), randomPCSelector, tfm));
 			else sim.register(new DeliveryTruckInitial(rmSim.getTruck(j), 
-					rng.nextInt(GlobalParameters.DEPHASE_INTERVAL_MIN), randomPCSelector, tfm));
+					rng.nextInt(GlobalParameters.DEPHASE_INTERVAL_SEC), randomPCSelector, tfm));
 		}
 		
 		sim.register(new TickListener() {
@@ -140,10 +148,9 @@ public class RmcSimulation {
 
 	/**
 	 * Loads the problem file into GlobalParameters.PROBLEM using XMLPROBLEMDAO 
-	 * @param sim Simulator instance.
 	 * 
 	 */
-	protected void loadProblem(Simulator sim) {
+	protected void loadProblem() {
 		XMLProblemDAO dao = new XMLProblemDAO(new File(GlobalParameters.DATA_FOLDER+GlobalParameters.INPUT_FILE));
 		Problem problem = null;
 		try {

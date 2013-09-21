@@ -89,7 +89,11 @@ public class StatisticTracker implements Listener {
 			sb.append(stats.getResultTruck().toString());
 			//objfunc
 			sb.append("ObjectiveFunctionValue: ").append(stats.getTotalValue()).append("\n");
+			stats.printSchedules();
 			return sb.toString();
+			
+			
+			
 		}
 		public String hourlyStatistic () {
 			final StringBuilder sb = new StringBuilder();
@@ -98,6 +102,6 @@ public class StatisticTracker implements Listener {
 			return sb.toString();
 		}
 		public void writeFile() {
-			Utility.wrtieInFile(false, stats);
+			Utility.wrtieInFile(true, stats);
 		}
 }

@@ -6,6 +6,7 @@ package shaz.rmc.pdpExtended.delMasInitial;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -36,7 +37,7 @@ public class TruckAgentFailureManager {
 		rng = pRand;
 		logger = Logger.getLogger(OrderManagerInitial.class);
 		noOfTrucksToBeFailed = pNoOfTruckToBeFailed;
-		breakSpecificTruck = true;
+		breakSpecificTruck = false;
 		
 		timeTruck = new  LinkedHashMap<Integer, Integer>();
 		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false)
@@ -49,11 +50,24 @@ public class TruckAgentFailureManager {
 		
 	}
 
+	/**
+	 *  Adds truck id, according to probablity
+	 */
 	private void setTruckIdAndFailTime() {
-		// TODO randomly select truckBreakDowns
-		//select timeInMinutes in an array using randomNo gen
-		// select truck Id from totalTrucks..oh, need that as well
-		// add both in hashMap
+		for (int i = 1; i <= GlobalParameters.PROBLEM.getVehicles().size(); i++) {
+			if (rng.nextInt(100) < GlobalParameters.TRUCK_BREAKDOWN_PROBABILTY) //so take a percentage value, if that is below GlobalParameters.TRUCK_BREAKDOWN_PROBABILTY 
+				//then break the truck
+				putInTimeTruck(i);
+		}
+	}
+
+	
+	private void putInTimeTruck(int truckId) {
+		//select time during the day
+		int startMinute = GlobalParameters.START_DATETIME.getMinuteOfDay();
+		int endMinute = GlobalParameters.END_DATETIME.getMinuteOfDay();
+		int breakMin = rng.nextInt(endMinute - startMinute) + startMinute;
+		timeTruck.put(breakMin, truckId);
 	}
 
 	private void setSpecificTruckId() {

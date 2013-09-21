@@ -101,5 +101,8 @@ public class TruckStateTeamCommitment extends TruckAgentState {
 	public void processOrderPlanInformerAnts(long startTime) {
 		processOrderPlanInformerAnt(startTime);		
 	}
-
+	@Override
+	public String toString(){
+		return "TEAM_COMMITMENT";
+	}
 }

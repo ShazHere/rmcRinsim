@@ -56,11 +56,11 @@ public class OrderManagerInitial implements TickListener {
 	private void addOrderInTick(TimeLapse timeLapse) {
 		ArrayList<String> orderIdList = new ArrayList<String>(); 
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-		if (currTime.minusMinutes(lastTimeOrdersChecked.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN ){
+		if (currTime.minusSeconds(lastTimeOrdersChecked.getSecondOfDay()).getSecondOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_SEC ){
 			Iterator<Order> i = GlobalParameters.PROBLEM.getOrders().iterator();
 			while(i.hasNext()) {
 				Order ord = i.next();
-				if (currTime.plusHours(2).compareTo(ord.getEarliestStartTime()) >= 0)  { //Xhours earlier the from their start times, orders will be added
+				if (currTime.plusMinutes(210).compareTo(ord.getEarliestStartTime()) >= 0)  { //Xhours earlier the from their start times, orders will be added
 					logger.debug("index of order to be added is = " + GlobalParameters.PROBLEM.getOrders().indexOf(ord));
 					if (addOrder(ord, timeLapse.getStartTime()))
 						orderIdList.add(ord.getId());
@@ -89,7 +89,7 @@ public class OrderManagerInitial implements TickListener {
 			addBasicOrders();
 		else {
 			int orderToBeAdded = GlobalParameters.INPUT_INSTANCE_TYPE.getPerOfX(GlobalParameters.PROBLEM.getOrders().size());
-			logger.debug("Orders to be added at Start is=  " + orderToBeAdded);
+			logger.info("Orders to be added is=  " + orderToBeAdded);
 			for (int k = 0; k < orderToBeAdded; k++) {
 				int index = this.rng.nextInt(GlobalParameters.PROBLEM.getOrders().size());
 				this.addOrder(GlobalParameters.PROBLEM.getOrders().get(index) , 0);

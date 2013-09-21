@@ -225,7 +225,7 @@ public class OrderAgentPlan {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		for (Delivery d : deliveries) {
 			long currMilli = currTime.getMillis() - refreshTimes.get(d).getMillis();
-			if (new Duration (currMilli).getStandardMinutes() >= GlobalParameters.INTENTION_EVAPORATION_MIN) 
+			if (new Duration (currMilli).getStandardSeconds() >= GlobalParameters.INTENTION_EVAPORATION_SEC) 
 				return false;
 		}
 		return true;
@@ -239,7 +239,7 @@ public class OrderAgentPlan {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		for (Delivery d : deliveries) {
 			long currMilli = currTime.getMillis() - refreshTimes.get(d).getMillis();
-			if (new Duration (currMilli).getStandardMinutes() >= GlobalParameters.INTENTION_EVAPORATION_MIN) 
+			if (new Duration (currMilli).getStandardSeconds() >= GlobalParameters.INTENTION_EVAPORATION_SEC) 
 				return d;
 		}
 		return null;

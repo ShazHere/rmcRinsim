@@ -38,8 +38,8 @@ public class TruckStateInProcess extends TruckAgentState {
 	
 	public TruckStateInProcess(DeliveryTruckInitial truckAgent) {
 		super(truckAgent);
-		timeForLastExpAnt = new DateTime(getTotalTimeRange().getStartTime().plusMinutes(truckAgent.getDePhaseByMin()));
-		timeForLastIntAnt = new DateTime(getTotalTimeRange().getStartTime().plusMinutes(truckAgent.getDePhaseByMin()).plusMinutes(GlobalParameters.INTENTION_INTERVAL_MIN));
+		timeForLastExpAnt = new DateTime(getTotalTimeRange().getStartTime().plusSeconds(truckAgent.getDePhaseBySec()));
+		timeForLastIntAnt = new DateTime(getTotalTimeRange().getStartTime().plusSeconds(truckAgent.getDePhaseBySec()).plusSeconds(GlobalParameters.INTENTION_INTERVAL_SEC));
 		bestAnt = null;
 	}
 
@@ -169,7 +169,7 @@ public class TruckStateInProcess extends TruckAgentState {
 	void sendExpAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		//check  exp ants to be sent after particular interval only
-		if (currTime.minusMinutes(timeForLastExpAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_MIN ) {
+		if (currTime.minusSeconds(timeForLastExpAnt.getSecondOfDay()).getSecondOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_SEC ) {
 			ExpAnt eAnt = new ExpAnt(truckAgent, Utility.getAvailableSlots(truckAgent.getTruckSchedule().getSchedule(), availableSlots,  
 					new TimeSlot(new DateTime(currTime), getTotalTimeRange().getEndTime()), GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l), truckAgent.getTruckSchedule().getSchedule(), currTime);
 			if (availableSlots.size()>0) {
@@ -184,7 +184,7 @@ public class TruckStateInProcess extends TruckAgentState {
 	void sendIntAnts(long startTime) { 
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);//send int ants to book again the whole schedule..
 		if (currTime.compareTo(timeForLastIntAnt) > 0) {
-		if (currTime.minusMinutes(timeForLastIntAnt.getMinuteOfDay()).getMinuteOfDay() >= GlobalParameters.INTENTION_INTERVAL_MIN ) {
+		if (currTime.minusSeconds(timeForLastIntAnt.getSecondOfDay()).getSecondOfDay() >= GlobalParameters.INTENTION_INTERVAL_SEC ) {
 			processExplorationAnts(startTime);
 			if (bestAnt != null) {
 				if (truckAgent.getTruckSchedule().scheduleStillValid(bestAnt.getSchedule())){
@@ -194,7 +194,8 @@ public class TruckStateInProcess extends TruckAgentState {
 					logger.debug(truckAgent.getId()+"T int sent by Truck");
 					//checkArgument(bestAnt.getSchedule().get(0) instanceof TruckDeliveryUnit, true); //truck should start from its start PS
 					checkArgument(bestAnt.getSchedule().get(0).getStartLocation().equals(truckAgent.getStartLocation()));
-					truckAgent.getcApi().send(((TruckDeliveryUnit)bestAnt.getSchedule().get(0)).getDelivery().getLoadingStation(), iAnt); 
+					TruckDeliveryUnit sendToTdu = sendToPS(bestAnt.getSchedule());
+					truckAgent.getcApi().send(sendToTdu.getDelivery().getLoadingStation(), iAnt); 
 					timeForLastIntAnt = currTime;
 					bestAnt = null;
 					return;
@@ -205,11 +206,7 @@ public class TruckStateInProcess extends TruckAgentState {
 				ArrayList<TruckScheduleUnit> originalfullSchedule = truckAgent.getTruckSchedule().makeOriginalSchedule(truckAgent.getTruckSchedule().getSchedule());
 				IntAnt iAnt = new IntAnt(truckAgent, tmp,originalfullSchedule, currTime);
 				logger.debug(truckAgent.getId()+"T int sent by Truck with Old schedule");
-				TruckDeliveryUnit sendToTdu;
-				if (truckAgent.getTruckSchedule().getSchedule().get(0) instanceof TruckDeliveryUnit)
-					sendToTdu = (TruckDeliveryUnit)truckAgent.getTruckSchedule().getSchedule().get(0);
-				else
-					sendToTdu = (TruckDeliveryUnit)truckAgent.getTruckSchedule().getSchedule().get(1);
+				TruckDeliveryUnit sendToTdu = sendToPS(truckAgent.getTruckSchedule().getSchedule());
 				truckAgent.getcApi().send(sendToTdu.getDelivery().getLoadingStation(), iAnt);  
 				timeForLastIntAnt = currTime; //here no need to make bestAnt = null, since it coud compete with future explorations
 			}
@@ -217,6 +214,20 @@ public class TruckStateInProcess extends TruckAgentState {
 		}
 		}
 	}
+
+
+	/**
+	 * @return
+	 */
+	private TruckDeliveryUnit sendToPS(ArrayList<TruckScheduleUnit> sch) {
+		TruckDeliveryUnit sendToTdu;
+		if (sch.get(0) instanceof TruckDeliveryUnit)
+			sendToTdu = (TruckDeliveryUnit)sch.get(0);
+		else
+			sendToTdu = (TruckDeliveryUnit)sch.get(1);
+		return sendToTdu;
+	}
+	
 
 	private void printBestAnt(long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
@@ -250,5 +261,8 @@ public class TruckStateInProcess extends TruckAgentState {
 	public void processOrderPlanInformerAnts(long startTime) {
 		super.processOrderPlanInformerAnt(startTime);
 	}
-
+	@Override
+	public String toString(){
+		return "IN_PROCESS";
+	}
 }

@@ -162,7 +162,7 @@ public abstract class OrderAgentState {
 	 * @return
 	 */
 	protected boolean isFeasibilityIntervalPassed(DateTime currTime) {
-		return currTime.minusMinutes(orderAgent.getTimeForLastFeaAntInMin()).getMinuteOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_MIN;
+		return currTime.minusSeconds(orderAgent.getTimeForLastFeaAntInSec()).getSecondOfDay() >= GlobalParameters.FEASIBILITY_INTERVAL_SEC;
 	}
 	
 	public void addExpAnt(ExpAnt eAnt) {

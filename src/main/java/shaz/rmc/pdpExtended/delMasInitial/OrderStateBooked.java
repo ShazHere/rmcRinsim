@@ -63,4 +63,9 @@ public class OrderStateBooked extends OrderAgentState {
 		// TODO Auto-generated method stub
 		
 	}
+	
+	@Override
+	public String toString(){
+		return "BOOKED";
+	}
 }

@@ -61,16 +61,16 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 
 	private static int totalDeliveryTruck = 0;
 	private final int id;
-	private final int dePhaseByMin;
+	private final int dePhaseBySec;
 	private final shaz.rmc.core.domain.Vehicle truck;
 	private final DeliveryTruckInitialIntention i;
 //	private TruckAgentState state;
 	private final TruckCommunicationStrategy strategy;
 	private final TruckAgentFailureManager truckFailureManager;
 	
-	public DeliveryTruckInitial( Vehicle pTruck, int pDePhaseByMin, RandomGenerator pRandomPCSelector, TruckAgentFailureManager pTruckAgentFailureManager) {
+	public DeliveryTruckInitial( Vehicle pTruck, int pDePhaseBySec, RandomGenerator pRandomPCSelector, TruckAgentFailureManager pTruckAgentFailureManager) {
 		setCapacity(pTruck.getNormalVolume());
-		dePhaseByMin = pDePhaseByMin;
+		dePhaseBySec = pDePhaseBySec;
 		truckFailureManager = pTruckAgentFailureManager;
 		//System.out.println("Dephase no. is " + dePhaseByMin);
 		randomPCSelector = pRandomPCSelector; //this won't generate the exact random no. required by us..:(.
@@ -139,8 +139,8 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	/**
 	 * @return the dePhaseByMin
 	 */
-	protected int getDePhaseByMin() {
-		return dePhaseByMin;
+	protected int getDePhaseBySec() {
+		return dePhaseBySec;
 	}
 	protected RandomGenerator getRandomPCSelector (){
 		return randomPCSelector;
@@ -295,6 +295,18 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		}
 		else 
 			return null;
+	}
+	public String getScheduleToPrint() {
+		StringBuffer strbuf = new StringBuffer();
+		for (TruckScheduleUnit tsu : this.truckSchedule.getPracticalSchedule()){
+			strbuf.append(tsu.toString());
+		}
+		return strbuf.toString();
+		
+	}
+	public String getState() {
+		
+		return this.strategy.getState().toString();
 	}
 
 }

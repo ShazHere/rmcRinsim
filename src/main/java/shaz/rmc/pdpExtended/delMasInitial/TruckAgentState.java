@@ -90,7 +90,7 @@ public abstract class TruckAgentState {
 		if (truckAgent.getPdpModel().getVehicleState(truckAgent).equals(VehicleState.IDLE)
 				&& truckAgent.canIBreakAt(currTime, truckAgent.getId())){
 			truckAgent.setTruckState(TruckAgentState.BROKEN);
-			logger.debug(truckAgent.getId()+"T BROKE currTime= " + currTime);
+			logger.info(truckAgent.getId()+"T BROKE currTime= " + currTime);
 		}
 	}
 	

@@ -38,4 +38,8 @@ public class OrderStateJointBooked extends OrderStateBooked {
 			strategy.addMemebers(orderPlan.getDeliveryTrucks());
 		}
 	}
+	@Override
+	public String toString(){
+		return "JOINT_BOOKED";
+	}
 }

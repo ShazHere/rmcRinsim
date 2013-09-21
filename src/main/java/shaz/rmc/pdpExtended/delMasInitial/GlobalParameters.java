@@ -5,6 +5,7 @@ package shaz.rmc.pdpExtended.delMasInitial;
 
 //import java.util.GregorianCalendar;
 
+import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomData;
 import org.apache.commons.math3.random.RandomDataImpl;
 
@@ -25,20 +26,21 @@ public final class GlobalParameters {
 
 	private GlobalParameters(){} //Just to make sure its objects are never initiated
 	
+	public static Problem PROBLEM = null;	//the problem loader
 	//public static boolean ENABLE_GUI = true;
 	
 	//public static final int SIMULATION_SPEED = 200; //specifies what should be execution speed of simulator.
 	//public static final int TICK_INTERVAL = 200000; 
 	//public static final int INTENTION_EVAPORATION_RATE = 10; //means 20 ticks
 	//public static final int EXPLORATION_EVAPORATION_RATE = 20; //means  no. of tics
-	public static final int DEPHASE_INTERVAL_MIN = 3; //means ants shud be de-phased randomly between 0 to X min
-	public static final int FEASIBILITY_INTERVAL_MIN = 3; //earlier 8 means send feeasibilty ants to near by after every X minutes.
-	public static final int FEASIBILITY_EVAPORATION_INTERVAL_MIN = FEASIBILITY_INTERVAL_MIN + 2; //earlier + 5
-	public static final int EXPLORATION_INTERVAL_MIN = 2; //means no. of mintues //earlier 2
-	public static final int INTENTION_INTERVAL_MIN = 3; //means no. of mintues earlier = 5
-	public static final int INTENTION_EVAPORATION_MIN = INTENTION_INTERVAL_MIN + 2; //earlier 3
+	public static final int DEPHASE_INTERVAL_SEC = 3*60; //means ants shud be de-phased randomly between 0 to X Sec
+	public static final int FEASIBILITY_INTERVAL_SEC = 2*60; //earlier 8 means send feeasibilty ants to near by after every X minutes.
+	public static final int FEASIBILITY_EVAPORATION_INTERVAL_SEC = FEASIBILITY_INTERVAL_SEC + (1*60); //earlier + 5
+	public static final int EXPLORATION_INTERVAL_SEC = 1*60; //means no. of mintues //earlier 2
+	public static final int INTENTION_INTERVAL_SEC = 2*60; //means no. of mintues earlier = 5
+	public static final int INTENTION_EVAPORATION_SEC = INTENTION_INTERVAL_SEC + (1*60); //earlier 3
 	public static final int EXPLORATION_SCHEDULE_SIZE = 2; //earlier 3 (5/02/2013)
-	public static final int TOTAL_TRUCKS =4; //almost 29 trucks are there in the instances
+	//public static final int TOTAL_TRUCKS = PROBLEM.getVehicles().size() ; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = true; //will all the vehicles have same capacity
 	public static final int FIXED_CAPACITY = 10000; //in m3, but not used except for estimation of maximum possible start time 30/07/2013
 	public static final double TRUCK_SPEED = 10; //points per hour, in a 10*10 square area. at the moment i consider it 100km2 area. 
@@ -51,13 +53,13 @@ public final class GlobalParameters {
 	public static final int MINUTES_TO_CHANGE_ST4ORDER = 60; // When shold start time of the order be delayed..
 	public static final int MINUTES_TO_DELAY_ST = 30; //means ST should be delayed with MINUTES_TO_DELAY_ST if MINUTES_TO_CHANGE_ST4ORDER time has been elapsed
 							//after each change of ST. I should make it in such a way that if this is 0, then actually there is no ST_DELAY
-	public static final int MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED = 60;
+	public static final int MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED = 80;
 	public static final int MINUTES_BEFOR_DELIVERY_CREATED = 5; //mintues before pickup time, when delivery(physically) should be created. 
 	public static final int DISCHARGE_RATE_PERHOUR = 10000; //Constant for all orders
 	public static final int LOADING_MINUTES = 5;
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
-	public static final long AVAILABLE_SLOT_SIZE_HOURS = 3;
-	public static final boolean ENABLE_TRUCK_BREAKDOWN = true;
+	public static final long AVAILABLE_SLOT_SIZE_HOURS = 2;
+	public static final boolean ENABLE_TRUCK_BREAKDOWN = false;
 	public static final boolean ENABLE_JI = false;
 	
 	public static final boolean EXP_RANKING_WITH_SCORE_ENABLE = true; //should exploration ants be ranked accoridng their score by Truck agent
@@ -85,12 +87,11 @@ public final class GlobalParameters {
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-02-15/";
 	public static final String LOG_LOCATION = "hh";  //not used 
 	
+	public static final int SCALE = 8;
 	public static final String DATA_FOLDER= "/Users/Shaza/Documents/RMC_Data_2013/input/";
 	//public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/GeneratroFilesRestult14Sept2013/";
 	public static final String RESULT_FOLDER = "/Users/Shaza/Documents/RMC_Data_2013/output/";
-	public static final String INPUT_FILE = "firstSample.xml";
-	
-	public static Problem PROBLEM = null;	//the problem loader
+	public static final String INPUT_FILE = SCALE + "/1.0_" + SCALE + ".xml";
 	
 	/**
 	 * Simulation Start time, w.r.t real time clock
@@ -104,11 +105,14 @@ public final class GlobalParameters {
 	
 	public static RandomData RANDOM_DATA_GEN = new RandomDataImpl();  // for generating random sequence having good values..
 	
-	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per0;
-	
-	
+	public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per100;
+	//breakdown probability between 0 to 25 percent.  
+	public static final int TRUCK_BREAKDOWN_PROBABILTY = 20;   
+		
 	//RINSIM PARAMETERS
 	public static final int TOTAL_PRODUCTION_SITES = 2;
+
+	
 	public class Weights {
 		//public static final int LAGTIME =  20;
 		public static final int TRAVEL_TIME = 20;
@@ -123,6 +127,7 @@ public final class GlobalParameters {
 		per50 (50),  ///50 percent orders are dynamic, so in the begining randomly 50percent orders added, irrespective of their start time.
 					//later, in first tick of orderManagerInitial, the 
 		per0(100); //nothing will be dynamic, all orders are known before hand, irrespective of their start Time
+		
 		
 		private final int value;
 		

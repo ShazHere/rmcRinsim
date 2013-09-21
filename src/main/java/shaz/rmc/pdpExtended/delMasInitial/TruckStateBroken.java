@@ -96,5 +96,8 @@ public class TruckStateBroken extends TruckAgentState {
 		// TODO Auto-generated method stub
 		
 	}
-
+	@Override
+	public String toString(){
+		return "BROKEN";
+	}
 }

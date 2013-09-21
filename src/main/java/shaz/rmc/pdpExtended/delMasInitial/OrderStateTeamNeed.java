@@ -114,11 +114,11 @@ public class OrderStateTeamNeed extends OrderAgentState {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (assignDeliveryTime == null)
 			;//do as normal DelMas
-		else if (orderPlan.areDeliveriesRefreshing(startTime) && orderPlan.calculateRemainingVolume() == 0 && assignDeliveryTime.plusMinutes(GlobalParameters.INTENTION_INTERVAL_MIN).compareTo(currTime) < 0 ) {
+		else if (orderPlan.areDeliveriesRefreshing(startTime) && orderPlan.calculateRemainingVolume() == 0 && assignDeliveryTime.plusSeconds(GlobalParameters.INTENTION_INTERVAL_SEC).compareTo(currTime) < 0 ) {
 			orderAgent.setOrderState(OrderAgentState.BOOKED);
 			logger.info(orderAgent.getOrder().getId() + "O delivery assignig to TEAM MEMBER completed");
 		}
-		else if (assignDeliveryTime.plusMinutes(GlobalParameters.INTENTION_INTERVAL_MIN).compareTo(currTime) < 0 ){
+		else if (assignDeliveryTime.plusSeconds(GlobalParameters.INTENTION_INTERVAL_SEC).compareTo(currTime) < 0 ){
 			checkArgument(false,true);//i think this should not occur..i hope so..:P
 //do as in normalDelMAS
 		}
@@ -130,5 +130,9 @@ public class OrderStateTeamNeed extends OrderAgentState {
 			if (!makeOrderPlanAdjustment(orderPlan, startTime))
 				orderAgent.setOrderState(OrderAgentState.UNDELIVERABLE);
 		}
+	}
+	@Override
+	public String toString(){
+		return "TEAM_NEED";
 	}
 }

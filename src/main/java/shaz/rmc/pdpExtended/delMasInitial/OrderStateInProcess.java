@@ -127,7 +127,8 @@ public class OrderStateInProcess extends OrderAgentState {
 	 */
 	private ProductionSiteInitial selectPsToSend(OrderAgentInitial pOrderAgent, ExpAnt exp) {
 		ProductionSiteInitial selectedPs;
-		if (exp.getAvailableSlots().get(0).getStartTime().compareTo(exp.getSchedule().get(0).getTimeSlot().getEndTime()) >= 0) {
+		
+		if (exp.getAvailableSlots().size()>0 && exp.getAvailableSlots().get(0).getStartTime().compareTo(exp.getSchedule().get(0).getTimeSlot().getEndTime()) >= 0) {
 			if (pOrderAgent.getSites().size()>1) 				//select the next pC to visit at random..
 				selectedPs = pOrderAgent.getSites().get(new RandomDataImpl().nextInt(0, pOrderAgent.getSites().size()-1));
 			else
@@ -242,5 +243,10 @@ public class OrderStateInProcess extends OrderAgentState {
 	public void doSpecial(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	@Override
+	public String toString(){
+		return "IN_PROCESS";
 	}
 }

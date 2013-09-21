@@ -59,7 +59,7 @@ public class OrderStateWaiting extends OrderAgentState{
 		for (Delivery d : orderPlan.getDeliveries()){
 			currMilliInterval = GlobalParameters.START_DATETIME.plusMillis((int)currMilli).getMillis() - orderPlan.getRefreshTimes().get(d).getMillis();
 			if (orderPlan.getIsConfirmed().get(d) == false 
-					&& (new Duration (currMilliInterval)).getStandardMinutes() > GlobalParameters.INTENTION_EVAPORATION_MIN) {
+					&& (new Duration (currMilliInterval)).getStandardSeconds() > GlobalParameters.INTENTION_EVAPORATION_SEC) {
 				return d;
 			}
 		}
@@ -105,5 +105,9 @@ public class OrderStateWaiting extends OrderAgentState{
 	public void doSpecial(OrderAgentPlan orderPlan, TimeLapse timeLapse) {
 		// TODO Auto-generated method stub
 		
+	}
+	@Override
+	public String toString(){
+		return "WAITING";
 	}
 }

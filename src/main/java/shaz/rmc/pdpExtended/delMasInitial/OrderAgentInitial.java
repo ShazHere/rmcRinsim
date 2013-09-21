@@ -180,8 +180,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 		return null;
 	}
-	protected int getTimeForLastFeaAntInMin() { 
-		return timeForLastFeaAnt.getMinuteOfDay();
+	protected int getTimeForLastFeaAntInSec() { 
+		return timeForLastFeaAnt.getSecondOfDay();
 	}
 	protected void setTimeForLastFeaAnt(DateTime timeForLastFeaAnt) {
 		this.timeForLastFeaAnt = timeForLastFeaAnt;
@@ -196,8 +196,9 @@ public class OrderAgentInitial  extends Depot implements Agent {
 			if (new Duration ((long)((Point.distance(p.getPosition(), this.getPosition())/GlobalParameters.TRUCK_SPEED)*60l*60l*1000l)).getStandardMinutes() <= GlobalParameters.MINUTES_TO_PERISH_CONCRETE  )
 				possibleSites.add(p);
 		}
+		checkArgument(possibleSites.size()>0,true);
 	}
-	private void checkMsgs(long currentTime) {
+//	private void checkMsgs(long currentTime) {
 //		Queue<Message> messages = mailbox.getMessages();
 //		if (messages.size() > 0) {
 //			for (Message m : messages) {
@@ -213,7 +214,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 //				}
 //			}
 //		}
-	}
+//	}
 	public Queue<Message> receiveMessages() {
 		return mailbox.getMessages();
 	}
@@ -353,6 +354,15 @@ public class OrderAgentInitial  extends Depot implements Agent {
 				+ orderPlan.getRemainingToBookVolume() + ", parcelDeliveries="
 				+ parcelDeliveries + ", orderState="
 				+ getOrderState() + "]";
+	}
+	public String getDeliveriesForPrint() {
+		StringBuffer strbuf = new StringBuffer();
+		if (orderPlan.getDeliveries().size() > 0 && this.getOrderState() == OrderAgentState.SERVED ) {
+			for (Delivery d : orderPlan.getDeliveries()) { //there might b some error in this calculation.
+				strbuf.append(d.toString());
+			}
+		}
+		return strbuf.toString();
 	}
 	public void sendOrderPlanInformerAnt(Delivery del) {
 		OrderPlanInformerAnt opiAnt = new OrderPlanInformerAnt(this, del);

@@ -146,10 +146,10 @@ import shaz.rmc.core.domain.DeliveryS.Builder;
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		
-		sb.append("Delivery[");
+		sb.append("\nDelivery[");
 		//sb.append("\n  order=").append(order.getId());
-		//sb.append("\n  truck=").append(truck.getId());
-		sb.append("Delivery no =").append(deliveryNo);
+		sb.append("truck=").append(truck.getId());
+		sb.append("\n  Delivery no =").append(deliveryNo);
 		sb.append("\n  loading time1=").append(deliveryTime.minus(loadingDuration).minus(stationToCYTravelTime));
 		sb.append("\n  from Station=" + loadingStation);
 		sb.append("\n  departs at station=").append(deliveryTime.minus(stationToCYTravelTime));

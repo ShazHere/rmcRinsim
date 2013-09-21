@@ -148,7 +148,7 @@ public class Station implements Location, Serializable {
 		ArrayList<StationBookingUnit> removeAbleBookings = new ArrayList<StationBookingUnit>();
 		for (StationBookingUnit sbu : availabilityList) {
 			long currMilli = currTime.getMillis() - sbu.getRefreshTime().getMillis();
-			if (new Duration (currMilli).getStandardMinutes() >= GlobalParameters.INTENTION_EVAPORATION_MIN) { //evaporate if never reAssured by truck
+			if (new Duration (currMilli).getStandardSeconds() >= GlobalParameters.INTENTION_EVAPORATION_SEC) { //evaporate if never reAssured by truck
 				removeAbleBookings.add(sbu);
 			}
 		}

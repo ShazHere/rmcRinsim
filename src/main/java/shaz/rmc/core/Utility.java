@@ -16,6 +16,7 @@ import com.rits.cloning.Cloner;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -138,13 +139,15 @@ public class Utility {
 		// PrintWriter out; //not using it any more because it swallows any exceptions and  
 		
 		//fileName =  fileName + GlobalParameters.INPUT_INSTANCE_TYPE.toString();
-		String fileName = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + ".txt"; //+ "-" +GlobalParameters.ENABLE_TRUCK_BREAKDOWN + "-" +GlobalParameters.ENABLE_JI;
-		String fileNameHourConcrete = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + "-HoursConcrete" + ".txt";
-		String fileNameWastedConcrete = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + "-WastedConcrete" + ".txt";
+		String filePostfix = getFilePostFix();
+			
+		String fileName = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + filePostfix; //+ "-" +GlobalParameters.ENABLE_TRUCK_BREAKDOWN + "-" +GlobalParameters.ENABLE_JI;
+		String fileNameHourConcrete = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + "-HoursConcrete" + filePostfix;
+		String fileNameWastedConcrete = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + "-WastedConcrete" + filePostfix;
 		String columnSeperator = "\t"; 
 		String commentText = "# Data file for input file: " + GlobalParameters.DATA_FOLDER + GlobalParameters.INPUT_FILE + "\n" +
 							"# Experiment Date: " + new DateTime(System.currentTimeMillis()) + "\n";
-	
+		createDirectory();
 			boolean addComment = checkAlreadyExist(fileName);
 			
 			String columnName = resultElement.getColumnNames(columnSeperator)+ columnSeperator + GlobalParameters.INPUT_INSTANCE_TYPE.toString() +"\n";
@@ -163,6 +166,18 @@ public class Utility {
 
 	
 		return false;
+	}
+	/**
+	 * @return
+	 */
+	private static String getFilePostFix() {
+		String filePostfix = "";
+		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN)
+			filePostfix = filePostfix + "_B";
+		if (GlobalParameters.ENABLE_JI)
+			filePostfix = filePostfix + "_JI";
+		filePostfix = filePostfix + ".txt";
+		return filePostfix;
 	} 
 	
 	private static boolean checkAlreadyExist(String fileName) {
@@ -239,6 +254,20 @@ public class Utility {
 		cl.registerImmutable(Delivery.class);
 		//cl.setDumpClonedClasses(true);
 		return cl;
+	}
+	private static void createDirectory() {
+		String dirName = GlobalParameters.RESULT_FOLDER + GlobalParameters.SCALE;
+		 File theDir = new File(dirName);
+
+		  // if the directory does not exist, create it
+		  if (!theDir.exists()) {
+		    System.out.println("creating directory: " + dirName);
+		    boolean result = theDir.mkdir();  
+
+		     if(result) {    
+		       System.out.println("DIR created");  
+		     }
+		  }		
 	}
 	
 //	/**
