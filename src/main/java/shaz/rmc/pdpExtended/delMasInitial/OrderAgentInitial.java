@@ -71,7 +71,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 	private ArrayList<ProductionSiteInitial> possibleSites; //sites from which this order could receive delivery according to PERISH time
 	
 	//private OrderAgentState state;
-	public OrderAgentInitial(Simulator pSim, Point pLocation, Order pOrder ) {
+	public OrderAgentInitial(Simulator pSim, Point pLocation, Order pOrder, DateTime currTime ) {
 		super();
 		Location = pLocation;
 		super.setStartPosition(Location);
@@ -84,7 +84,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		
 		//deliveries = new ArrayList<Delivery>();
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
-		orderPlan = new OrderAgentPlan(new Duration(0), this, GlobalParameters.START_DATETIME);
+		orderPlan = new OrderAgentPlan(new Duration(0), this, currTime);//GlobalParameters.START_DATETIME);
 		maximumPossibleStartTime = makeMaximumPossibleStartTime();
 		if (GlobalParameters.ENABLE_JI)
 			strategy = new OrderStrategyCoalition(this);
@@ -180,8 +180,8 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 		return null;
 	}
-	protected int getTimeForLastFeaAntInSec() { 
-		return timeForLastFeaAnt.getSecondOfDay();
+	protected DateTime getTimeForLastFeaAnt() { 
+		return timeForLastFeaAnt;
 	}
 	protected void setTimeForLastFeaAnt(DateTime timeForLastFeaAnt) {
 		this.timeForLastFeaAnt = timeForLastFeaAnt;

@@ -169,7 +169,8 @@ public class TruckStateInProcess extends TruckAgentState {
 	void sendExpAnts(long startTime) {
 		final DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		//check  exp ants to be sent after particular interval only
-		if (currTime.minusSeconds(timeForLastExpAnt.getSecondOfDay()).getSecondOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_SEC ) {
+		//if (currTime.minusSeconds(timeForLastExpAnt.getSecondOfDay()).getSecondOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_SEC ) {
+		if (currTime.minusSeconds( GlobalParameters.EXPLORATION_INTERVAL_SEC).compareTo(timeForLastExpAnt) >= 0) {
 			ExpAnt eAnt = new ExpAnt(truckAgent, Utility.getAvailableSlots(truckAgent.getTruckSchedule().getSchedule(), availableSlots,  
 					new TimeSlot(new DateTime(currTime), getTotalTimeRange().getEndTime()), GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l), truckAgent.getTruckSchedule().getSchedule(), currTime);
 			if (availableSlots.size()>0) {
@@ -184,7 +185,8 @@ public class TruckStateInProcess extends TruckAgentState {
 	void sendIntAnts(long startTime) { 
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);//send int ants to book again the whole schedule..
 		if (currTime.compareTo(timeForLastIntAnt) > 0) {
-		if (currTime.minusSeconds(timeForLastIntAnt.getSecondOfDay()).getSecondOfDay() >= GlobalParameters.INTENTION_INTERVAL_SEC ) {
+		//if (currTime.minusSeconds(timeForLastIntAnt.getSecondOfDay()).getSecondOfDay() >= GlobalParameters.INTENTION_INTERVAL_SEC ) {
+		if (currTime.minusSeconds(GlobalParameters.INTENTION_INTERVAL_SEC).compareTo(timeForLastIntAnt) >= 0 ) {
 			processExplorationAnts(startTime);
 			if (bestAnt != null) {
 				if (truckAgent.getTruckSchedule().scheduleStillValid(bestAnt.getSchedule())){

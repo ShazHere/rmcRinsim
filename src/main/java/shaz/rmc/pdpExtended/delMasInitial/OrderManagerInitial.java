@@ -60,7 +60,7 @@ public class OrderManagerInitial implements TickListener {
 			Iterator<Order> i = GlobalParameters.PROBLEM.getOrders().iterator();
 			while(i.hasNext()) {
 				Order ord = i.next();
-				if (currTime.plusMinutes(210).compareTo(ord.getEarliestStartTime()) >= 0)  { //Xhours earlier the from their start times, orders will be added
+				if (currTime.plusMinutes(180).compareTo(ord.getEarliestStartTime()) >= 0)  { //Xhours earlier the from their start times, orders will be added
 					logger.debug("index of order to be added is = " + GlobalParameters.PROBLEM.getOrders().indexOf(ord));
 					if (addOrder(ord, timeLapse.getStartTime()))
 						orderIdList.add(ord.getId());
@@ -112,7 +112,7 @@ public class OrderManagerInitial implements TickListener {
 	private boolean addOrder(Order ord, long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		System.out.println(ord.toString());
-		OrderAgentInitial or = new OrderAgentInitial(sim, prm.getRandomPosition(rng), ord);//<GlobalParameters.PROBLEM.getOrders().size()?i:i-1));
+		OrderAgentInitial or = new OrderAgentInitial(sim, prm.getRandomPosition(rng), ord, currTime);//<GlobalParameters.PROBLEM.getOrders().size()?i:i-1));
 		//OrderAgentInitial or = new OrderAgentInitial(sim, new Point(3.5, 2.7), ord);//<GlobalParameters.PROBLEM.getOrders().size()?i:i-1)); for canonical form
 		if (orderSet.contains(or))
 			return false;

@@ -134,31 +134,33 @@ public class ExpAnt extends Ant {
 		Utility.getAvailableSlots(this.schedule, this.availableSlots, new TimeSlot (new DateTime(currTime), this.truckTotalTimeRange.getEndTime()), GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l);
 		if (availableSlots.size() == 0)
 			return false;
-		AvailableSlot currentSlot = availableSlots.get(0);
-		DateTime actualInterestedTime = ScheduleHelper.getActualInterestedTime(interestedTime, currPSToCurrOrderTravelTime); //means time at which truck should start its slot for current delivery
-			if (ScheduleHelper.isInterestedAtExactTime(this.originator, interestedTime, currPSToCurrOrderTravelTime, currentSlot,actualInterestedTime, pS, pOr)) {
-				//if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
-					this.currentLagTime = new Duration(0);
-					currentInterestedTime = actualInterestedTime;
-					lastOrderTravelUnit = ScheduleHelper.makeLastOrderTravelUnit(this.originator, currentInterestedTime, currentSlot, pS);
-					pS4NextOrderVisited = ScheduleHelper.makeNextOrderTravelUnit(this.originator, currentInterestedTime, currentSlot, pOr);
-					return true;
-				//}
-			}
-			else if (GlobalParameters.LAG_TIME_ENABLE) {//estimate with lag time
-				if (ScheduleHelper.isInterestedWithLagTime(this.originator, interestedTime, currPSToCurrOrderTravelTime,currentSlot, actualInterestedTime, pS, pOr)) {
-//					Duration possibleLagtime = new Duration(actualInterestedTime, currentSlot.getStartTime() );
-//					if (currentSlot.getStartTime().compareTo(actualInterestedTime.plus(possibleLagtime)) <= 0) {// this condition is added since, once entered in from outer if, there were chances hat 
-						//(new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
-					checkArgument( ((new Duration(currentSlot.getStartTime(), currentSlot.getEndTime())).getStandardMinutes() >= (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()), true);						
-						this.currentLagTime = ScheduleHelper.makeLagTime(currentSlot, actualInterestedTime, pS);//TODO: check this, it should be duraton b/w actualInterestedTime and the induced lag time! should calculate with seperate method..17/07/2013
-						currentInterestedTime = actualInterestedTime.plus(this.currentLagTime);
+		for(AvailableSlot av : availableSlots){
+			AvailableSlot currentSlot = av;//availableSlots.get(0);
+			DateTime actualInterestedTime = ScheduleHelper.getActualInterestedTime(interestedTime, currPSToCurrOrderTravelTime); //means time at which truck should start its slot for current delivery
+				if (ScheduleHelper.isInterestedAtExactTime(this.originator, interestedTime, currPSToCurrOrderTravelTime, currentSlot,actualInterestedTime, pS, pOr)) {
+					//if ((new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
+						this.currentLagTime = new Duration(0);
+						currentInterestedTime = actualInterestedTime;
 						lastOrderTravelUnit = ScheduleHelper.makeLastOrderTravelUnit(this.originator, currentInterestedTime, currentSlot, pS);
 						pS4NextOrderVisited = ScheduleHelper.makeNextOrderTravelUnit(this.originator, currentInterestedTime, currentSlot, pOr);
 						return true;
 					//}
 				}
-			}
+				else if (GlobalParameters.LAG_TIME_ENABLE) {//estimate with lag time
+					if (ScheduleHelper.isInterestedWithLagTime(this.originator, interestedTime, currPSToCurrOrderTravelTime,currentSlot, actualInterestedTime, pS, pOr)) {
+	//					Duration possibleLagtime = new Duration(actualInterestedTime, currentSlot.getStartTime() );
+	//					if (currentSlot.getStartTime().compareTo(actualInterestedTime.plus(possibleLagtime)) <= 0) {// this condition is added since, once entered in from outer if, there were chances hat 
+							//(new Duration(currentSlot.getStartTime(), actualInterestedTime)).getStandardMinutes() < (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()) {
+						checkArgument( ((new Duration(currentSlot.getStartTime(), currentSlot.getEndTime())).getStandardMinutes() >= (Duration.standardHours(GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS)).getStandardMinutes()), true);						
+							this.currentLagTime = ScheduleHelper.makeLagTime(currentSlot, actualInterestedTime, pS);//TODO: check this, it should be duraton b/w actualInterestedTime and the induced lag time! should calculate with seperate method..17/07/2013
+							currentInterestedTime = actualInterestedTime.plus(this.currentLagTime);
+							lastOrderTravelUnit = ScheduleHelper.makeLastOrderTravelUnit(this.originator, currentInterestedTime, currentSlot, pS);
+							pS4NextOrderVisited = ScheduleHelper.makeNextOrderTravelUnit(this.originator, currentInterestedTime, currentSlot, pOr);
+							return true;
+						//}
+					}
+				}
+		}
 		return false;
 	}
 

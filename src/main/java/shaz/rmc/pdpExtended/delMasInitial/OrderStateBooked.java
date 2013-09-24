@@ -47,7 +47,7 @@ public class OrderStateBooked extends OrderAgentState {
 			DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 			checkArgument(currTime.compareTo(orderPlan.getDeliveries().get(0).getLoadingTime()) < 0,true);
 			checkedCorrectlyBooked = true;
-		}//if this check is caught too often then it means there is need to re-visit different iterval times and 'MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED' values.
+		}//if this check is caught too often then it means there is need to re-visit different interval times and 'MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED' values.
 		
 	}
 	@Override

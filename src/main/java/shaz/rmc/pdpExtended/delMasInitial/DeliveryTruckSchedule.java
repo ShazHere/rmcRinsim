@@ -43,6 +43,7 @@ public class DeliveryTruckSchedule {
 
 	DeliveryTruckSchedule(ArrayList<TruckScheduleUnit> pSch) {
 		this.schedule = pSch;
+		practicalSchedule = new ArrayList<TruckScheduleUnit>();
 		unitStatus = new LinkedHashMap<Delivery, Reply>();
 		removedUnits = new ArrayList<TruckScheduleUnit>();
 	}
@@ -68,7 +69,8 @@ public class DeliveryTruckSchedule {
 					}
 				}
 				else if (newUnit instanceof TruckTravelUnit && u instanceof TruckTravelUnit) {
-					if (newUnit.equals(u)){
+					//if (newUnit.equals(u)){
+					if (newUnit.getStartLocation().equals(u.getStartLocation()) && newUnit.getEndLocation().equals(u.getEndLocation()) ) {
 						foundMatch = true;
 						break;
 					}

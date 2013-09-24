@@ -33,19 +33,20 @@ public final class GlobalParameters {
 	//public static final int TICK_INTERVAL = 200000; 
 	//public static final int INTENTION_EVAPORATION_RATE = 10; //means 20 ticks
 	//public static final int EXPLORATION_EVAPORATION_RATE = 20; //means  no. of tics
-	public static final int DEPHASE_INTERVAL_SEC = 3*60; //means ants shud be de-phased randomly between 0 to X Sec
+	public static final int DEPHASE_INTERVAL_SEC = 6*60; //means ants shud be de-phased randomly between 0 to X Sec
 	public static final int FEASIBILITY_INTERVAL_SEC = 2*60; //earlier 8 means send feeasibilty ants to near by after every X minutes.
-	public static final int FEASIBILITY_EVAPORATION_INTERVAL_SEC = FEASIBILITY_INTERVAL_SEC + (1*60); //earlier + 5
-	public static final int EXPLORATION_INTERVAL_SEC = 1*60; //means no. of mintues //earlier 2
+	public static final int FEASIBILITY_EVAPORATION_INTERVAL_SEC = FEASIBILITY_INTERVAL_SEC + (60); //earlier + 5
+	public static final int EXPLORATION_INTERVAL_SEC = 60; //means no. of mintues //earlier 2
 	public static final int INTENTION_INTERVAL_SEC = 2*60; //means no. of mintues earlier = 5
-	public static final int INTENTION_EVAPORATION_SEC = INTENTION_INTERVAL_SEC + (1*60); //earlier 3
-	public static final int EXPLORATION_SCHEDULE_SIZE = 2; //earlier 3 (5/02/2013)
+	public static final int INTENTION_EVAPORATION_SEC = INTENTION_INTERVAL_SEC + (60); //earlier 3
+	
+	public static final int EXPLORATION_SCHEDULE_SIZE = 1; //earlier 3 (5/02/2013)
 	//public static final int TOTAL_TRUCKS = PROBLEM.getVehicles().size() ; //almost 29 trucks are there in the instances
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = true; //will all the vehicles have same capacity
 	public static final int FIXED_CAPACITY = 10000; //in m3, but not used except for estimation of maximum possible start time 30/07/2013
 	public static final double TRUCK_SPEED = 10; //points per hour, in a 10*10 square area. at the moment i consider it 100km2 area. 
 	//public static final int FIXED_VEHICLE_CAPACITY =10000;
-	public static final int TRUCKS_PLAN_IN_ADVANCE_HOURS = 6; //specifies how much time in advance the truck can plan. but if deliveries are so many, the truck
+	//public static final int TRUCKS_PLAN_IN_ADVANCE_HOURS = 6; //specifies how much time in advance the truck can plan. but if deliveries are so many, the truck
 	//accepts the deliveyr time of even after TRUCKS_PLAN_IN_ADVANCE_HOURS. 
 	public static final int MINUTES_TO_PERISH_CONCRETE = 80; //in minutes..
 	public static final int MAX_LAG_TIME_MINUTES = 30; //used when LAG_TIME_ENABLE = true
@@ -58,8 +59,8 @@ public final class GlobalParameters {
 	public static final int DISCHARGE_RATE_PERHOUR = 10000; //Constant for all orders
 	public static final int LOADING_MINUTES = 5;
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
-	public static final long AVAILABLE_SLOT_SIZE_HOURS = 2;
-	public static final boolean ENABLE_TRUCK_BREAKDOWN = false;
+	public static final long AVAILABLE_SLOT_SIZE_HOURS = 1;
+	public static final boolean ENABLE_TRUCK_BREAKDOWN = true;
 	public static final boolean ENABLE_JI = false;
 	
 	public static final boolean EXP_RANKING_WITH_SCORE_ENABLE = true; //should exploration ants be ranked accoridng their score by Truck agent
@@ -68,7 +69,7 @@ public final class GlobalParameters {
 	//CHECK NOTES ABOUT INPUT FILES!!
 	//public static final String INPUT_FILE = "canonical-30May2013.xml";  //with expanded order start times
 	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-bigger2.xml";  //with expanded order start times
-	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //compaq deliveries, the normal basic set
+//	public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic.xml";  //compaq deliveries, the normal basic set
 //	public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-4Delivery.xml";
 	//public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-expanded.xml";
 	//public static final String INPUT_FILE =  "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-1Delivery.xml";
@@ -82,21 +83,21 @@ public final class GlobalParameters {
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-bigger2/"; 
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-10-1Delivery/"; 
 	//public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/JIExpMay2013/";
-//	public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/30August/";
+	//public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/30August/";
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-01-20/";
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-02-15/";
 	public static final String LOG_LOCATION = "hh";  //not used 
 	
-	public static final int SCALE = 8;
+	public static final int SCALE = 7;
 	public static final String DATA_FOLDER= "/Users/Shaza/Documents/RMC_Data_2013/input/";
 	//public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/GeneratroFilesRestult14Sept2013/";
 	public static final String RESULT_FOLDER = "/Users/Shaza/Documents/RMC_Data_2013/output/";
-	public static final String INPUT_FILE = SCALE + "/1.0_" + SCALE + ".xml";
+	public static final String INPUT_FILE = SCALE + "/1.2_" + SCALE + ".xml";
 	
 	/**
 	 * Simulation Start time, w.r.t real time clock
 	 */
-	public static final DateTime START_DATETIME = new DateTime(2011, 1, 10, 7, 0, 0 ,0, GregorianChronology.getInstance()); //07AM on 10Jan, 2011
+	public static final DateTime START_DATETIME = new DateTime(2011, 1, 10, 6, 0, 0 ,0, GregorianChronology.getInstance()); //07AM on 10Jan, 2011
 	/**
 	 * Simulation End time, w.r.t real time clock
 	 */
