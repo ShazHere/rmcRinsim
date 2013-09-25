@@ -153,7 +153,7 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		Duration dur = new Duration(GlobalParameters.MINUTES_TO_DELAY_ST * 60 * 1000);
 		orderPlan = new OrderAgentPlan(orderPlan.getDelayStartTime().plus(dur), this, currTime);
 		parcelDeliveries = new ArrayList<DeliveryInitial>();
-		logger.info(order.getId() + "O NewOrder Plan StDelay = " + orderPlan.getDelayStartTime().getStandardMinutes());
+		logger.info(order.getId() + "O NewOrder Plan StDelay = " + orderPlan.getDelayStartTime().getStandardMinutes() + ", CURRENT TIME = " + currTime);
 	}
 	
 	/**

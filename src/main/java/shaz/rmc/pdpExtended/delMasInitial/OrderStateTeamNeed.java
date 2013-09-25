@@ -59,7 +59,7 @@ public class OrderStateTeamNeed extends OrderAgentState {
 			TimeSlot ts = orderPlan.getTimeWindowFailedDelivery(failedDelivery);//time slot at order, w.r.t time of delivery
 			
 			DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-			logger.debug(orderAgent.getOrder().getId() + "O Delivery Failure detected; DeliveryNO = " + failedDelivery.getDeliveryNo() + "Order in TeamNeed! ");
+			logger.info(orderAgent.getOrder().getId() + "O Delivery Failure detected; DeliveryNO = " + failedDelivery.getDeliveryNo() + "Order in TeamNeed! ");
 			strategy.getTc().removeMember((DeliveryTruckInitial) failedDelivery.getTruck());
 			TruckCostForDelivery cost = strategy.getTc().getMostSuitableTruck(failedDelivery, ts, currTime);
 			boolean deliveryAssigned = false;

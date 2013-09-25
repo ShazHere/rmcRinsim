@@ -54,14 +54,14 @@ public final class GlobalParameters {
 	public static final int MINUTES_TO_CHANGE_ST4ORDER = 60; // When shold start time of the order be delayed..
 	public static final int MINUTES_TO_DELAY_ST = 30; //means ST should be delayed with MINUTES_TO_DELAY_ST if MINUTES_TO_CHANGE_ST4ORDER time has been elapsed
 							//after each change of ST. I should make it in such a way that if this is 0, then actually there is no ST_DELAY
-	public static final int MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED = 80;
+	public static final int MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED = 70;
 	public static final int MINUTES_BEFOR_DELIVERY_CREATED = 5; //mintues before pickup time, when delivery(physically) should be created. 
 	public static final int DISCHARGE_RATE_PERHOUR = 10000; //Constant for all orders
 	public static final int LOADING_MINUTES = 5;
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
 	public static final long AVAILABLE_SLOT_SIZE_HOURS = 1;
 	public static final boolean ENABLE_TRUCK_BREAKDOWN = true;
-	public static final boolean ENABLE_JI = false;
+	public static final boolean ENABLE_JI = true;
 	
 	public static final boolean EXP_RANKING_WITH_SCORE_ENABLE = true; //should exploration ants be ranked accoridng their score by Truck agent
 	public static final boolean PS_ALWAYS_AVAILABLE = true;
@@ -92,7 +92,7 @@ public final class GlobalParameters {
 	public static final String DATA_FOLDER= "/Users/Shaza/Documents/RMC_Data_2013/input/";
 	//public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/GeneratroFilesRestult14Sept2013/";
 	public static final String RESULT_FOLDER = "/Users/Shaza/Documents/RMC_Data_2013/output/";
-	public static final String INPUT_FILE = SCALE + "/1.2_" + SCALE + ".xml";
+	public static final String INPUT_FILE = SCALE + "/1.1_" + SCALE + ".xml";
 	
 	/**
 	 * Simulation Start time, w.r.t real time clock
@@ -111,7 +111,7 @@ public final class GlobalParameters {
 	public static final int TRUCK_BREAKDOWN_PROBABILTY = 20;   
 		
 	//RINSIM PARAMETERS
-	public static final int TOTAL_PRODUCTION_SITES = 2;
+	//public static final int TOTAL_PRODUCTION_SITES = 2;
 
 	
 	public class Weights {

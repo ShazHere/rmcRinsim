@@ -128,7 +128,7 @@ public abstract class TruckAgentState {
 	 */
 	protected void removeRejectedUnitFromSchedule(communicateAbleUnit u, DateTime currTime) {
 		if (u.getOrderReply() == Reply.REJECT && u.isAddedInTruckSchedule() == true){ //means proably orderPlan changed
-			truckAgent.getTruckSchedule().remove(u.getTunit());
+			truckAgent.getTruckSchedule().remove(u.getTunit(), truckAgent);
 			if (truckAgent.getTruckSchedule().isEmpty())
 				Utility.adjustAvailableSlotInBeginning(currTime, availableSlots);
 			else

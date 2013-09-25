@@ -54,7 +54,7 @@ public class OrderAgentPlan {
 		timeForLastIntention = pCurrTime;
 		deliveries = new ArrayList<Delivery>();
 		interestedTime = pOrderAgent.getOrder().getStartTime().plus(pDelayStartTime);
-		if (pCurrTime.compareTo(interestedTime) >= 0) { // this could be the case when after a delivery failure, OrderPlan was re-initialized.
+		if (pCurrTime.compareTo(interestedTime.minusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED)) >= 0) { // this could be the case when after a delivery failure, OrderPlan was re-initialized.
 			interestedTime = pCurrTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED);
 			delayStartTime = new Duration(orderAgent.getOrder().getStartTime(), interestedTime);
 		}
@@ -106,7 +106,7 @@ public class OrderAgentPlan {
 		}			
 		if (remainingToBookVolume <= 0) {
 			orderAgent.setOrderState(OrderAgentState.BOOKED);
-			logger.info(orderAgent.getOrder().getId() + "O fully BOOKED");
+			logger.info(orderAgent.getOrder().getId() + "O fully BOOKED , CURRENT TIME = " + currTime);
 		}
 		this.timeForLastIntention = currTime;
 		
@@ -285,7 +285,7 @@ public class OrderAgentPlan {
 	public boolean isOrderDeliveryingStarted(DateTime currTime) {
 		if (deliveries.size() == 0)
 			return false;
-		if (currTime.compareTo(deliveries.get(0).getDeliveryTime()) >= 0)
+		if (currTime.compareTo(deliveries.get(0).getLoadingTime()) >= 0)
 			return true;
 		else
 			return false;

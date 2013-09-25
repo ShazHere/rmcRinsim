@@ -72,7 +72,7 @@ public class TruckStateTeamCommitment extends TruckAgentState {
 			CommitmentAnt cAnt = (CommitmentAnt)i.next(); 
 			if (truckAgent.getTruckSchedule().isOverlapped(cAnt.getCommUnit().getTunit())) {
 				logger.debug(truckAgent.getId()+"T OVERLAP after team member breakdown, So dropping overlapped unit");
-				truckAgent.getTruckSchedule().removeOverlappedUnit(cAnt.getCommUnit().getTunit());
+				truckAgent.getTruckSchedule().removeOverlappedUnit(cAnt.getCommUnit().getTunit(), truckAgent);
 				addInTruckSchedule(cAnt);
 			}
 			else {

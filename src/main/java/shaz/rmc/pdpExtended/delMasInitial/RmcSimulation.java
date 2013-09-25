@@ -36,7 +36,8 @@ public class RmcSimulation {
 	private static Logger log = Logger.getLogger(RmcSimulation.class);
 	private static Simulator sim;
 	public static void main(String[] args) {
-		int randomSeed = 250; //if randomSeed == 0, then each generato is a new random Generator without any seed, else same rng should be passed to all
+		//int randomSeed = 250; //if randomSeed == 0, then each generato is a new random Generator without any seed, else same rng should be passed to all
+		int randomSeed = 0;
 		final RandomGenerator rng = new MersenneTwister(randomSeed);
 		sim = new Simulator(rng, 200); //tick is one milli second, step = 200ms 
 		/* Discussed with Rinde that truck.getSpeed and roadModel.maxSpeed should always be in same units.  

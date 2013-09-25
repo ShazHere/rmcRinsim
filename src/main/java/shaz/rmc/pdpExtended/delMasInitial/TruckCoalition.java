@@ -38,7 +38,9 @@ public class TruckCoalition {
 		members.add(truck);
 	}
 	protected void removeMember(DeliveryTruckInitial truck) {
-		members.remove(truck);
+		do 
+			members.remove(truck);
+		while (members.contains(truck));
 	}
 	
 	public void addMemebers(ArrayList<DeliveryTruckInitial> truckList) {

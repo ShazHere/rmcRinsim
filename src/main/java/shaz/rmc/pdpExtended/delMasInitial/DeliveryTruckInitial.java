@@ -115,7 +115,7 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 	
 	public void removeFromSchedule(TruckDeliveryUnit tdu) {
-		truckSchedule.remove(tdu);
+		truckSchedule.remove(tdu, this);
 	}
 
 	
