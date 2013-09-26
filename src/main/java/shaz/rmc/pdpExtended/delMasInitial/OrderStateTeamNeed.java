@@ -64,7 +64,7 @@ public class OrderStateTeamNeed extends OrderAgentState {
 			TruckCostForDelivery cost = strategy.getTc().getMostSuitableTruck(failedDelivery, ts, currTime);
 			boolean deliveryAssigned = false;
 			if (cost != null) 
-				if (assignDelivery(orderPlan, cost, currTime) == true);
+				if (assignDelivery(orderPlan, cost, currTime) == true)
 					deliveryAssigned = true;
 			if (deliveryAssigned)
 				orderPlan.removeDelivery(failedDelivery);

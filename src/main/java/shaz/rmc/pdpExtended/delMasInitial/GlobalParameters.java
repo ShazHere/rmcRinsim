@@ -37,7 +37,7 @@ public final class GlobalParameters {
 	public static final int FEASIBILITY_INTERVAL_SEC = 2*60; //earlier 8 means send feeasibilty ants to near by after every X minutes.
 	public static final int FEASIBILITY_EVAPORATION_INTERVAL_SEC = FEASIBILITY_INTERVAL_SEC + (60); //earlier + 5
 	public static final int EXPLORATION_INTERVAL_SEC = 60; //means no. of mintues //earlier 2
-	public static final int INTENTION_INTERVAL_SEC = 2*60; //means no. of mintues earlier = 5
+	public static final int INTENTION_INTERVAL_SEC = 100; //means no. of mintues earlier = 5
 	public static final int INTENTION_EVAPORATION_SEC = INTENTION_INTERVAL_SEC + (60); //earlier 3
 	
 	public static final int EXPLORATION_SCHEDULE_SIZE = 1; //earlier 3 (5/02/2013)

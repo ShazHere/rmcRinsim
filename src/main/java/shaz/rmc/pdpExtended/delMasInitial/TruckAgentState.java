@@ -128,14 +128,14 @@ public abstract class TruckAgentState {
 	 */
 	protected void removeRejectedUnitFromSchedule(communicateAbleUnit u, DateTime currTime) {
 		if (u.getOrderReply() == Reply.REJECT && u.isAddedInTruckSchedule() == true){ //means proably orderPlan changed
-			truckAgent.getTruckSchedule().remove(u.getTunit(), truckAgent);
+			truckAgent.getTruckSchedule().remove(u.getTunit(), truckAgent, currTime);
 			if (truckAgent.getTruckSchedule().isEmpty())
 				Utility.adjustAvailableSlotInBeginning(currTime, availableSlots);
 			else
 				truckAgent.getTruckSchedule().adjustTruckSchedule(truckAgent);
 			logger.debug(truckAgent.getId()+"T Schedule unit removed in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
 		}
-		truckAgent.getTruckSchedule().makePracticalSchedule(truckAgent);
+		truckAgent.getTruckSchedule().makePracticalSchedule(truckAgent, currTime);
 	}
 
 	public static final int IN_PROCESS = 0; // The normal and general state

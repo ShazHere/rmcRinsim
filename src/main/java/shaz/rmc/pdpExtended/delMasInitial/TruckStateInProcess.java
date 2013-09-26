@@ -60,12 +60,12 @@ public class TruckStateInProcess extends TruckAgentState {
 			checkArgument(iAnt.isConsistentWithExistingSchedule(truckAgent.getTruckSchedule().getSchedule()) == true, true);
 			if (iAnt.hasNoREJECTTunit() ) 
 			{
-				addOrUpdateTUnits(iAnt);;
+				addOrUpdateTUnits(iAnt , currTime);
 			} //no need of else,coz it will be removed any way..
 			else {
 				handleREJECTEDTunits(iAnt, currTime);
 			}
-			truckAgent.getTruckSchedule().makePracticalSchedule(truckAgent);
+			truckAgent.getTruckSchedule().makePracticalSchedule(truckAgent, currTime);
 			intentionAnts.clear();  //remove the ant
 		}
 	}
@@ -113,7 +113,7 @@ public class TruckStateInProcess extends TruckAgentState {
 		explorationAnts.clear(); 
 	}
 	
-	private boolean addOrUpdateTUnits(IntAnt iAnt){
+	private boolean addOrUpdateTUnits(IntAnt iAnt, DateTime currTime){
 		boolean newDeliveryUnitAdded = false;
 		final Cloner cl = Utility.getCloner();
 		for (communicateAbleUnit u : iAnt.getSchedule()){
@@ -131,6 +131,7 @@ public class TruckStateInProcess extends TruckAgentState {
 						if (truckAgent.getTruckSchedule().alreadyExist(tsu) == false){
 							TruckTravelUnit ttu = cl.deepClone((TruckTravelUnit)tsu);
 							truckAgent.getTruckSchedule().add(ttu);
+							checkArgument(currTime.compareTo(ttu.getTimeSlot().getStartTime()) < 0, true);
 							logger.debug(truckAgent.getId()+"T Travel unit added: " + ttu.toString());
 						}
 					}

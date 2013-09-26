@@ -114,8 +114,8 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		return truckFailureManager.canIBreakAt(currTime, id2);
 	}
 	
-	public void removeFromSchedule(TruckDeliveryUnit tdu) {
-		truckSchedule.remove(tdu, this);
+	public void removeFromSchedule(TruckDeliveryUnit tdu, DateTime currTime) {
+		truckSchedule.remove(tdu, this, currTime);
 	}
 
 	

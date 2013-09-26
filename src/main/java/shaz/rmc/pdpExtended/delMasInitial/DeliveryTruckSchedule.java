@@ -132,7 +132,7 @@ public class DeliveryTruckSchedule {
 	 * @param tdu
 	 * removes from schedule truckDeliveryUnit and associated TruckTravelUnits.
 	 */
-	protected void remove(TruckDeliveryUnit tdu, DeliveryTruckInitial rmcTruck) {
+	protected void remove(TruckDeliveryUnit tdu, DeliveryTruckInitial rmcTruck, DateTime currTime) {
 		checkArgument(getIndexOf(tdu, this.schedule)> -1 || (getIndexOf(tdu, this.schedule) == -1 && getIndexOf(tdu, removedUnits) > -1), true);
 		if (getIndexOf(tdu, removedUnits) > -1)
 			return;
@@ -141,7 +141,7 @@ public class DeliveryTruckSchedule {
 			unitStatus.remove(tdu.getDelivery());
 			removedUnits.add(tdu);
 			//makePracticalSchedule(rmcTruck);
-			beforeReturningRemoveMethod(rmcTruck);
+			beforeReturningRemoveMethod(rmcTruck, currTime);
 			checkArgument(schedule.isEmpty(), true);
 			checkArgument(practicalSchedule.isEmpty(), true);
 			return;
@@ -164,7 +164,7 @@ public class DeliveryTruckSchedule {
 				removedUnits.add(schedule.get(getIndexOf(tdu, this.schedule)));
 				schedule.remove(unitIndex-1); //travel Unit before tdu.
 				schedule.remove(getIndexOf(tdu, this.schedule));
-				beforeReturningRemoveMethod(rmcTruck);
+				beforeReturningRemoveMethod(rmcTruck, currTime);
 				return;
 			}
 			else {
@@ -180,14 +180,14 @@ public class DeliveryTruckSchedule {
 				schedule.remove(getIndexOf(tdu, this.schedule));
 			}	
 		}
-		beforeReturningRemoveMethod(rmcTruck);	
+		beforeReturningRemoveMethod(rmcTruck, currTime);	
 	}
 	/**
 	 * @param rmcTruck
 	 */
-	private void beforeReturningRemoveMethod(DeliveryTruckInitial rmcTruck) {
+	private void beforeReturningRemoveMethod(DeliveryTruckInitial rmcTruck, DateTime currTime) {
 		adjustTruckSchedule(rmcTruck);
-		makePracticalSchedule(rmcTruck);
+		makePracticalSchedule(rmcTruck, currTime);
 		Utility.sortSchedule(schedule);
 	}
 	
@@ -201,7 +201,8 @@ public class DeliveryTruckSchedule {
 		for (TruckScheduleUnit tsu : sch) {
 			if (tsu instanceof TruckDeliveryUnit) {
 				if (((TruckDeliveryUnit)tdu).getDelivery().equals(((TruckDeliveryUnit)tsu).getDelivery())
-						&& ((TruckDeliveryUnit)tdu).getLagTime().equals(((TruckDeliveryUnit)tsu).getLagTime())
+						//&& ((TruckDeliveryUnit)tdu).getLagTime().equals(((TruckDeliveryUnit)tsu).getLagTime()) lag time should not be compared, since OrderPlanInformer ants
+						//when inform truck to remove a tdu, they always fill lagtime = 0
 						&& ((TruckDeliveryUnit)tdu).getWastedConcrete()==((TruckDeliveryUnit)tsu).getWastedConcrete())
 					return index;
 			}
@@ -302,7 +303,7 @@ public class DeliveryTruckSchedule {
 	 * @return the practical schedule containing truckDeliveryUnit with status of ACCEPT only. The travel units are modified/added 
 	 * according to the ACCEPTed truckDeliveryUnits.
 	 */
-	public void makePracticalSchedule(DeliveryTruckInitial rmcTruck) {
+	public void makePracticalSchedule(DeliveryTruckInitial rmcTruck, DateTime currTime) {
 		if (schedule.isEmpty() || !unitStatus.containsValue(Reply.ACCEPT)) {
 			practicalSchedule = new ArrayList<TruckScheduleUnit>();
 			return;
@@ -322,6 +323,17 @@ public class DeliveryTruckSchedule {
 		pracSchedule = fillTravelUnitsInSchedule(rmcTruck, pracSchedule, cl);
 		
 		Utility.sortSchedule(pracSchedule);
+		for (TruckScheduleUnit tsu: pracSchedule) {
+			if (tsu instanceof TruckDeliveryUnit) {
+				if (getIndexOf((TruckDeliveryUnit) tsu, this.practicalSchedule) == -1) // means not present in practicalScedule so far
+					checkArgument(tsu.getTimeSlot().getStartTime().compareTo(currTime) >0, true);
+			}
+			else {
+				if (getIndexOf((TruckTravelUnit)tsu, this.practicalSchedule) == -1) // means not present in practicalScedule so far
+					checkArgument(tsu.getTimeSlot().getStartTime().compareTo(currTime) >0, true);
+			}
+		}
+		
 		this.practicalSchedule = pracSchedule;
 	}
 	/**
@@ -750,7 +762,7 @@ public class DeliveryTruckSchedule {
 	 * @param tunit with respect to which overlapped has to be found in this.schedule
 	 * Should be called only if this.isOverlapped(TruckDeliveryUnit tunit) is true
 	 */
-	public void removeOverlappedUnit(TruckDeliveryUnit tunit, DeliveryTruckInitial rmcTruck) {
+	public void removeOverlappedUnit(TruckDeliveryUnit tunit, DeliveryTruckInitial rmcTruck, DateTime currTime) {
 		int indexOfOverlappingUnit = 0;
 		for (TruckScheduleUnit u : schedule) {
 			if (tunit.getTimeSlot().getStartTime().compareTo(u.getTimeSlot().getStartTime()) >= 0) {
@@ -769,7 +781,7 @@ public class DeliveryTruckSchedule {
 		}
 		checkArgument(schedule.get(indexOfOverlappingUnit) instanceof TruckDeliveryUnit, true);
 		TruckDeliveryUnit removableDelivery = (TruckDeliveryUnit) schedule.get(indexOfOverlappingUnit);
-		this.remove(removableDelivery, rmcTruck);
+		this.remove(removableDelivery, rmcTruck, currTime);
 		
 	}
 	/**
