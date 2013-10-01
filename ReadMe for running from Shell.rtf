@@ -1,0 +1,43 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1038\cocoasubrtf360
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\paperw11900\paperh16840\margl1440\margr1440\vieww15760\viewh11480\viewkind0
+\pard\tx566\tx1133\tx1700\tx2267\tx2834\tx3401\tx3968\tx4535\tx5102\tx5669\tx6236\tx6803\ql\qnatural\pardirnatural
+
+\f0\fs24 \cf0 Follow these steps:\
+\
+
+\b 1) 
+\b0 create runnable jar from eclipse, select option "Extract required libraries to generated jar", select an output folder and press finish\
+\
+
+\b 2)
+\b0  If loging is not required then on can simply run  using following command:\
+\
+	java -jar XXX.jar <args>\
+\
+which in my case becomes following:\
+\
+	java  -jar RmcSimulation.JAR 8 1.2 /Users/Shaza/Documents/RMC_Data_2013/input/ /Users/Shaza/Documents/RMC_Data_2013/output/\
+\
+
+\b 3)
+\b0  if log4j system is used then we need to specify path for log4j.xml explicitly, the command format would be:\
+\
+	java -Dlog4j.configuration=file:/path/to/log4j.xml -jar XXX.JAR <args>\
+\
+which in my case, I stored path/to/log4j.xml in an environment variable using:\
+\
+ 	LOG_CONFIG=/Users/Shaza/Documents/workspace/shaza-rmc.core/src/main/resources/log4j.xml\
+to recheck  use\
+\
+	echo $LOG_CONFIG\
+\
+so practically my final command to run becomes following:\
+\
+	java -Dlog4j.configuration=file:$LOG_CONFIG -jar RmcSimulation.JAR 8 1.2 /Users/Shaza/Documents/RMC_Data_2013/input/ /Users/	Shaza/Documents/RMC_Data_2013/output/\
+\
+\
+
+\b Note
+\b0 : So in remote server, I need to copy the .jar file and log4j.xml files and then use above commands}
