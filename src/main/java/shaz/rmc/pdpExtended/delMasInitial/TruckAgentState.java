@@ -17,6 +17,7 @@ import shaz.rmc.core.Ant;
 import shaz.rmc.core.AvailableSlot;
 import shaz.rmc.core.Reply;
 import shaz.rmc.core.TimeSlot;
+import shaz.rmc.core.TruckScheduleUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
@@ -44,6 +45,7 @@ public abstract class TruckAgentState {
 	//only start and endTime will be used
 	protected ArrayList<AvailableSlot> availableSlots; 
 
+	int currMinBreakChecked = GlobalParameters.START_DATETIME.getMinuteOfDay();
 	public TruckAgentState(DeliveryTruckInitial pTruck) {
 		this.truckAgent = pTruck;
 		this.logger = Logger.getLogger(TruckAgentState.class);
@@ -87,10 +89,13 @@ public abstract class TruckAgentState {
 	
 	protected void shouldIBreak(long startTime){
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		if (truckAgent.getPdpModel().getVehicleState(truckAgent).equals(VehicleState.IDLE)
-				&& truckAgent.canIBreakAt(currTime, truckAgent.getId())){
-			truckAgent.setTruckState(TruckAgentState.BROKEN);
-			logger.info(truckAgent.getId()+"T BROKE currTime= " + currTime);
+		if (currMinBreakChecked < currTime.getMinuteOfDay()) {
+			if (truckAgent.getPdpModel().getVehicleState(truckAgent).equals(VehicleState.IDLE)
+					&& truckAgent.canIBreakAt(currTime, truckAgent.getId())){
+				truckAgent.setTruckState(TruckAgentState.BROKEN);
+				logger.info(truckAgent.getId()+"T BROKE currTime= " + currTime);
+			}
+			currMinBreakChecked = currTime.getMinuteOfDay();
 		}
 	}
 	
@@ -127,15 +132,30 @@ public abstract class TruckAgentState {
 	 * @param currTime 
 	 */
 	protected void removeRejectedUnitFromSchedule(communicateAbleUnit u, DateTime currTime) {
-		if (u.getOrderReply() == Reply.REJECT && u.isAddedInTruckSchedule() == true){ //means proably orderPlan changed
-			truckAgent.getTruckSchedule().remove(u.getTunit(), truckAgent, currTime);
-			if (truckAgent.getTruckSchedule().isEmpty())
-				Utility.adjustAvailableSlotInBeginning(currTime, availableSlots);
-			else
-				truckAgent.getTruckSchedule().adjustTruckSchedule(truckAgent);
-			logger.debug(truckAgent.getId()+"T Schedule unit removed in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
+		if (u.getOrderReply() == Reply.REJECT && u.isAddedInTruckSchedule() == true ){ 
+			//means proably orderPlan changed, currTime is check so that if its really started, then don't remove it and let it go. even if order now rejects it.
+			if (truckAgent.getTruckSchedule().getUnitStatus(u.getDelivery()) != Reply.ACCEPT) {
+				removeUnit(u, currTime);
+			}
+			else if (currTime.compareTo(u.getTimeSlot().getStartTime()) <0) //status is ACCEPT
+			{
+				removeUnit(u, currTime);
+			}
 		}
-		truckAgent.getTruckSchedule().makePracticalSchedule(truckAgent, currTime);
+		//truckAgent.getTruckSchedule().makePracticalSchedule(truckAgent, currTime);
+	}
+
+	/**
+	 * @param u
+	 * @param currTime
+	 */
+	private void removeUnit(communicateAbleUnit u, DateTime currTime) {
+		truckAgent.getTruckSchedule().remove(u.getTunit(), truckAgent, currTime);
+		if (truckAgent.getTruckSchedule().isEmpty())
+			Utility.adjustAvailableSlotInBeginning(currTime, availableSlots);
+		else
+			truckAgent.getTruckSchedule().adjustTruckSchedule(truckAgent);
+		logger.debug(truckAgent.getId()+"T Schedule unit removed in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
 	}
 
 	public static final int IN_PROCESS = 0; // The normal and general state

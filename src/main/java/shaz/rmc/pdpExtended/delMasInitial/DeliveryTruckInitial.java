@@ -111,7 +111,12 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	
 	protected boolean canIBreakAt(DateTime currTime, int id2) {
 		checkArgument(strategy.getState() instanceof TruckStateInProcess);
-		return truckFailureManager.canIBreakAt(currTime, id2);
+		TruckScheduleUnit currUnit = truckSchedule.getScheduleUnitCurrentlyActive(currTime);
+		if (currUnit == null) {
+			return truckFailureManager.canIBreakAt(currTime, id2);
+		}
+		else  
+			return false;
 	}
 	
 	public void removeFromSchedule(TruckDeliveryUnit tdu, DateTime currTime) {

@@ -69,8 +69,9 @@ public class DeliveryTruckSchedule {
 					}
 				}
 				else if (newUnit instanceof TruckTravelUnit && u instanceof TruckTravelUnit) {
-					//if (newUnit.equals(u)){
-					if (newUnit.getStartLocation().equals(u.getStartLocation()) && newUnit.getEndLocation().equals(u.getEndLocation()) ) {
+					//if (newUnit.equals(u)){ some how not working
+					if (newUnit.getStartLocation().equals(u.getStartLocation()) && newUnit.getEndLocation().equals(u.getEndLocation())
+							&& ((TruckTravelUnit)newUnit).getTravelTime().equals(((TruckTravelUnit)u).getTravelTime())) {
 						foundMatch = true;
 						break;
 					}
@@ -186,11 +187,63 @@ public class DeliveryTruckSchedule {
 	 * @param rmcTruck
 	 */
 	private void beforeReturningRemoveMethod(DeliveryTruckInitial rmcTruck, DateTime currTime) {
+		//addExtraTravelUnitAccordingToCurrentLocation(rmcTruck, currTime);
 		adjustTruckSchedule(rmcTruck);
 		makePracticalSchedule(rmcTruck, currTime);
 		Utility.sortSchedule(schedule);
 	}
 	
+	/**
+	 * @param rmcTruck
+	 * @param currTime
+	 * This method is added since there is possibility that a truck is on the way to delivery(Oxdi), or doing delivery(Oxdi), 
+	 * and suppose that Oxdi is canceled because of failure of Oxd(i-1). Then there might be a travel unit required to reach 
+	 * the startLocation of trucks next schedule unit. 
+	 *  
+	 */
+	private void addExtraTravelUnitAccordingToCurrentLocation(DeliveryTruckInitial rmcTruck, DateTime currTime) {
+		int index = -1;
+		if (schedule.isEmpty())
+			return;
+		//for (TruckScheduleUnit tsu: schedule) {
+		for (int i = 0; i< schedule.size(); i++) {
+			if (i < schedule.size() -1) {
+				if (currTime.compareTo(schedule.get(i).getTimeSlot().getStartTime()) >= 0  && currTime.compareTo(schedule.get(i+1).getTimeSlot().getStartTime()) < 0) {
+					index++;
+					break;
+				}
+			}
+			if (currTime.compareTo(schedule.get(i).getTimeSlot().getStartTime()) < 0 && index == -1)
+				break;
+			index++;
+		}
+		if (index == 0) { //then its start location and current location shud be start location  also shedule.get(index)'s start
+			//location shud be trck start Location if any is NO, then add a travel unit form current location to start location of 
+			//schedule.get(index)
+			if (!rmcTruck.getRoadModel().getPosition(rmcTruck).equals(schedule.get(index).getStartLocation()) 
+					|| !rmcTruck.getStartLocation().equals(schedule.get(index).getStartLocation())) {
+				TruckTravelUnit ttu = makeTravelUnitFromCurrentToI(rmcTruck, index);
+				this.add(ttu);
+			}
+		}
+		else if (index > 0 && index < schedule.size()-1 && (!schedule.get(index-1).getEndLocation().equals(rmcTruck.getRoadModel().getPosition(rmcTruck)) 
+				|| !schedule.get(index-1).getEndLocation().equals(schedule.get(index).getStartLocation()))){
+			 //schedule.get(index -1).getEndLocation shud b == current location and  schedule.get(index -1).getEndLocation
+		//shud be == schedule.get(index). start location.
+			TruckTravelUnit ttu = makeTravelUnitFromCurrentToI(rmcTruck, index);
+			this.add(ttu);
+		}
+		
+	}
+	
+	
+	private TruckTravelUnit makeTravelUnitFromCurrentToI( DeliveryTruckInitial rmcTruck, int index) {
+		Double distance = Point.distance(rmcTruck.getRoadModel().getPosition(rmcTruck), schedule.get(index).getStartLocation()); //TODO replace by getPStoOrDuration method
+		Duration travelDist = new Duration((long)((distance/rmcTruck.getSpeed())*60*60*1000));
+		TruckTravelUnit reqUnit = new TruckTravelUnit(rmcTruck, Utility.getTravelUnitTimeSlot(travelDist, schedule.get(index).getTimeSlot().getStartTime(), true),
+				rmcTruck.getRoadModel().getPosition(rmcTruck), schedule.get(index).getStartLocation(), travelDist) ; //createNewTravelUnit
+		return reqUnit;
+	}
 	/**
 	 * @param tdu
 	 * @return index of the tdu unit in this.schedule.
@@ -262,7 +315,11 @@ public class DeliveryTruckSchedule {
 					return true;
 			}
 			else if (u instanceof TruckTravelUnit && un instanceof TruckTravelUnit){// u instanceof TruckTravelUnit 
-				if (u.getTimeSlot().compareTo(un.getTimeSlot()) == 0) //may be check with start time and end time seperately??
+				//if (u.getTimeSlot().compareTo(un.getTimeSlot()) == 0) //may be check with start time and end time seperately??
+				if (u.getStartLocation().equals(un.getStartLocation()) && u.getEndLocation().equals(un.getEndLocation()) 
+						&& ((TruckTravelUnit)u).getTravelTime().equals(((TruckTravelUnit)un).getTravelTime())
+						&& ((TruckTravelUnit)u).getTimeSlot().getStartTime().equals(((TruckTravelUnit)un).getTimeSlot().getStartTime())
+						&& ((TruckTravelUnit)u).getTimeSlot().getEndTime().equals(((TruckTravelUnit)un).getTimeSlot().getEndTime()))
 					return true;
 			} 
 		}
@@ -323,7 +380,7 @@ public class DeliveryTruckSchedule {
 		pracSchedule = fillTravelUnitsInSchedule(rmcTruck, pracSchedule, cl);
 		
 		Utility.sortSchedule(pracSchedule);
-		for (TruckScheduleUnit tsu: pracSchedule) {
+		for (TruckScheduleUnit tsu: pracSchedule) {//to make sure that a new unit is not added in practical schedule when its time has already been started.
 			if (tsu instanceof TruckDeliveryUnit) {
 				if (getIndexOf((TruckDeliveryUnit) tsu, this.practicalSchedule) == -1) // means not present in practicalScedule so far
 					checkArgument(tsu.getTimeSlot().getStartTime().compareTo(currTime) >0, true);
@@ -332,6 +389,7 @@ public class DeliveryTruckSchedule {
 				if (getIndexOf((TruckTravelUnit)tsu, this.practicalSchedule) == -1) // means not present in practicalScedule so far
 					checkArgument(tsu.getTimeSlot().getStartTime().compareTo(currTime) >0, true);
 			}
+			//If above two checks are failing then may be further decrease intervals of int ant
 		}
 		
 		this.practicalSchedule = pracSchedule;
@@ -344,7 +402,7 @@ public class DeliveryTruckSchedule {
 	private ArrayList<TruckScheduleUnit> fillTravelUnitsInSchedule(DeliveryTruckInitial rmcTruck, ArrayList<TruckScheduleUnit> anySchedule, final Cloner cl) {
 		//fill the travelUnits between  DeliveryUNits of anySchedule
 		ArrayList<TruckTravelUnit> toBeAddedTTU = new ArrayList<TruckTravelUnit>();//partially save in this arrayList, otherwise index of Practical schedule gets distrubed during For loop
-		for (int i =0;i < anySchedule.size()-1; i+=1) { 
+		for (int i =getFirstIndexToScanSchedule(schedule);i < anySchedule.size()-1; i+=1) { 
 			if (getTravelUnitIfExists(schedule, anySchedule.get(i), anySchedule.get(i+1)) != null)
 				toBeAddedTTU.add(cl.deepClone(getTravelUnitIfExists(schedule, anySchedule.get(i), anySchedule.get(i+1))));
 			else{
@@ -462,16 +520,25 @@ public class DeliveryTruckSchedule {
 			else
 				return false;
 		}
-		int i; //as index for the for loop
-		if (schedule.get(0) instanceof TruckDeliveryUnit)
-			i=0;
-		else i = 1;
+		int i = getFirstIndexToScanSchedule(schedule);
 		while (i< schedule.size()-1) { 
 			if (!(schedule.get(i) instanceof TruckDeliveryUnit && schedule.get(i+1) instanceof TruckTravelUnit))
 				return false;
 			i = i +2;
 		}
 		return true;
+	}
+	/**
+	 * @param schedule
+	 * @return
+	 */
+	private int getFirstIndexToScanSchedule(
+			ArrayList<TruckScheduleUnit> schedule) {
+		int i; //as index for the for loop
+		if (schedule.get(0) instanceof TruckDeliveryUnit)
+			i=0;
+		else i = 1;
+		return i;
 	}
 	public void updateUnitStatus(TruckDeliveryUnit tdu, Reply orderReply) {
 		if (getIndexOf(tdu, schedule) >= 0)
@@ -799,5 +866,53 @@ public class DeliveryTruckSchedule {
 	public void fillTravelUnitsInSchedule(DeliveryTruckInitial truckAgent) {
 		this.fillTravelUnitsInSchedule(truckAgent, schedule, Utility.getCloner());
 		Utility.sortSchedule(schedule);
+	}
+	
+	/**
+	 * @param inputSchedule
+	 * @return the portion of inputSchedule, that is extended form this.schedule
+	 * 
+	 * //exp selection decesio should be based on newly explored schedule, not previous schedule
+	 */
+	protected ArrayList<TruckScheduleUnit> getExtendedSchedule(ArrayList<TruckScheduleUnit> inputSchedule) {
+		ArrayList<TruckScheduleUnit> extendedSchedule = new ArrayList<TruckScheduleUnit>();
+		boolean alreadyExist;
+		for (TruckScheduleUnit tsu: inputSchedule) {
+			alreadyExist = false;
+			for (TruckScheduleUnit existingTsu: this.schedule) {
+				if (tsu instanceof TruckDeliveryUnit && existingTsu instanceof TruckDeliveryUnit) {
+					if (((TruckDeliveryUnit)tsu).getDelivery().equals(((TruckDeliveryUnit)existingTsu).getDelivery())) {
+						alreadyExist = true;
+						break;
+					}
+				}
+				else if (tsu instanceof TruckTravelUnit && existingTsu instanceof TruckTravelUnit) {
+					//if (newUnit.equals(u)){ some how not working
+					if (tsu.getStartLocation().equals(existingTsu.getStartLocation()) && tsu.getEndLocation().equals(existingTsu.getEndLocation())
+							&& ((TruckTravelUnit)tsu).getTravelTime().equals(((TruckTravelUnit)existingTsu).getTravelTime()) 
+							&& ((TruckTravelUnit)tsu).getStartLocation().equals(((TruckTravelUnit)existingTsu).getStartLocation())
+							&& ((TruckTravelUnit)tsu).getEndLocation().equals(((TruckTravelUnit)existingTsu).getEndLocation())){
+						alreadyExist = true;
+						break;
+					}
+				}
+			}
+			if (!alreadyExist)
+				extendedSchedule.add(tsu);
+		}
+		checkArgument (inputSchedule.size() >= extendedSchedule.size(), true );
+		return extendedSchedule; 
+	}
+	public Reply getUnitStatus(Delivery delivery) {
+		return this.unitStatus.get(delivery);
+		
+	}
+	public TruckScheduleUnit getScheduleUnitCurrentlyActive(DateTime currTime) {
+		for (TruckScheduleUnit tsu : this.practicalSchedule) {
+			if (currTime.compareTo(tsu.getTimeSlot().getStartTime())>= 0 
+					&& currTime.compareTo(tsu.getTimeSlot().getEndTime()) < 0)
+			return tsu;
+		}
+		return null;
 	}
 }

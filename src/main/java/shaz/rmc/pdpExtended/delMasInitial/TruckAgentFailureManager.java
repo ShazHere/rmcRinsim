@@ -32,6 +32,8 @@ public class TruckAgentFailureManager {
 	
 	private final Map<Integer, Integer> timeTruck;
 	//<MinuteOfDay, TruckId>
+	private final Map<Integer, Integer> truckTime;
+	//<truckId, MinuteOfDay>
 	
 	public TruckAgentFailureManager(RandomGenerator pRand, int pNoOfTruckToBeFailed) {
 		rng = pRand;
@@ -40,6 +42,7 @@ public class TruckAgentFailureManager {
 		breakSpecificTruck = false;
 		
 		timeTruck = new  LinkedHashMap<Integer, Integer>();
+		truckTime = new  LinkedHashMap<Integer, Integer>();
 		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false)
 			return;
 		if (breakSpecificTruck)
@@ -68,18 +71,24 @@ public class TruckAgentFailureManager {
 		int endMinute = GlobalParameters.END_DATETIME.getMinuteOfDay();
 		int breakMin = rng.nextInt(endMinute - startMinute) + startMinute;
 		timeTruck.put(breakMin, truckId);
+		truckTime.put(truckId, breakMin);
 	}
 
 	private void setSpecificTruckId() {
 		timeTruck.put(840, 1);
 		//timeTruck.put(900, 5);
+		truckTime.put(840, 1);
 	}
 	
 	protected boolean canIBreakAt (DateTime currTime, int truckId) {
 		if (GlobalParameters.ENABLE_TRUCK_BREAKDOWN == false)
 			return false;
-		if (timeTruck.get(currTime.getMinuteOfDay()) != null && timeTruck.get(currTime.getMinuteOfDay()) == truckId)
-			return true;
+		//if (timeTruck.get(currTime.getMinuteOfDay()) != null && timeTruck.get(currTime.getMinuteOfDay()) == truckId)
+			//return true;
+		if (truckTime.get(truckId) != null){
+			if (currTime.getMinuteOfDay() >= truckTime.get(truckId))
+				return true;
+		}
 		return false;
 	}
 

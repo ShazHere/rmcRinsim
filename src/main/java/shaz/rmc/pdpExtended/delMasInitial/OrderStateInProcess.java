@@ -150,6 +150,8 @@ public class OrderStateInProcess extends OrderAgentState {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (isFeasibilityIntervalPassed(currTime) ){
 			//setOrderInterests();
+			if (currTime.compareTo(orderPlan.getInterestedTime()) >= 0) 
+				orderAgent.makeNewOrderPlan(currTime);
 			orderAgent.sendFAntToPS();
 			orderAgent.setTimeForLastFeaAnt(currTime);
 		}	
