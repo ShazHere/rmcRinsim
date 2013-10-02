@@ -141,11 +141,11 @@ public class Utility {
 		//fileName =  fileName + GlobalParameters.INPUT_INSTANCE_TYPE.toString();
 		String filePostfix = getFilePostFix();
 			
-		String fileName = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + filePostfix; //+ "-" +GlobalParameters.ENABLE_TRUCK_BREAKDOWN + "-" +GlobalParameters.ENABLE_JI;
-		String fileNameHourConcrete = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + "-HoursConcrete" + filePostfix;
-		String fileNameWastedConcrete = GlobalParameters.RESULT_FOLDER + GlobalParameters.INPUT_FILE + "-WastedConcrete" + filePostfix;
+		String fileName = GlobalParameters.RESULT_FOLDER + GlobalParameters.getFileNamePrefix() + filePostfix; //+ "-" +GlobalParameters.ENABLE_TRUCK_BREAKDOWN + "-" +GlobalParameters.ENABLE_JI;
+		String fileNameHourConcrete = GlobalParameters.RESULT_FOLDER + GlobalParameters.getFileNamePrefix() + "-HoursConcrete" + filePostfix;
+		String fileNameWastedConcrete = GlobalParameters.RESULT_FOLDER + GlobalParameters.getFileNamePrefix() + "-WastedConcrete" + filePostfix;
 		String columnSeperator = "\t"; 
-		String commentText = "# Data file for input file: " + GlobalParameters.DATA_FOLDER + GlobalParameters.INPUT_FILE + "\n" +
+		String commentText = "# Data file for input file: " + GlobalParameters.INPUT_FILE + "\n" +
 							"# Experiment Date: " + new DateTime(System.currentTimeMillis()) + "\n";
 		createDirectory();
 			boolean addComment = checkAlreadyExist(fileName);

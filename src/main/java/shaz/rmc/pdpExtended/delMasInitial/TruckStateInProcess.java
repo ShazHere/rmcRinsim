@@ -195,7 +195,7 @@ public class TruckStateInProcess extends TruckAgentState {
 					IntAnt iAnt = new IntAnt(truckAgent, tmp,originalfullSchedule, currTime);
 					logger.debug(truckAgent.getId()+"T int sent by Truck");
 					//checkArgument(bestAnt.getSchedule().get(0) instanceof TruckDeliveryUnit, true); //truck should start from its start PS
-					checkArgument(bestAnt.getSchedule().get(0).getStartLocation().equals(truckAgent.getStartLocation()));
+					//checkArgument(bestAnt.getSchedule().get(0).getStartLocation().equals(truckAgent.getStartLocation()));
 					TruckDeliveryUnit sendToTdu = sendToPS(bestAnt.getSchedule());
 					truckAgent.getcApi().send(sendToTdu.getDelivery().getLoadingStation(), iAnt); 
 					timeForLastIntAnt = currTime;

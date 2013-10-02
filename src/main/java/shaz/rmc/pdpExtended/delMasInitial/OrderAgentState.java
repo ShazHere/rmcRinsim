@@ -182,7 +182,7 @@ public abstract class OrderAgentState {
 		Delivery d = orderPlan.getFailedDelivery(startTime);
 		checkArgument(d != null, true);
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-		logger.debug(orderAgent.getOrder().getId() + "O Delivery Failure detected; DeliveryNO = " + d.getDeliveryNo());
+		logger.debug(orderAgent.getOrder().getId() + "O Delivery Failure  handled (DelMAS) DeliveryNO = " + d.getDeliveryNo());
 		 orderPlan.removeDeliveriesAccordingTofFailedDeliveryAndCurrentTime(d, currTime);
 		 if (orderAgent.isOrderDeliverable(currTime)) {
 			orderPlan.setOrderInterests(currTime);

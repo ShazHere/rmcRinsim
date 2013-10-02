@@ -201,7 +201,8 @@ public class DeliveryTruckSchedule {
 		for (TruckScheduleUnit tsu : sch) {
 			if (tsu instanceof TruckDeliveryUnit) {
 				if (((TruckDeliveryUnit)tdu).getDelivery().equals(((TruckDeliveryUnit)tsu).getDelivery())
-						&& ((TruckDeliveryUnit)tdu).getLagTime().equals(((TruckDeliveryUnit)tsu).getLagTime())
+						//&& ((TruckDeliveryUnit)tdu).getLagTime().equals(((TruckDeliveryUnit)tsu).getLagTime()) ag time should not be compared, since OrderPlanInformer ants
+						//when inform truck to remove a tdu, they always fill lagtime = 0
 						&& ((TruckDeliveryUnit)tdu).getWastedConcrete()==((TruckDeliveryUnit)tsu).getWastedConcrete())
 					return index;
 			}
@@ -261,7 +262,11 @@ public class DeliveryTruckSchedule {
 					return true;
 			}
 			else if (u instanceof TruckTravelUnit && un instanceof TruckTravelUnit){// u instanceof TruckTravelUnit 
-				if (u.getTimeSlot().compareTo(un.getTimeSlot()) == 0) //may be check with start time and end time seperately??
+				//if (u.getTimeSlot().compareTo(un.getTimeSlot()) == 0) //may be check with start time and end time seperately??
+				if (u.getStartLocation().equals(un.getStartLocation()) && u.getEndLocation().equals(un.getEndLocation()) 
+						&& ((TruckTravelUnit)u).getTravelTime().equals(((TruckTravelUnit)un).getTravelTime())
+						&& ((TruckTravelUnit)u).getTimeSlot().getStartTime().equals(((TruckTravelUnit)un).getTimeSlot().getStartTime())
+						&& ((TruckTravelUnit)u).getTimeSlot().getEndTime().equals(((TruckTravelUnit)un).getTimeSlot().getEndTime()))
 					return true;
 			} 
 		}
