@@ -8,7 +8,6 @@ import org.apache.commons.math3.random.RandomData;
 import org.apache.commons.math3.random.RandomDataImpl;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 import org.eclipse.swt.graphics.RGB;
 import org.joda.time.DateTime;
 
@@ -35,25 +34,11 @@ public class RmcSimulation {
 	 * @param args
 	 */
 	private static Logger log = Logger.getLogger(RmcSimulation.class);
-
 	private static Simulator sim;
 	public static void main(String[] args) {
-		
 		//int randomSeed = 250; //if randomSeed == 0, then each generato is a new random Generator without any seed, else same rng should be passed to all
 		int randomSeed = 0;
 		final RandomGenerator rng = new MersenneTwister(randomSeed);
-		
-		if (args.length > 0) {
-			int scale = Integer.parseInt(args[0]);
-			GlobalParameters gp = new GlobalParameters(scale, args[1], args[2], args[3], args[4]);
-			log.info(gp.toString());
-		}
-		else {
-			log.error("Arguments must be supllied: RmcSimulation scale<int> stress<String> dataFolder<String> resultFolder<String>");
-	        System.exit(1);
-		}
-		
-		
 		sim = new Simulator(rng, 200); //tick is one milli second, step = 200ms 
 		/* Discussed with Rinde that truck.getSpeed and roadModel.maxSpeed should always be in same units.  
 		 * Here I use unit/hour or km/hour.																	
@@ -167,7 +152,7 @@ public class RmcSimulation {
 	 * 
 	 */
 	protected void loadProblem() {
-		XMLProblemDAO dao = new XMLProblemDAO(new File(GlobalParameters.INPUT_FILE));
+		XMLProblemDAO dao = new XMLProblemDAO(new File(GlobalParameters.DATA_FOLDER+GlobalParameters.INPUT_FILE));
 		Problem problem = null;
 		try {
 			problem = dao.loadProblem();

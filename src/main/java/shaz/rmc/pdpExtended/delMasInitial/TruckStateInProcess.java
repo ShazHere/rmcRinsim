@@ -6,13 +6,9 @@ package shaz.rmc.pdpExtended.delMasInitial;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Set;
 
 import org.joda.time.DateTime;
-import org.joda.time.Duration;
-import org.joda.time.base.AbstractDateTime;
 
 import com.rits.cloning.Cloner;
 
@@ -64,12 +60,12 @@ public class TruckStateInProcess extends TruckAgentState {
 			checkArgument(iAnt.isConsistentWithExistingSchedule(truckAgent.getTruckSchedule().getSchedule()) == true, true);
 			if (iAnt.hasNoREJECTTunit() ) 
 			{
-				addOrUpdateTUnits(iAnt , currTime);
+				addOrUpdateTUnits(iAnt);;
 			} //no need of else,coz it will be removed any way..
 			else {
 				handleREJECTEDTunits(iAnt, currTime);
 			}
-			truckAgent.getTruckSchedule().makePracticalSchedule(truckAgent, currTime);
+			truckAgent.getTruckSchedule().makePracticalSchedule(truckAgent);
 			intentionAnts.clear();  //remove the ant
 		}
 	}
@@ -96,14 +92,19 @@ public class TruckStateInProcess extends TruckAgentState {
 			if (eAnt.getSchedule().size() < maxSizeFound)
 				j.remove();
 		}
- 		checkArgument(explorationAnts.isEmpty() == false, true);
+		checkArgument(explorationAnts.isEmpty() == false, true);
 		
 		//handle the selection based on schedule score
 		if (GlobalParameters.EXP_RANKING_WITH_SCORE_ENABLE) {
-			if (GlobalParameters.EXP_BEST_DE_PRIORITIZE_DEL0)
-				bestAnt = selectbyDividingToTwoGroups();
-			else //select 1st schedule as best
-				bestAnt = selectBestAntBasedOnSingleRanking();
+			//select 1st schedule as best
+			bestAnt = explorationAnts.get(0);
+			for (ExpAnt eAnt: explorationAnts) { //find eAnt with smallest score, i.e least cost
+				//if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){				
+					if (eAnt.getScheduleScore()< bestAnt.getScheduleScore()) {
+							bestAnt = eAnt;
+						}
+				//}
+			}
 		}
 		else {
 			bestAnt = explorationAnts.get(truckAgent.getRandomPCSelector().nextInt(explorationAnts.size()));
@@ -111,84 +112,8 @@ public class TruckStateInProcess extends TruckAgentState {
 		printBestAnt(startTime);
 		explorationAnts.clear(); 
 	}
-
-
-	private ExpAnt selectbyDividingToTwoGroups() {
-		ArrayList<ExpAnt> del0Ants = new ArrayList<ExpAnt>();
-		ArrayList<ExpAnt> notDel0Ants = new ArrayList<ExpAnt>();
-		
-		for (ExpAnt eAnt: explorationAnts) { //exp selection decesio should be based on newly explored schedule, not previous schedule
-			for (TruckScheduleUnit tsu: eAnt.getSchedule()) {//truckAgent.getTruckSchedule().getExtendedSchedule(eAnt.getSchedule())) {
-				if (tsu instanceof TruckDeliveryUnit && !this.truckAgent.getTruckSchedule().alreadyExist(tsu)) {
-					if (((TruckDeliveryUnit)tsu).getDelivery().getDeliveryNo() > 0)
-						notDel0Ants.add(eAnt);
-					else
-						del0Ants.add(eAnt);
-				}
-			}
-		}
-		if (notDel0Ants.isEmpty() == false) {
-			
-			if (GlobalParameters.EXP_BEST_PRIORATIZE_NOT_SERVING_ORDERS == true) {
-				ArrayList<ExpAnt> containngUnServedExtendedSchedule = getExpContainingUnServedExtendedSchedule(notDel0Ants);
-				if (!containngUnServedExtendedSchedule.isEmpty())
-					return getBestFromSortedExpAntArrayList(containngUnServedExtendedSchedule);
-			}
-			// if not returned so far, then return..
-			return getBestFromSortedExpAntArrayList(notDel0Ants);
-		}
-		else 
-			return getBestFromSortedExpAntArrayList(del0Ants);
-	}
-
-
-	/**
-	 * @param notDel0Ants
-	 * @param containngUnServedExtendedSchedule
-	 */
-	private ArrayList<ExpAnt> getExpContainingUnServedExtendedSchedule(ArrayList<ExpAnt> notDel0Ants) {
-		ArrayList<ExpAnt> containngUnServedExtendedSchedule = new ArrayList<ExpAnt>();
-		Set<OrderAgentInitial> servingOrders = new HashSet<OrderAgentInitial>();
-		for (TruckScheduleUnit tsu: truckAgent.getSchedule()) {
-			if (tsu instanceof TruckDeliveryUnit)
-				servingOrders.add((OrderAgentInitial) ((TruckDeliveryUnit)tsu).getDelivery().getOrder());
-		}
-		for (ExpAnt eAnt: notDel0Ants) {
-			for (TruckScheduleUnit tsu: eAnt.getSchedule()) {//truckAgent.getTruckSchedule().getExtendedSchedule(eAnt.getSchedule())) {
-				if (tsu instanceof TruckDeliveryUnit && !this.truckAgent.getTruckSchedule().alreadyExist(tsu) 
-						&& !servingOrders.contains(((TruckDeliveryUnit)tsu).getDelivery().getOrder())  ) {
-					containngUnServedExtendedSchedule.add(eAnt);
-				}
-			}
-		}
-		return containngUnServedExtendedSchedule;
-	}
-
-
 	
-
-	/**
-	 * @return bestAnt
-	 * 
-	 */
-	private ExpAnt selectBestAntBasedOnSingleRanking() {
-		
-		return getBestFromSortedExpAntArrayList(explorationAnts);
-	}
-
-	private ExpAnt getBestFromSortedExpAntArrayList(ArrayList<ExpAnt> expList) {
-		ExpAnt best = expList.get(0);
-		for (ExpAnt eAnt: expList) { //find eAnt with smallest score, i.e least cost
-			//if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){				
-				if (eAnt.getScheduleScore()< best.getScheduleScore()) {
-					best = eAnt;
-				}
-			//}
-		}
-		return best;
-	}
-
-	private boolean addOrUpdateTUnits(IntAnt iAnt, DateTime currTime){
+	private boolean addOrUpdateTUnits(IntAnt iAnt){
 		boolean newDeliveryUnitAdded = false;
 		final Cloner cl = Utility.getCloner();
 		for (communicateAbleUnit u : iAnt.getSchedule()){
@@ -198,34 +123,19 @@ public class TruckStateInProcess extends TruckAgentState {
 				checkArgument(u.getTunit().getTimeSlot().getEndTime().compareTo(getTotalTimeRange().getEndTime()) <= 0 , true);
 				checkArgument(u.getTunit().getTimeSlot().getStartTime().compareTo(getTotalTimeRange().getStartTime()) >= 0 , true);
 				TruckDeliveryUnit tu = cl.deepClone(u.getTunit());				
-				//truckAgent.getTruckSchedule().add(tu, u.getOrderReply());
+				truckAgent.getTruckSchedule().add(tu, u.getOrderReply());
 				logger.debug(truckAgent.getId()+"T Schedule unit added in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
-				//checkArgument(currTime.compareTo(tu.getTimeSlot().getStartTime()) < 0, true);
-				boolean travelCanBeAdded = false;
-				boolean newTTUNeededToBeAdded = false;
-				TruckTravelUnit ttu = null;
+				
 				for(TruckScheduleUnit tsu: iAnt.getFullSchedule()) {
 					if (tsu instanceof TruckTravelUnit){
 						if (truckAgent.getTruckSchedule().alreadyExist(tsu) == false){
-							newTTUNeededToBeAdded = true;
-							ttu = cl.deepClone((TruckTravelUnit)tsu);
-							//truckAgent.getTruckSchedule().add(ttu);
-							//checkArgument(currTime.compareTo(ttu.getTimeSlot().getStartTime()) < 0, true);
+							TruckTravelUnit ttu = cl.deepClone((TruckTravelUnit)tsu);
+							truckAgent.getTruckSchedule().add(ttu);
 							logger.debug(truckAgent.getId()+"T Travel unit added: " + ttu.toString());
-							if (currTime.compareTo(ttu.getTimeSlot().getStartTime()) < 0)
-								travelCanBeAdded = true;
 						}
 					}
 				}
-				if (!newTTUNeededToBeAdded)
-					travelCanBeAdded = true;
-				if(travelCanBeAdded && currTime.compareTo(tu.getTimeSlot().getStartTime()) < 0) {
-					truckAgent.getTruckSchedule().add(tu, u.getOrderReply());
-					if (ttu != null)
-						truckAgent.getTruckSchedule().add(ttu);
-					newDeliveryUnitAdded =true;
-				}
-				
+				newDeliveryUnitAdded =true;
 			}
 			else //update already existing unit
 			{
@@ -262,24 +172,12 @@ public class TruckStateInProcess extends TruckAgentState {
 		//if (currTime.minusSeconds(timeForLastExpAnt.getSecondOfDay()).getSecondOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_SEC ) {
 		if (currTime.minusSeconds( GlobalParameters.EXPLORATION_INTERVAL_SEC).compareTo(timeForLastExpAnt) >= 0) {
 			ExpAnt eAnt = new ExpAnt(truckAgent, Utility.getAvailableSlots(truckAgent.getTruckSchedule().getSchedule(), availableSlots,  
-					getExplorationSlot(currTime), GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l), truckAgent.getTruckSchedule().getSchedule(), currTime);
+					new TimeSlot(new DateTime(currTime), getTotalTimeRange().getEndTime()), GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l), truckAgent.getTruckSchedule().getSchedule(), currTime);
 			if (availableSlots.size()>0) {
 				sentToPS(eAnt, availableSlots );
 			}
 			timeForLastExpAnt = currTime;
 		}		
-	}
-
-
-	/**
-	 * @param currTime
-	 * @return
-	 */
-	private TimeSlot getExplorationSlot(final DateTime currTime) {
-		DateTime startTime = new DateTime(currTime.plusSeconds(GlobalParameters.EXPLORATION_ANT_SEARCH_FOR_SEC_AFTER)); 
-		DateTime endTime = startTime.compareTo(getTotalTimeRange().getEndTime()) >= 0 ? startTime:getTotalTimeRange().getEndTime();
-		return new TimeSlot(startTime, endTime);
-				
 	}
 
 	@Override
@@ -297,7 +195,7 @@ public class TruckStateInProcess extends TruckAgentState {
 					IntAnt iAnt = new IntAnt(truckAgent, tmp,originalfullSchedule, currTime);
 					logger.debug(truckAgent.getId()+"T int sent by Truck");
 					//checkArgument(bestAnt.getSchedule().get(0) instanceof TruckDeliveryUnit, true); //truck should start from its start PS
-					//checkArgument(bestAnt.getSchedule().get(0).getStartLocation().equals(truckAgent.getStartLocation()));
+					checkArgument(bestAnt.getSchedule().get(0).getStartLocation().equals(truckAgent.getStartLocation()));
 					TruckDeliveryUnit sendToTdu = sendToPS(bestAnt.getSchedule());
 					truckAgent.getcApi().send(sendToTdu.getDelivery().getLoadingStation(), iAnt); 
 					timeForLastIntAnt = currTime;

@@ -42,8 +42,6 @@ public class OrderStateWaiting extends OrderAgentState{
 			Delivery d = checkOrderStatus(orderPlan, startTime);
 			if (d != null){
 				orderPlan.reSetOrderDelivery(d);
-				if (currTime.compareTo(orderPlan.getInterestedTime()) >= 0) 
-					orderAgent.makeNewOrderPlan(currTime);
 				orderAgent.sendFAntToPS();
 			}
 			orderAgent.setTimeForLastFeaAnt(currTime);
@@ -82,7 +80,7 @@ public class OrderStateWaiting extends OrderAgentState{
 					if (orderPlan.getIsConfirmed().get(iAnt.getCurrentUnit().getDelivery()) == false ){
 						orderPlan.putInIsConfirmed(iAnt.getCurrentUnit().getDelivery(), true);
 						orderAgent.setOrderState(OrderAgentState.IN_PROCESS);
-						orderPlan = orderPlan.setOrderInterests(currTime);
+						orderPlan.setOrderInterests(currTime);
 					} //else we shouldn't touch order state
 					orderPlan.putInRefreshTimes(iAnt.getCurrentUnit().getDelivery(), currTime);
 					iAnt.getCurrentUnit().setOrderReply(Reply.WEEK_ACCEPT); //So earlier it could be UnderProcess, but once confirmed, its Weekly accepted

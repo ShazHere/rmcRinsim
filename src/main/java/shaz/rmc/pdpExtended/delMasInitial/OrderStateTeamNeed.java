@@ -59,17 +59,16 @@ public class OrderStateTeamNeed extends OrderAgentState {
 			TimeSlot ts = orderPlan.getTimeWindowFailedDelivery(failedDelivery);//time slot at order, w.r.t time of delivery
 			
 			DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)timeLapse.getStartTime());
-			logger.info(orderAgent.getOrder().getId() + "O Delivery Failure detected; DeliveryNO = " + failedDelivery.getDeliveryNo() + ", Order in TeamNeed! ");
+			logger.info(orderAgent.getOrder().getId() + "O Delivery Failure detected; DeliveryNO = " + failedDelivery.getDeliveryNo() + "Order in TeamNeed! ");
 			strategy.getTc().removeMember((DeliveryTruckInitial) failedDelivery.getTruck());
 			TruckCostForDelivery cost = strategy.getTc().getMostSuitableTruck(failedDelivery, ts, currTime);
 			boolean deliveryAssigned = false;
 			if (cost != null) 
-				if (assignDelivery(orderPlan, cost, currTime) == true)
+				if (assignDelivery(orderPlan, cost, currTime) == true);
 					deliveryAssigned = true;
-			if (deliveryAssigned){
+			if (deliveryAssigned)
 				orderPlan.removeDelivery(failedDelivery);
-				logger.info(orderAgent.getOrder().getId() + "O Delivery Failure handled (JI); DeliveryNO = " + failedDelivery.getDeliveryNo());
-			}
+			
 			else 
 				normalDelMASWay(orderPlan, timeLapse.getStartTime());
 				//if cost == null then what to do? should it be thrown like normal DelMAS?

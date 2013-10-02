@@ -53,9 +53,8 @@ public class OrderAgentPlan {
 		orderAgent = pOrderAgent;
 		timeForLastIntention = pCurrTime;
 		deliveries = new ArrayList<Delivery>();
-		
 		interestedTime = pOrderAgent.getOrder().getStartTime().plus(pDelayStartTime);
-		if (isInterestedTimeTooNear(pCurrTime)) { // this could be the case when after a delivery failure, OrderPlan was re-initialized.
+		if (pCurrTime.compareTo(interestedTime.minusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED)) >= 0) { // this could be the case when after a delivery failure, OrderPlan was re-initialized.
 			interestedTime = pCurrTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED);
 			delayStartTime = new Duration(orderAgent.getOrder().getStartTime(), interestedTime);
 		}
@@ -71,55 +70,6 @@ public class OrderAgentPlan {
 		isConfirmed =new LinkedHashMap<Delivery, Boolean>();
 		isPhysicallyCreated = new LinkedHashMap<Delivery, Boolean>();
 	}
-
-	/**
-	 * @param pCurrTime
-	 * @return
-	 */
-	private boolean isInterestedTimeTooNear(DateTime pCurrTime) {
-		return pCurrTime.compareTo(interestedTime.minusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED)) >= 0;
-	}
-	
-	
-	/**
-	 * @param iAnt te ant under process
-	 */ 
-	protected OrderAgentPlan setOrderInterests(DateTime currTime) {
-		checkArgument(orderAgent.getOrderState() == OrderAgentState.IN_PROCESS);//Actually I will be called from OrderStateWaiting.processIntentionAnts, 
-		//but before calling this method, orderState object should have been changed
-		remainingToBookVolume = calculateRemainingVolume();
-		if (!deliveries.isEmpty()) {
-			Delivery lastDelivery = deliveries.get(deliveries.size()-1);
-			interestedTime = lastDelivery.getDeliveryTime().plus(lastDelivery.getUnloadingDuration());
-			interestedDeliveryNo = lastDelivery.getDeliveryNo() +1;
-		}
-		else{
-			//interestedTime = orderAgent.getOrder().getStartTime(); //TODO there should be .plus(DelayStartTime)
-			interestedTime = orderAgent.getOrder().getStartTime().plus(delayStartTime);
-//			if (isInterestedTimeTooNear(currTime))
-//				return new OrderAgentPlan(delayStartTime, orderAgent, currTime);
-			interestedDeliveryNo = 0;
-		}		
-		checkArgument(currTime.plusSeconds(GlobalParameters.EXPLORATION_ANT_SEARCH_FOR_SEC_AFTER).compareTo(interestedTime) < 0, true);
-		if (remainingToBookVolume <= 0) {
-			orderAgent.setOrderState(OrderAgentState.BOOKED);
-			logger.info(orderAgent.getOrder().getId() + "O fully BOOKED , CURRENT TIME = " + currTime);
-		}
-		this.timeForLastIntention = currTime;
-		return this;
-	}
-	protected int calculateRemainingVolume() {
-		int remainingVolume = totalConcreteRequired;
-		if (!deliveries.isEmpty()){
-			for (Delivery d : deliveries) {
-				remainingVolume -= d.getDeliveredVolume()-d.getWastedVolume();
-			}
-		}
-		if (remainingVolume < 0)
-			remainingVolume = 0;
-		return remainingVolume;
-	}
-	
 	/**
 	 * should not be called for refresh deliveries, rather it should be called for the deliveries for which order was really interested.
 	 * @param Delivery
@@ -136,6 +86,41 @@ public class OrderAgentPlan {
 		timeForLastIntention = currTime;
 		sortDeliveries(deliveries);
 		//setOrderInterests();
+	}
+	/**
+	 * @param iAnt te ant under process
+	 */ 
+	protected void setOrderInterests(DateTime currTime) {
+		checkArgument(orderAgent.getOrderState() == OrderAgentState.IN_PROCESS);//Actually I will be called from OrderStateWaiting.processIntentionAnts, 
+		//but before calling this method, orderState object should have been changed
+		remainingToBookVolume = calculateRemainingVolume();
+		if (!deliveries.isEmpty()) {
+			Delivery lastDelivery = deliveries.get(deliveries.size()-1);
+			interestedTime = lastDelivery.getDeliveryTime().plus(lastDelivery.getUnloadingDuration());
+			interestedDeliveryNo = lastDelivery.getDeliveryNo() +1;
+		}
+		else{
+			//interestedTime = orderAgent.getOrder().getStartTime(); //TODO there should be .plus(DelayStartTime)
+			interestedTime = orderAgent.getOrder().getStartTime().plus(delayStartTime);
+			interestedDeliveryNo = 0;
+		}			
+		if (remainingToBookVolume <= 0) {
+			orderAgent.setOrderState(OrderAgentState.BOOKED);
+			logger.info(orderAgent.getOrder().getId() + "O fully BOOKED , CURRENT TIME = " + currTime);
+		}
+		this.timeForLastIntention = currTime;
+		
+	}
+	protected int calculateRemainingVolume() {
+		int remainingVolume = totalConcreteRequired;
+		if (!deliveries.isEmpty()){
+			for (Delivery d : deliveries) {
+				remainingVolume -= d.getDeliveredVolume()-d.getWastedVolume();
+			}
+		}
+		if (remainingVolume < 0)
+			remainingVolume = 0;
+		return remainingVolume;
 	}
 	/**
 	 * Generates actual parcels corresponding to the deliveries, to be picked up physically by trucks. 
@@ -240,12 +225,8 @@ public class OrderAgentPlan {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		for (Delivery d : deliveries) {
 			long currMilli = currTime.getMillis() - refreshTimes.get(d).getMillis();
-			if (new Duration (currMilli).getStandardSeconds() >= GlobalParameters.INTENTION_EVAPORATION_SEC
-					&& currTime.compareTo(d.getUnloadingFinishTime()) < 0) {
-				//TODO: chk if (currTime.compareTo(d.getUnloadingFinishTime()) >= 0) then ignore failure & return true
-				
+			if (new Duration (currMilli).getStandardSeconds() >= GlobalParameters.INTENTION_EVAPORATION_SEC) 
 				return false;
-			}
 		}
 		return true;
 	}
@@ -258,8 +239,7 @@ public class OrderAgentPlan {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		for (Delivery d : deliveries) {
 			long currMilli = currTime.getMillis() - refreshTimes.get(d).getMillis();
-			if (new Duration (currMilli).getStandardSeconds() >= GlobalParameters.INTENTION_EVAPORATION_SEC 
-					&& currTime.compareTo(d.getUnloadingFinishTime()) < 0) 
+			if (new Duration (currMilli).getStandardSeconds() >= GlobalParameters.INTENTION_EVAPORATION_SEC) 
 				return d;
 		}
 		return null;

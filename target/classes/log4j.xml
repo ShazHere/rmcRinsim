@@ -10,7 +10,7 @@
         </appender>
 
 		<appender name="FILE" class="org.apache.log4j.DailyRollingFileAppender" >
-			<param name="file" value="${HOME}/Documents/workspace/shaza-rmc.core/log/rmc.log" />
+			<param name="file" value="${HOME}/Documents/workspace/MAS-Project/bin/rmc1.log" />
 			<param name="datePattern" value="'.'yyyy-MM" />
 			<param name="append" value="true" />
 			<layout class="org.apache.log4j.PatternLayout">

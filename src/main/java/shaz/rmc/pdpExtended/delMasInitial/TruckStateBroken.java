@@ -71,7 +71,7 @@ public class TruckStateBroken extends TruckAgentState {
 				deleteAble.add((TruckDeliveryUnit)tsu);
 		}
 		for (TruckDeliveryUnit tdu: deleteAble) {
-			truckAgent.removeFromSchedule(tdu, currTime);
+			truckAgent.removeFromSchedule(tdu);
 		}
 		extraUnitsRemoved = true;
 	}

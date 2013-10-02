@@ -40,7 +40,7 @@ public class OrderPlanInformerAnt extends Ant {
 	public OrderPlanInformerAnt(CommunicationUser sender, Delivery del) {
 		super(sender);
 		TimeSlot unitSlot = new TimeSlot(del.getLoadingTime(), del.getUnloadingFinishTime());
-		TruckDeliveryUnit tdu = new TruckDeliveryUnit(del.getTruck(), unitSlot, del, del.getWastedVolume(), new Duration( 0)); // so lag time is 0, means at truk side we should not compare lag time.
+		TruckDeliveryUnit tdu = new TruckDeliveryUnit(del.getTruck(), unitSlot, del, del.getWastedVolume(), new Duration( 0));
 		commUnit = new communicateAbleUnit(tdu, Reply.NO_REPLY, Reply.REJECT, true);
 		originator = (OrderAgentInitial)del.getOrder();
 		checkArgument(originator == del.getOrder());
