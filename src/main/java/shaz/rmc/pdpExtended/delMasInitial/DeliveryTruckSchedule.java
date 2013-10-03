@@ -313,7 +313,7 @@ public class DeliveryTruckSchedule {
 			return;
 		}
 		
-		checkArgument(isScheduleValid(schedule) == true, true); //comment only for saving time..
+		//checkArgument(isScheduleValid(schedule) == true, true); //comment only for saving time..
 		checkArgument(isUnitStatusValid(schedule, unitStatus) == true, true);
 		
 		ArrayList<TruckScheduleUnit> pracSchedule = new ArrayList<TruckScheduleUnit>();
@@ -674,7 +674,8 @@ public class DeliveryTruckSchedule {
 						if (del.getOrder() == or)
 							returnSchedule.add(tsu);
 						else if ( unitStatus.get(del) == Reply.ACCEPT && !( del.getDeliveryNo() == 0 
-								&& currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*3).compareTo(del.getDeliveryTime()) <= 0))
+								//&& currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*3).compareTo(del.getDeliveryTime()) <= 0))
+								&& currTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED).compareTo(del.getDeliveryTime()) <= 0))
 							//if it is an accept but not like above deliery
 							returnSchedule.add(tsu);
 					}

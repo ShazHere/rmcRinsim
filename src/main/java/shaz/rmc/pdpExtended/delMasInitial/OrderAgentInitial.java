@@ -198,6 +198,9 @@ public class OrderAgentInitial  extends Depot implements Agent {
 		}
 		checkArgument(possibleSites.size()>0,true);
 	}
+	public PDPModel getPDPModel() {
+		return this.pdpModel;
+	}
 //	private void checkMsgs(long currentTime) {
 //		Queue<Message> messages = mailbox.getMessages();
 //		if (messages.size() > 0) {

@@ -38,10 +38,10 @@ public final class GlobalParameters {
 	//public static final int TICK_INTERVAL = 200000; 
 
 	public static final int DEPHASE_INTERVAL_SEC = 6*60; //means ants shud be de-phased randomly between 0 to X Sec
-	public static final int FEASIBILITY_INTERVAL_SEC = 2*60; //earlier 8 means send feeasibilty ants to near by after every X minutes.
+	public static final int FEASIBILITY_INTERVAL_SEC = 90; //earlier 8 means send feeasibilty ants to near by after every X minutes.
 	public static final int FEASIBILITY_EVAPORATION_INTERVAL_SEC = FEASIBILITY_INTERVAL_SEC + (60); //earlier + 5
 	public static final int EXPLORATION_INTERVAL_SEC = 60; //means no. of mintues //earlier 2
-	public static final int INTENTION_INTERVAL_SEC = 2*60; //means no. of mintues earlier = 5
+	public static final int INTENTION_INTERVAL_SEC = 90; //means no. of mintues earlier = 5
 	public static final int INTENTION_EVAPORATION_SEC = INTENTION_INTERVAL_SEC + (60); //earlier 3
 	
 	public static final int EXPLORATION_SCHEDULE_SIZE = 1; //earlier 3 (5/02/2013)
@@ -65,14 +65,16 @@ public final class GlobalParameters {
 	public static final int MAX_NO_OF_EXPLORATION_FOR_ORDER = 5; //no. of exploration ants, that can visit order while exploring
 	public static final long AVAILABLE_SLOT_SIZE_HOURS = 1; //used to find slots that is available, after which exp ants checks
 	public static final boolean ENABLE_TRUCK_BREAKDOWN = true;
-	public static final boolean ENABLE_JI = false; //would JI features be used
+	public static final boolean ENABLE_JI = true; //would JI features be used
 	
 	public static final boolean EXP_RANKING_WITH_SCORE_ENABLE = true; //should exploration ants be ranked accoridng their score by Truck agent
+	public static final boolean EXP_BEST_PRIORATIZE_NOT_SERVING_ORDERS = true;
+	public static final boolean EXP_BEST_DE_PRIORITIZE_DEL0 = true;
+	public static final int EXPLORATION_ANT_SEARCH_FOR_SEC_AFTER =0;// INTENTION_EVAPORATION_SEC * 4; //EXP ants donot start searching for truckSchedule for currTime,
 	public static final boolean PS_ALWAYS_AVAILABLE = true;
 	//breakdown probability between 0 to 25 percent.  
-	public static final int TRUCK_BREAKDOWN_PROBABILTY = 18;   
+	public static final int TRUCK_BREAKDOWN_PROBABILTY = 20;   
 		
-	
 	//CHECK NOTES ABOUT INPUT FILES!!
 	//public static final String INPUT_FILE = "canonical-30May2013.xml";  //with expanded order start times
 	//public static final String INPUT_FILE = "planning2011-01-10-update-ucy-oneDayOrdersSameTruck-basic-bigger2.xml";  //with expanded order start times
@@ -135,7 +137,7 @@ public final class GlobalParameters {
 		strbuf.append("\nEXPLORATION_INTERVAL_SEC = ").append(EXPLORATION_INTERVAL_SEC);
 		strbuf.append("\nINTENTION_INTERVAL_SEC = ").append(INTENTION_INTERVAL_SEC);
 		strbuf.append("\nINTENTION_EVAPORATION_SEC = ").append(INTENTION_EVAPORATION_SEC);
-	//	strbuf.append("\nEXPLORATION_ANT_SEARCH_FOR_SEC_AFTER = ").append(EXPLORATION_ANT_SEARCH_FOR_SEC_AFTER);
+		strbuf.append("\nEXPLORATION_ANT_SEARCH_FOR_SEC_AFTER = ").append(EXPLORATION_ANT_SEARCH_FOR_SEC_AFTER);
 		strbuf.append("\nEXPLORATION_SCHEDULE_SIZE = ").append(EXPLORATION_SCHEDULE_SIZE);
 		strbuf.append("\nIS_FIXED_VEHICLE_CAPACITY = ").append(IS_FIXED_VEHICLE_CAPACITY);
 		strbuf.append("\nFIXED_CAPACITY = ").append(FIXED_CAPACITY);
@@ -155,8 +157,8 @@ public final class GlobalParameters {
 		strbuf.append("\nENABLE_TRUCK_BREAKDOWN = ").append(ENABLE_TRUCK_BREAKDOWN);
 		strbuf.append("\nENABLE_JI = ").append(ENABLE_JI);
 		strbuf.append("\nEXP_RANKING_WITH_SCORE_ENABLE = ").append(EXP_RANKING_WITH_SCORE_ENABLE);
-	//	strbuf.append("\nEXP_BEST_DE_PRIORITIZE_DEL0 = ").append(EXP_BEST_DE_PRIORITIZE_DEL0);
-	//	strbuf.append("\nEXP_BEST_PRIORATIZE_NOT_SERVING_ORDERS = ").append(EXP_BEST_PRIORATIZE_NOT_SERVING_ORDERS);
+		strbuf.append("\nEXP_BEST_DE_PRIORITIZE_DEL0 = ").append(EXP_BEST_DE_PRIORITIZE_DEL0);
+		strbuf.append("\nEXP_BEST_PRIORATIZE_NOT_SERVING_ORDERS = ").append(EXP_BEST_PRIORATIZE_NOT_SERVING_ORDERS);
 		strbuf.append("\nPS_ALWAYS_AVAILABLE = ").append(PS_ALWAYS_AVAILABLE);
 		strbuf.append("\nTRUCK_BREAKDOWN_PROBABILTY = ").append(TRUCK_BREAKDOWN_PROBABILTY);
 		strbuf.append("\nSTART_DATETIME = ").append(START_DATETIME);

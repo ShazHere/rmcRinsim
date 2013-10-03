@@ -6,7 +6,9 @@ package shaz.rmc.pdpExtended.delMasInitial;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Set;
 
 import org.joda.time.DateTime;
 
@@ -96,15 +98,10 @@ public class TruckStateInProcess extends TruckAgentState {
 		
 		//handle the selection based on schedule score
 		if (GlobalParameters.EXP_RANKING_WITH_SCORE_ENABLE) {
-			//select 1st schedule as best
-			bestAnt = explorationAnts.get(0);
-			for (ExpAnt eAnt: explorationAnts) { //find eAnt with smallest score, i.e least cost
-				//if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){				
-					if (eAnt.getScheduleScore()< bestAnt.getScheduleScore()) {
-							bestAnt = eAnt;
-						}
-				//}
-			}
+			if (GlobalParameters.EXP_BEST_DE_PRIORITIZE_DEL0)
+				bestAnt = selectbyDividingToTwoGroups();
+			else //select 1st schedule as best
+				bestAnt = selectBestAntBasedOnSingleRanking();
 		}
 		else {
 			bestAnt = explorationAnts.get(truckAgent.getRandomPCSelector().nextInt(explorationAnts.size()));
@@ -112,6 +109,71 @@ public class TruckStateInProcess extends TruckAgentState {
 		printBestAnt(startTime);
 		explorationAnts.clear(); 
 	}
+	private ExpAnt selectbyDividingToTwoGroups() {
+				ArrayList<ExpAnt> del0Ants = new ArrayList<ExpAnt>();
+				ArrayList<ExpAnt> notDel0Ants = new ArrayList<ExpAnt>();
+				for (ExpAnt eAnt: explorationAnts) { //exp selection decesio should be based on newly explored schedule, not previous schedule
+					for (TruckScheduleUnit tsu: eAnt.getSchedule()) {//truckAgent.getTruckSchedule().getExtendedSchedule(eAnt.getSchedule())) {
+						if (tsu instanceof TruckDeliveryUnit && !this.truckAgent.getTruckSchedule().alreadyExist(tsu)) {
+							if (((TruckDeliveryUnit)tsu).getDelivery().getDeliveryNo() > 0)
+								notDel0Ants.add(eAnt);
+							else
+								del0Ants.add(eAnt);
+						}
+					}
+				}
+				if (notDel0Ants.isEmpty() == false) {
+					if (GlobalParameters.EXP_BEST_PRIORATIZE_NOT_SERVING_ORDERS == true) {
+						ArrayList<ExpAnt> containngUnServedExtendedSchedule = getExpContainingUnServedExtendedSchedule(notDel0Ants);
+						if (!containngUnServedExtendedSchedule.isEmpty())
+							return getBestFromSortedExpAntArrayList(containngUnServedExtendedSchedule);
+					}
+					// if not returned so far, then return..
+					return getBestFromSortedExpAntArrayList(notDel0Ants);
+				}
+				else 
+					return getBestFromSortedExpAntArrayList(del0Ants);
+			}
+	
+	/**
+		 * @return bestAnt
+		 * 
+		 */
+		private ExpAnt selectBestAntBasedOnSingleRanking() {
+			return getBestFromSortedExpAntArrayList(explorationAnts);
+		}
+		private ExpAnt getBestFromSortedExpAntArrayList(ArrayList<ExpAnt> expList) {
+			ExpAnt best = expList.get(0);
+			for (ExpAnt eAnt: expList) { //find eAnt with smallest score, i.e least cost
+				//if (b.scheduleStillValid(b.schedule, eAnt.getSchedule())){				
+					if (eAnt.getScheduleScore()< best.getScheduleScore()) {
+						best = eAnt;
+					}
+				//}
+			}
+			return best;
+		}
+			/**
+			 * @param notDel0Ants
+			 * @param containngUnServedExtendedSchedule
+			 */
+			private ArrayList<ExpAnt> getExpContainingUnServedExtendedSchedule(ArrayList<ExpAnt> notDel0Ants) {
+				ArrayList<ExpAnt> containngUnServedExtendedSchedule = new ArrayList<ExpAnt>();
+				Set<OrderAgentInitial> servingOrders = new HashSet<OrderAgentInitial>();
+				for (TruckScheduleUnit tsu: truckAgent.getSchedule()) {
+					if (tsu instanceof TruckDeliveryUnit)
+						servingOrders.add((OrderAgentInitial) ((TruckDeliveryUnit)tsu).getDelivery().getOrder());
+				}
+				for (ExpAnt eAnt: notDel0Ants) {
+					for (TruckScheduleUnit tsu: eAnt.getSchedule()) {//truckAgent.getTruckSchedule().getExtendedSchedule(eAnt.getSchedule())) {
+						if (tsu instanceof TruckDeliveryUnit && !this.truckAgent.getTruckSchedule().alreadyExist(tsu) 
+								&& !servingOrders.contains(((TruckDeliveryUnit)tsu).getDelivery().getOrder())  ) {
+							containngUnServedExtendedSchedule.add(eAnt);
+						}
+					}
+				}
+				return containngUnServedExtendedSchedule;
+			}
 	
 	private boolean addOrUpdateTUnits(IntAnt iAnt){
 		boolean newDeliveryUnitAdded = false;
@@ -172,13 +234,23 @@ public class TruckStateInProcess extends TruckAgentState {
 		//if (currTime.minusSeconds(timeForLastExpAnt.getSecondOfDay()).getSecondOfDay() >= GlobalParameters.EXPLORATION_INTERVAL_SEC ) {
 		if (currTime.minusSeconds( GlobalParameters.EXPLORATION_INTERVAL_SEC).compareTo(timeForLastExpAnt) >= 0) {
 			ExpAnt eAnt = new ExpAnt(truckAgent, Utility.getAvailableSlots(truckAgent.getTruckSchedule().getSchedule(), availableSlots,  
-					new TimeSlot(new DateTime(currTime), getTotalTimeRange().getEndTime()), GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l), truckAgent.getTruckSchedule().getSchedule(), currTime);
+					getExplorationSlot(currTime), GlobalParameters.AVAILABLE_SLOT_SIZE_HOURS*60l), truckAgent.getTruckSchedule().getSchedule(), currTime);
 			if (availableSlots.size()>0) {
 				sentToPS(eAnt, availableSlots );
 			}
 			timeForLastExpAnt = currTime;
 		}		
 	}
+	
+	/**
+		 * @param currTime
+		 * @return
+		 */
+		private TimeSlot getExplorationSlot(final DateTime currTime) {
+			DateTime startTime = new DateTime(currTime.plusSeconds(GlobalParameters.EXPLORATION_ANT_SEARCH_FOR_SEC_AFTER)); 
+			DateTime endTime = startTime.compareTo(getTotalTimeRange().getEndTime()) >= 0 ? startTime:getTotalTimeRange().getEndTime();
+			return new TimeSlot(startTime, endTime);
+		}
 
 	@Override
 	public

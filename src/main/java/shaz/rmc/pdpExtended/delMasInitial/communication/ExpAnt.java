@@ -337,8 +337,8 @@ public class ExpAnt extends Ant {
 				}
 			}
 			int score = (Weights.TRAVEL_TIME * travelMin) + //(Weights.LAGTIME*lagTimeInMin) + 
-					(Weights.STARTTIME_DELAY*startTimeDelay) + (Weights.CONCRETE_WASTAGE*wastedConcrete) + 
-					(30 * deliveryNoEffect); 
+					(Weights.STARTTIME_DELAY*startTimeDelay) + (Weights.CONCRETE_WASTAGE*wastedConcrete);// + 
+					//(30 * deliveryNoEffect); 
 			
 			//add here attraction for the schedule with greater than delivery no. 0
 			return score/schedule.size(); //this is an attempt to normalize score with respect to size of schedule

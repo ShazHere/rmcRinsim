@@ -217,7 +217,7 @@ public class OrderStateInProcess extends OrderAgentState {
 				}
 			}
 		} 
-			return Reply.REJECT;
+		return Reply.REJECT;
 	}
 
 	@Override

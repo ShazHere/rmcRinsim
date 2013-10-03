@@ -70,15 +70,14 @@ public class OrderStateTeamNeed extends OrderAgentState {
 				orderPlan.removeDelivery(failedDelivery);
 				logger.info(orderAgent.getOrder().getId() + "O Delivery Failure handled (JI); DeliveryNO = " + failedDelivery.getDeliveryNo());
 			}
-			else 
+			else // cost is null or assignDelivery was unsuccessful
 				normalDelMASWay(orderPlan, timeLapse.getStartTime());
-				//if cost == null then what to do? should it be thrown like normal DelMAS?
 		}
 	}
 
 	private boolean assignDelivery(OrderAgentPlan orderPlan,TruckCostForDelivery cost, DateTime currTime) {
-		if (orderPlan.isOrderDeliveryingStarted(currTime)== false) {
-			if (cost.getDeliveryCost() < 3) {
+		//if (orderPlan.isOrderDeliveryingStarted(currTime)== false) {
+			if (cost.getDeliveryCost() <= 3) {
 				CommitmentAnt cAnt = new CommitmentAnt(orderAgent, currTime, cost.getTruckDeliveryUnit());
 				putInOrderPlan(orderPlan, cost.getTruckDeliveryUnit().getDelivery(), currTime);
 				orderAgent.getcApi().send(cost.getTruckAgent(), cAnt);
@@ -87,17 +86,17 @@ public class OrderStateTeamNeed extends OrderAgentState {
 			else { //think about resetPlan..or what to do?
 				;
 			}
-		}
-		else { //means order has already been started to be delivered
-			if (cost.getDeliveryCost() <= 3){
-				//assign delivery
-				//send commitment ant
-			}
-			else {
-				; //think how to deal  with cost 3 & > 4..
-				//may be first check how much this situation occurs..
-			}
-		}
+//	}
+//		else { //means order has already been started to be delivered
+//			if (cost.getDeliveryCost() <= 3){
+//				//assign delivery
+//				//send commitment ant
+//			}
+//			else {
+//				; //think how to deal  with cost 3 & > 4..
+//				//may be first check how much this situation occurs..
+//			}
+//		}
 		return false;
 	}
 	private void putInOrderPlan(OrderAgentPlan orderPlan, Delivery del, DateTime currTime) {
@@ -114,15 +113,17 @@ public class OrderStateTeamNeed extends OrderAgentState {
 	public void checkDeliveryStatuses(OrderAgentPlan orderPlan, long startTime) {
 		DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
 		if (assignDeliveryTime == null)
-			;//do as normal DelMas
-		else if (orderPlan.areDeliveriesRefreshing(startTime) && orderPlan.calculateRemainingVolume() == 0 && assignDeliveryTime.plusSeconds(GlobalParameters.INTENTION_INTERVAL_SEC).compareTo(currTime) < 0 ) {
+			;//will be already doing as  normal DelMas
+		else if (orderPlan.areDeliveriesRefreshing(startTime)// && orderPlan.calculateRemainingVolume() == 0 
+				&& assignDeliveryTime.plusSeconds(GlobalParameters.INTENTION_INTERVAL_SEC).compareTo(currTime) < 0 ) {
+			checkArgument (orderPlan.calculateRemainingVolume() == 0, true);
 			orderAgent.setOrderState(OrderAgentState.BOOKED);
 			logger.info(orderAgent.getOrder().getId() + "O delivery assignig to TEAM MEMBER completed");
 		}
-		else if (assignDeliveryTime.plusSeconds(GlobalParameters.INTENTION_INTERVAL_SEC).compareTo(currTime) < 0 ){
-			checkArgument(false,true);//i think this should not occur..i hope so..:P
+		//else if (assignDeliveryTime.plusSeconds(GlobalParameters.INTENTION_INTERVAL_SEC).compareTo(currTime) < 0 ){
+			//checkArgument(false,true);//i think this should not occur..i hope so..:P
 //do as in normalDelMAS
-		}
+		//}
 		//else seems it will staty in OrderStateTeam
 	}
 	private void normalDelMASWay(OrderAgentPlan orderPlan, long startTime) {

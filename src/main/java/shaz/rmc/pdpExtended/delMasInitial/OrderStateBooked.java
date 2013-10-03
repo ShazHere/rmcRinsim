@@ -9,6 +9,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 
 import rinde.sim.core.TimeLapse;
+import rinde.sim.core.model.pdp.PDPModel.ParcelState;
 
 /**
  * @author Shaza
@@ -45,7 +46,15 @@ public class OrderStateBooked extends OrderAgentState {
 	public void changeOrderPlan(OrderAgentPlan orderPlan, long startTime) {
 		if(checkedCorrectlyBooked == false) {
 			DateTime currTime = GlobalParameters.START_DATETIME.plusMillis((int)startTime);
-			checkArgument(currTime.compareTo(orderPlan.getDeliveries().get(0).getLoadingTime()) < 0,true);
+			if (orderAgent.getDeliveryForDomainDelivery(orderPlan.getDeliveries().get(0)) != null) {
+				if (orderAgent.getPDPModel().getParcelState(orderAgent.getDeliveryForDomainDelivery(orderPlan.getDeliveries().get(0))) == ParcelState.IN_CARGO
+				|| orderAgent.getPDPModel().getParcelState(orderAgent.getDeliveryForDomainDelivery(orderPlan.getDeliveries().get(0))) == ParcelState.PICKING_UP
+				|| orderAgent.getPDPModel().getParcelState(orderAgent.getDeliveryForDomainDelivery(orderPlan.getDeliveries().get(0))) == ParcelState.DELIVERING
+				|| orderAgent.getPDPModel().getParcelState(orderAgent.getDeliveryForDomainDelivery(orderPlan.getDeliveries().get(0))) == ParcelState.DELIVERED)
+					checkedCorrectlyBooked = true; //since it has come from TeamNeed to this state so no need to check it
+			}
+			else
+				checkArgument(currTime.compareTo(orderPlan.getDeliveries().get(0).getLoadingTime()) < 0,true);
 			checkedCorrectlyBooked = true;
 		}//if this check is caught too often then it means there is need to re-visit different interval times and 'MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED' values.
 		
