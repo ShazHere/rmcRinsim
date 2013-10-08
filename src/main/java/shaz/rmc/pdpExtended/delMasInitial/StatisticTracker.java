@@ -86,6 +86,7 @@ public class StatisticTracker implements Listener {
 			//truck related
 			sb.append("\n").append("TotalTrucksUsed: ").append(stats.getTotalTrucksUsed()).append("\n");
 			sb.append("TotalTrucksGiven: ").append(stats.getTotalTrucksGiven()).append("\n");
+			sb.append("TrucksWithDisturbedSchedule: ").append(stats.getTruckWithDisturbedSchedule()).append("\n");
 			sb.append(stats.getResultTruck().toString());
 			//objfunc
 			sb.append("ObjectiveFunctionValue: ").append(stats.getTotalValue()).append("\n");

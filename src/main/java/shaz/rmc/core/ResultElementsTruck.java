@@ -17,9 +17,13 @@ public class ResultElementsTruck {
 	private int wastedConcrete = 0; //wasted conrete is here since while exploring (and latter booking) ants fill the schedule unit if a deliveyr involves wastage of concrete. 
 	private int totalConcrete = 0;  //total concrete delivered by truck(s)
 	private int totalDeliveries = 0; //totoal Deliveries made by truck(s)
+	private int noOfTimesACCEPTRemoved = 0;
+	private int noOfTimesWEEK_ACCEPTRemoved = 0;
+	private int noOfTimesUNDERPROCESSRemoved = 0;
+
 	
 	public ResultElementsTruck(int totalDeliveries, int travelMin, int lagTimeInMin, int startTimeDelay,
-			int wastedConcrete, int totalConcrete) {
+			int wastedConcrete, int totalConcrete, int noOfTimesACCEPTRemoved, int noOfTimesWEEK_ACCEPTRemoved, int noOfTimesUNDERPROCESSRemoved) {
 		super();
 		this.totalDeliveries = totalDeliveries;  
 		this.travelMin = travelMin;
@@ -27,6 +31,9 @@ public class ResultElementsTruck {
 		this.startTimeDelayInMin = startTimeDelay;
 		this.wastedConcrete = wastedConcrete;
 		this.totalConcrete = totalConcrete;
+		this.noOfTimesACCEPTRemoved = noOfTimesACCEPTRemoved;
+		this.noOfTimesWEEK_ACCEPTRemoved = noOfTimesWEEK_ACCEPTRemoved;
+		this.noOfTimesUNDERPROCESSRemoved = noOfTimesUNDERPROCESSRemoved;
 		
 	}
 	public ResultElementsTruck() {
@@ -85,6 +92,24 @@ public class ResultElementsTruck {
 	public void addTotalDeliveries(int totalDeliveries) {
 		this.totalDeliveries += totalDeliveries;
 	}
+	public int getNoOfTimesACCEPTRemoved() {
+		return noOfTimesACCEPTRemoved;
+	}
+	public void addNoOfTimesACCEPTRemoved(int noOfTimesACCEPTRemoved) {
+		this.noOfTimesACCEPTRemoved += noOfTimesACCEPTRemoved;
+	}
+	public int getNoOfTimesWEEK_ACCEPTRemoved() {
+		return noOfTimesWEEK_ACCEPTRemoved;
+	}
+	public void addNoOfTimesWEEK_ACCEPTRemoved(int noOfTimesWEEK_ACCEPTRemoved) {
+		this.noOfTimesWEEK_ACCEPTRemoved += noOfTimesWEEK_ACCEPTRemoved;
+	}
+	public int getNoOfTimesUNDERPROCESSRemoved() {
+		return noOfTimesUNDERPROCESSRemoved;
+	}
+	public void addNoOfTimesUNDERPROCESSRemoved(int noOfTimesUNDERPROCESSRemoved) {
+		this.noOfTimesUNDERPROCESSRemoved += noOfTimesUNDERPROCESSRemoved;
+	}
 	@Override
 	public String toString() {
 		final StringBuilder sb = new StringBuilder();
@@ -94,6 +119,9 @@ public class ResultElementsTruck {
 		sb.append("TravelDistance: ").append(travelMin).append("\n");
 		sb.append("WastedConcrete: ").append(wastedConcrete).append("\n");
 		sb.append("StartTimeDelay: ").append(startTimeDelayInMin).append("\n");
+		sb.append("ACCEPTEDRemoved: ").append(this.noOfTimesACCEPTRemoved).append("\n");
+		sb.append("WEEKACCEPTEDRemoved: ").append(this.noOfTimesWEEK_ACCEPTRemoved).append("\n");
+		sb.append("UNDERPROCESSRemoved: ").append(this.noOfTimesUNDERPROCESSRemoved).append("\n");
 		return sb.toString();
 	}
 }

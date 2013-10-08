@@ -58,6 +58,9 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	
 	private Point startLocation;
 	private ProductionSite startPS;
+	private int noOfTimesACCEPTRemoved;
+	private int noOfTimesWEEK_ACCEPTRemoved;
+	private int noOfTimesUNDERPROCESSRemoved;
 
 	private static int totalDeliveryTruck = 0;
 	private final int id;
@@ -79,6 +82,9 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 		truckSchedule = new DeliveryTruckSchedule(new ArrayList<TruckScheduleUnit>());
 		i = new DeliveryTruckInitialIntention(this);
 		
+		noOfTimesACCEPTRemoved = 0;
+		noOfTimesWEEK_ACCEPTRemoved = 0;
+		noOfTimesUNDERPROCESSRemoved = 0;
 		wastedConcrete = 0;
 		totalTravelTime = new Duration(0); //to keep record of total travelling time, to be used by objective function latter.
 
@@ -153,6 +159,15 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 	}
 	protected List<ProductionSiteInitial> getSites() {
 		return sites;
+	}
+	protected void incrementNoOfTimesACCEPTRemoved (int incrementBy) {
+		this.noOfTimesACCEPTRemoved += incrementBy;
+	}
+	protected void incrementNoOfTimesWEEK_ACCEPTRemoved (int incrementBy) {
+		this.noOfTimesWEEK_ACCEPTRemoved += incrementBy;
+	}
+	protected void incrementNoOfTimesUNDERPROCESSRemoved (int incrementBy) {
+		this.noOfTimesUNDERPROCESSRemoved += incrementBy;
 	}
 	public int getWastedConcrete() {
 		return wastedConcrete;
@@ -290,7 +305,8 @@ public class DeliveryTruckInitial extends rinde.sim.core.model.pdp.Vehicle imple
 					deliveredConcrete += ((TruckDeliveryUnit) u).getDelivery().getDeliveredVolume(); //truck used to deliver all concrete, even the one that will go wastage for order site. so unloading times would also have boht values
 				}
 			}
-		ResultElementsTruck re = new ResultElementsTruck(totalDeliveries, travelMin, lagTimeInMin, startTimeDelay, wastedConcrete,deliveredConcrete);
+		ResultElementsTruck re = new ResultElementsTruck(totalDeliveries, travelMin, lagTimeInMin, startTimeDelay, wastedConcrete, deliveredConcrete, 
+				noOfTimesACCEPTRemoved, noOfTimesWEEK_ACCEPTRemoved, noOfTimesUNDERPROCESSRemoved);
 			return re; 
 		}
 		else 

@@ -794,4 +794,9 @@ public class DeliveryTruckSchedule {
 		this.fillTravelUnitsInSchedule(truckAgent, schedule, Utility.getCloner());
 		Utility.sortSchedule(schedule);
 	}
+	protected Reply getUnitStatus(TruckDeliveryUnit tunit) {
+		if (unitStatus.containsKey(tunit.getDelivery()))
+			return this.unitStatus.get(tunit.getDelivery());
+		return Reply.NO_REPLY; //else
+	}
 }

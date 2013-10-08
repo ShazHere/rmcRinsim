@@ -34,6 +34,8 @@ public class ResultElements {
 	Set<OrderAgentInitial> orderSet;
 	Set<Vehicle> truckSet;
 	
+	private int truckWithDisturbedSchedule;
+	
 	private int totalValue = 0; // total cost of objective function
 
 	
@@ -45,6 +47,7 @@ public class ResultElements {
 		totalOrderGiven = 0;
 		totalTrucksGiven =0;
 		totalTrucksUsed = 0;
+		truckWithDisturbedSchedule = 0;
 	}
 	public ResultElements(Set<OrderAgentInitial> orderSet,
 			Set<Vehicle> truckSet) {
@@ -55,6 +58,7 @@ public class ResultElements {
 		// for estimating expected wasted concrete
 		totalTrucksUsed = 0;
 		totalTrucksGiven = truckSet.size();
+		truckWithDisturbedSchedule = 0;
 		ResultElementsTruck re;
 		ResultElementsTruck allResult = new ResultElementsTruck();
 		for (Vehicle v: truckSet){
@@ -69,6 +73,12 @@ public class ResultElements {
 				allResult.addWastedConcrete(re.getWastedConcrete());
 				allResult.addTotalDeliveries(re.getTotalDeliveries());
 				allResult.addTotalConcrete(re.getTotalConcrete());
+				allResult.addNoOfTimesACCEPTRemoved(re.getNoOfTimesACCEPTRemoved());
+				allResult.addNoOfTimesWEEK_ACCEPTRemoved(re.getNoOfTimesWEEK_ACCEPTRemoved());
+				allResult.addNoOfTimesUNDERPROCESSRemoved(re.getNoOfTimesUNDERPROCESSRemoved());
+				if (re.getNoOfTimesACCEPTRemoved() + re.getNoOfTimesWEEK_ACCEPTRemoved() 
+						+ re.getNoOfTimesUNDERPROCESSRemoved() > 0) //means some disturbance was tehre in truck
+					truckWithDisturbedSchedule += 1;
 			}
 			boolean addIt = true;
 			for (Integer capacity: truckCapacities) {
@@ -166,6 +176,18 @@ public class ResultElements {
 	public int getTotalDeliveries() {
 		return resultTruck.getTotalDeliveries();
 	}
+	public int getNoOfTimesACCEPTRemoved() {
+		return resultTruck.getNoOfTimesACCEPTRemoved();
+	}
+	public int getNoOfTimesWEEK_ACCEPTRemoved() {
+		return resultTruck.getNoOfTimesWEEK_ACCEPTRemoved();
+	}
+	public int getNoOfTimesUNDERPROCESSRemoved() {
+		return resultTruck.getNoOfTimesUNDERPROCESSRemoved();
+	}
+	public int getTruckWithDisturbedSchedule() {
+		return truckWithDisturbedSchedule;
+	}
 	/**
 	 * @return cost of objective function
 	 */
@@ -191,6 +213,7 @@ public class ResultElements {
 		colNames.append("TotalTrucksUsed").append(seperator);
 		colNames.append("TotalOrdersGiven").append(seperator);
 		colNames.append("TotalOrdersServed").append(seperator);
+		colNames.append("TrucksWithDisturbedSchedule").append(seperator);
 		
 		//truck detail
 		colNames.append("TravelMin").append(seperator);
@@ -199,6 +222,9 @@ public class ResultElements {
 		colNames.append("WastedConcrete").append(seperator);
 		colNames.append("TotalConcrete").append(seperator);
 		colNames.append("TotalDeliveries").append(seperator);
+		colNames.append("ACCEPTRemoved").append(seperator);
+		colNames.append("WEEK_ACCEPTRemoved").append(seperator);
+		colNames.append("UNDERPROCESSRemoved").append(seperator);
 		
 		//order details
 		colNames.append("TotalDeliveriesReadyByOrder").append(seperator);
@@ -258,6 +284,7 @@ public class ResultElements {
 		resultDetails.append(getTotalTrucksUsed()).append(seperator);
 		resultDetails.append(getTotalOrderGiven()).append(seperator);
 		resultDetails.append(getTotalOrderServed()).append(seperator);
+		resultDetails.append(getTruckWithDisturbedSchedule()).append(seperator);
 		
 		//truck detail
 		resultDetails.append(getTravelMin()).append(seperator);
@@ -266,6 +293,9 @@ public class ResultElements {
 		resultDetails.append(getWastedConcrete()).append(seperator);
 		resultDetails.append(getTotalConcrete()).append(seperator);
 		resultDetails.append(getTotalDeliveries()).append(seperator);
+		resultDetails.append(getNoOfTimesACCEPTRemoved()).append(seperator);
+		resultDetails.append(getNoOfTimesWEEK_ACCEPTRemoved()).append(seperator);
+		resultDetails.append(getNoOfTimesUNDERPROCESSRemoved()).append(seperator);
 		
 		//order details
 		resultDetails.append(getTotalDeliveriesReadyByOrder()).append(seperator);

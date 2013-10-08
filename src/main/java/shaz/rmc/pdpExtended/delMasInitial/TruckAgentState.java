@@ -17,6 +17,7 @@ import shaz.rmc.core.Ant;
 import shaz.rmc.core.AvailableSlot;
 import shaz.rmc.core.Reply;
 import shaz.rmc.core.TimeSlot;
+import shaz.rmc.core.TruckDeliveryUnit;
 import shaz.rmc.core.Utility;
 import shaz.rmc.core.communicateAbleUnit;
 import shaz.rmc.pdpExtended.delMasInitial.communication.ExpAnt;
@@ -128,7 +129,9 @@ public abstract class TruckAgentState {
 	 */
 	protected void removeRejectedUnitFromSchedule(communicateAbleUnit u, DateTime currTime) {
 		if (u.getOrderReply() == Reply.REJECT && u.isAddedInTruckSchedule() == true){ //means proably orderPlan changed
-			truckAgent.getTruckSchedule().remove(u.getTunit(), truckAgent);
+			countNoOTimeRemoved(u.getTunit());
+			
+			truckAgent.getTruckSchedule().remove(u.getTunit(), truckAgent);// actual removing
 			if (truckAgent.getTruckSchedule().isEmpty())
 				Utility.adjustAvailableSlotInBeginning(currTime, availableSlots);
 			else
@@ -136,6 +139,19 @@ public abstract class TruckAgentState {
 			logger.debug(truckAgent.getId()+"T Schedule unit removed in Trucks schedule (status= " +u.getOrderReply()+ ": " + u.getTunit().toString());
 		}
 		truckAgent.getTruckSchedule().makePracticalSchedule(truckAgent);
+	}
+
+	/**
+	 * @param u
+	 */
+	protected void countNoOTimeRemoved(TruckDeliveryUnit tdu) {
+		//no need to check truckState since this would never be called by broken truck. 
+		if (truckAgent.getTruckSchedule().getUnitStatus(tdu) == Reply.ACCEPT) //so which ever is removed consider removed..
+			truckAgent.incrementNoOfTimesACCEPTRemoved(1);
+		else if (truckAgent.getTruckSchedule().getUnitStatus(tdu) == Reply.WEEK_ACCEPT)
+			truckAgent.incrementNoOfTimesWEEK_ACCEPTRemoved(1);
+		else if (truckAgent.getTruckSchedule().getUnitStatus(tdu) == Reply.UNDER_PROCESS)
+			truckAgent.incrementNoOfTimesUNDERPROCESSRemoved(1);
 	}
 
 	public static final int IN_PROCESS = 0; // The normal and general state
