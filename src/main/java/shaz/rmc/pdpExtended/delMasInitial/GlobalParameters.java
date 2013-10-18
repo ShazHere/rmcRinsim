@@ -24,6 +24,15 @@ import shaz.rmc.core.domain.Problem;
  */
 public final class GlobalParameters {
 
+	
+	/**
+	 * @param pScale
+	 * @param pStress
+	 * @param pDataFolder
+	 * @param pResultFolder
+	 * @param pFileName
+	 * At the beining of program, these should be given as parameters. So that correct files are loaded. 
+	 */
 	public GlobalParameters(int pScale, String pStress, String pDataFolder, String pResultFolder, String pFileName){
 				 this.SCALE = pScale;
 				 this.STRESS = pStress;

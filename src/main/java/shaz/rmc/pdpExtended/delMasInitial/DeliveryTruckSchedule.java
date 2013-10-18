@@ -682,49 +682,7 @@ public class DeliveryTruckSchedule {
 				}
 				break;
 			}
-//			case 4: //if found availableSlot in case4 and not earlier, means ACCEPT with (delNo==0 || delNo>0 &&
-//				//curTime+MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED < del.deliveryTime)
-//			{
-//				for(TruckScheduleUnit tsu : truckSchedule) {
-//					if (tsu instanceof TruckDeliveryUnit) {
-//						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
-//						if (del.getOrder() == or)
-//							returnSchedule.add(tsu);
-//						else if ( unitStatus.get(del) == Reply.ACCEPT &&
-//								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFORE_ORDER_SHOULDBE_BOOKED).compareTo(del.getDeliveryTime()) <= 0))
-//							returnSchedule.add(tsu);
-//					}
-//				}
-//				break;
-//			}
-//			case 5:
-//			{
-//				for(TruckScheduleUnit tsu : truckSchedule) {
-//					if (tsu instanceof TruckDeliveryUnit) {
-//						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
-//						if (del.getOrder() == or)
-//							returnSchedule.add(tsu);
-//						else if ( unitStatus.get(del) == Reply.ACCEPT &&
-//								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*4).compareTo(del.getDeliveryTime()) <= 0))
-//							returnSchedule.add(tsu);
-//					}
-//				}
-//				break;
-//			}
-//			case 6:
-//			{
-//				for(TruckScheduleUnit tsu : truckSchedule) {
-//					if (tsu instanceof TruckDeliveryUnit) {
-//						Delivery del = ((TruckDeliveryUnit) tsu).getDelivery();
-//						if (del.getOrder() == or)
-//							returnSchedule.add(tsu);
-//						else if ( unitStatus.get(del) == Reply.ACCEPT &&
-//								!(currTime.plusMinutes(GlobalParameters.MINUTES_BEFOR_DELIVERY_CREATED*3).compareTo(del.getDeliveryTime()) <= 0))
-//							returnSchedule.add(tsu);
-//					}
-//				}
-//				break;
-//			}
+
 			
 		}
 		checkArgument(returnSchedule.isEmpty() == false,  true);
