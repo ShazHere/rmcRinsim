@@ -156,6 +156,7 @@ public class TruckStateInProcess extends TruckAgentState {
 			/**
 			 * @param notDel0Ants
 			 * @param containngUnServedExtendedSchedule
+			 * This seem to ensure that each truck is not scheduling an order more than once
 			 */
 			private ArrayList<ExpAnt> getExpContainingUnServedExtendedSchedule(ArrayList<ExpAnt> notDel0Ants) {
 				ArrayList<ExpAnt> containngUnServedExtendedSchedule = new ArrayList<ExpAnt>();
