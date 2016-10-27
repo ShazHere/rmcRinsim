@@ -5,19 +5,31 @@
   <version>0.0.1-SNAPSHOT</version>
   <dependencies>
   	<dependency>
-  		<groupId>rinsim</groupId>
-  		<artifactId>core</artifactId>
-  		<version>2.0.1-SNAPSHOT</version>
+  		<groupId>com.github.rinde</groupId>
+  		<artifactId>rinsim-core</artifactId>
+  		<version>2.1.0</version>
   	</dependency>
   	<dependency>
-  		<groupId>rinsim</groupId>
-  		<artifactId>ui</artifactId>
-  		<version>2.0.1-SNAPSHOT</version>
+  		<groupId>com.github.rinde</groupId>
+  		<artifactId>rinsim-ui</artifactId>
+  		<version>2.1.0</version>
   	</dependency>
   	<dependency>
-  		<groupId>rinsim</groupId>
-  		<artifactId>problem</artifactId>
-  		<version>2.0.1-SNAPSHOT</version>
+  		<groupId>com.github.rinde</groupId>
+  		<artifactId>rinsim-problem</artifactId>
+  		<version>2.1.0</version>
   	</dependency>
-  </dependencies>
+  	<dependency>
+    	<groupId>org.eclipse.swt</groupId>
+        <artifactId>org.eclipse.swt.gtk.linux.x86_64</artifactId>
+        <version>4.4</version>
+        </dependency>
+   </dependencies>
+  <repositories>
+    <repository>
+        <id>swt-repo</id>
+        <url>https://raw.githubusercontent.com/maven-eclipse/swt-repo/master/</url>
+    </repository>
+</repositories>
 </project>
+
