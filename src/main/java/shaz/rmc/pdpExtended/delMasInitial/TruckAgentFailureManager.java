@@ -27,16 +27,14 @@ public class TruckAgentFailureManager {
 	private final Logger logger; //for logging
 	
 	private final RandomGenerator rng;
-	private final int noOfTrucksToBeFailed;
 	private final boolean breakSpecificTruck;
 	
 	private final Map<Integer, Integer> timeTruck;
 	//<MinuteOfDay, TruckId>
 	
-	public TruckAgentFailureManager(RandomGenerator pRand, int pNoOfTruckToBeFailed) {
+	public TruckAgentFailureManager(RandomGenerator pRand) {
 		rng = pRand;
 		logger = Logger.getLogger(OrderManagerInitial.class);
-		noOfTrucksToBeFailed = pNoOfTruckToBeFailed;
 		breakSpecificTruck = false;
 		
 		timeTruck = new  LinkedHashMap<Integer, Integer>();

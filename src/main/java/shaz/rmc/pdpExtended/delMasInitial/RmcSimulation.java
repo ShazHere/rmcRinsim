@@ -36,19 +36,19 @@ public class RmcSimulation {
 	private static Logger log = Logger.getLogger(RmcSimulation.class);
 	private static Simulator sim;
 	public static void main(String[] args) {
-		//int randomSeed = 250; //if randomSeed == 0, then each generato is a new random Generator without any seed, else same rng should be passed to all
-		int randomSeed = 0;
+		int randomSeed = 200; //if randomSeed == 0, then each generato is a new random Generator without any seed, else same rng should be passed to all
+		//int randomSeed = 0;
 		final RandomGenerator rng = new MersenneTwister(randomSeed);
 		
-		if (args.length > 0) {
-			int scale = Integer.parseInt(args[0]);
-			GlobalParameters gp = new GlobalParameters(scale, args[1], args[2], args[3], args[4]);
-			log.info(gp.toString());
-		}
-		else {
-			log.error("Arguments must be supllied: RmcSimulation scale<int> stress<String> dataFolder<String> resultFolder<String>");
-	        System.exit(1);
-		}
+//		if (args.length > 0) {
+//			int scale = Integer.parseInt(args[0]);
+//			GlobalParameters gp = new GlobalParameters(scale, args[1], args[2], args[3], args[4]);
+//			log.info(gp.toString());
+//		}
+//		else {
+//			log.error("Arguments must be supllied: RmcSimulation scale<int> stress<String> dataFolder<String> resultFolder<String>");
+//	        System.exit(1);
+//		}
 
 		
 		sim = new Simulator(rng, 200); //tick is one milli second, step = 200ms 
@@ -75,17 +75,17 @@ public class RmcSimulation {
 		
 		final RmcSimulation rmSim = new RmcSimulation(); 
 		rmSim.loadProblem();
+		log.info(" Input file: " + GlobalParameters.INPUT_FILE);
 		//adding managers..
 		OrderManagerInitial omi;
 		TruckAgentFailureManager tfm;
-		final int noOfTruckToBeFailed = 1;
 		if (randomSeed == 0){
 			omi = new OrderManagerInitial(sim, new MersenneTwister(), prm);
-			tfm = new TruckAgentFailureManager(new MersenneTwister(), noOfTruckToBeFailed);
+			tfm = new TruckAgentFailureManager(new MersenneTwister());
 		}
 		else { 
 			omi = new OrderManagerInitial(sim, rng, prm);
-			tfm = new TruckAgentFailureManager(rng, noOfTruckToBeFailed);
+			tfm = new TruckAgentFailureManager(rng);
 		}
 		// Statistic Tracker
 		final StatisticTracker stTracker = new StatisticTracker(sim , pdpModel, omi, prm);
@@ -93,7 +93,6 @@ public class RmcSimulation {
 		
 		
 		sim.configure();
-		
 		
 		//adding order manager	
 		sim.register(omi);

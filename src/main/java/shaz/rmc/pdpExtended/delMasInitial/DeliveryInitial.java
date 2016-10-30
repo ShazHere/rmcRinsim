@@ -31,9 +31,9 @@ public class DeliveryInitial extends Parcel {  //parcel has to be given start lo
 	public DeliveryInitial(OrderAgentInitial pOrder, Delivery pDelivery, int pDeliveryNo, Point pStation, 
 			Point pOrderDestination, long pLoadingDuration, long pUnloadingDuration,
 			double pVolume) {
-		super(pStation, (long)pLoadingDuration, TimeWindow.ALWAYS, (long)pUnloadingDuration, TimeWindow.ALWAYS, pVolume);
+		super(pOrderDestination, (long)pLoadingDuration, TimeWindow.ALWAYS, (long)pUnloadingDuration, TimeWindow.ALWAYS, pVolume);
 		setStartPosition(pStation);
-		setDestination(pOrderDestination); //do i require to set it??
+		//setDestination(pOrderDestination); //do i require to set it??
 		System.out.println("Delivery " + pDeliveryNo + " startLocation is " + pStation.toString());
 		order = pOrder;
 		delivery = pDelivery;

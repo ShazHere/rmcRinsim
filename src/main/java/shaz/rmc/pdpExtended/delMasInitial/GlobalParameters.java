@@ -58,7 +58,6 @@ public final class GlobalParameters {
 	public static final boolean IS_FIXED_VEHICLE_CAPACITY = true; //will all the vehicles have same capacity
 	public static final int FIXED_CAPACITY = 10000; //in m3, but not used except for estimation of maximum possible start time 30/07/2013
 	public static final double TRUCK_SPEED = 10; //points per hour, in a 10*10 square area. at the moment i consider it 100km2 area. 
-	//public static final int FIXED_VEHICLE_CAPACITY =10000;
 	//public static final int TRUCKS_PLAN_IN_ADVANCE_HOURS = 6; //specifies how much time in advance the truck can plan. but if deliveries are so many, the truck
 	//accepts the deliveyr time of even after TRUCKS_PLAN_IN_ADVANCE_HOURS. 
 	public static final int MINUTES_TO_PERISH_CONCRETE = 80; //in minutes..
@@ -82,7 +81,7 @@ public final class GlobalParameters {
 	public static final int EXPLORATION_ANT_SEARCH_FOR_SEC_AFTER =0;// INTENTION_EVAPORATION_SEC * 4; //EXP ants donot start searching for truckSchedule for currTime,
 	public static final boolean PS_ALWAYS_AVAILABLE = true;
 	//breakdown probability between 0 to 25 percent.  
-	public static final int TRUCK_BREAKDOWN_PROBABILTY = 20;   
+	public static final int TRUCK_BREAKDOWN_PROBABILTY = 80;   
 		
 	//CHECK NOTES ABOUT INPUT FILES!!
 	//public static final String INPUT_FILE = "canonical-30May2013.xml";  //with expanded order start times
@@ -106,12 +105,12 @@ public final class GlobalParameters {
 	//public static final String DATA_FOLDER= "/Users/Shaza/Documents/try/ReadyMixConcrete/data/2011/planning2011-02-15/";
 	public static final String LOG_LOCATION = "hh";  //not used 
 	
-	public static int SCALE;// = 8;
-		public static  String STRESS ; //= "1.2";
-		public static  String DATA_FOLDER;//= "/Users/Shaza/Documents/RMC_Data_2013/input/";
+	public static int SCALE = 4;
+		public static  String STRESS  = "1.0";
+		public static  String DATA_FOLDER= "/home/shaza/RMCData_2016/input/";
 		//public static final String RESULT_FOLDER = "/Users/Shaza/Documents/workspace/shaza-rmc.core/GeneratroFilesRestult14Sept2013/";
-		public static  String RESULT_FOLDER; // = "/Users/Shaza/Documents/RMC_Data_2013/output/";
-		public static  String INPUT_FILE ; //= SCALE + "/" + STRESS +"_" + SCALE + ".xml";
+		public static  String RESULT_FOLDER = "/home/shaza/RMCData_2016/output/";
+		public static  String INPUT_FILE = DATA_FOLDER + SCALE + "/" + STRESS +"_" + SCALE + "_839.xml";
 		public static PERCENT INPUT_INSTANCE_TYPE = PERCENT.per100;
 		
 	/**
